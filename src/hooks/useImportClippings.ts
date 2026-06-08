@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { parseKindleClippings, groupByBook } from '../utils/parseKindleClippings';
+import { db } from '../db/db';
 import { upsertBook } from '../db/booksRepository';
 import { upsertHighlight } from '../db/highlightsRepository';
 import type { Book } from '../types/book';
@@ -54,7 +55,7 @@ export function useImportClippings() {
         };
 
         // upsertBook returns void; we detect "new" by checking existence before
-        const existsBefore = await import('../db/db').then(({ db }) => db.books.get(parsedBook.id));
+        const existsBefore = await db.books.get(parsedBook.id);
         await upsertBook(book);
         if (!existsBefore) stats.newBooks++;
 
