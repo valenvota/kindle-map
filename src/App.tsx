@@ -3,23 +3,40 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/db';
 import { ImportPage } from './pages/ImportPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { ReadingCanvas } from './components/canvas/ReadingCanvas';
 
-type View = 'import' | 'library';
+type Screen = 'import' | 'canvas' | 'list';
 
 export default function App() {
   const bookCount = useLiveQuery(() => db.books.count(), []);
-  const [forcedView, setForcedView] = useState<View | null>(null);
+  const [screen, setScreen] = useState<Screen | null>(null);
 
-  // Show import page until user has books, then show library
-  const view: View = forcedView ?? (bookCount === 0 ? 'import' : 'library');
+  // Derive current screen: no books → import, otherwise → canvas (default)
+  const current: Screen = screen ?? (bookCount === 0 ? 'import' : 'canvas');
+
+  if (current === 'import') {
+    return (
+      <ImportPage
+        onDone={() => setScreen('canvas')}
+      />
+    );
+  }
+
+  if (current === 'list') {
+    return (
+      <LibraryPage
+        onImport={() => setScreen('import')}
+        // LibraryPage toolbar will also show the toggle back to canvas
+        onCanvasView={() => setScreen('canvas')}
+      />
+    );
+  }
 
   return (
-    <>
-      {view === 'import' ? (
-        <ImportPage onDone={() => setForcedView('library')} />
-      ) : (
-        <LibraryPage onImport={() => setForcedView('import')} />
-      )}
-    </>
+    <ReadingCanvas
+      view="canvas"
+      onToggleView={() => setScreen('list')}
+      onImport={() => setScreen('import')}
+    />
   );
 }
