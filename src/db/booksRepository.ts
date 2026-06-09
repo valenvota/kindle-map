@@ -30,6 +30,20 @@ export async function updateBookHighlightCount(bookId: string): Promise<void> {
   });
 }
 
+export async function updateBookMetadata(
+  id: string,
+  patch: Partial<Pick<Book, 'title' | 'author' | 'description' | 'color' | 'tags'>>,
+): Promise<void> {
+  // Filter out undefined keys so we don't accidentally overwrite with undefined
+  const clean = Object.fromEntries(
+    Object.entries(patch).filter(([, v]) => v !== undefined),
+  ) as Partial<Book>;
+  await db.books.update(id, {
+    ...clean,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function deleteBook(id: string): Promise<void> {
   await db.transaction('rw', db.books, db.highlights, db.canvasNodes, async () => {
     await db.books.delete(id);

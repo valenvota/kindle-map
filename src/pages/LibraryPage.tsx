@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Upload, BookOpen, Search, LayoutDashboard } from 'lucide-react';
+import { Upload, BookOpen, Search, LayoutDashboard, AlertCircle } from 'lucide-react';
 import { db } from '../db/db';
 import { BookDetailView } from '../components/book/BookDetailView';
+import { detectAttentionIssues } from '../utils/cleanBookMetadata';
 import type { Book } from '../types/book';
 
 type Props = {
@@ -121,23 +122,44 @@ export function LibraryPage({ onImport, onCanvasView }: Props) {
 }
 
 function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
+  const issues = detectAttentionIssues(book.title, book.author);
+  const needsAttention = issues.length > 0;
+
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col rounded-2xl border border-stone-200 bg-white p-5 text-left transition-all hover:border-stone-300 hover:shadow-md"
+      className={[
+        'group flex flex-col rounded-2xl border bg-white p-5 text-left transition-all hover:shadow-md',
+        needsAttention
+          ? 'border-orange-200 hover:border-orange-300'
+          : 'border-stone-200 hover:border-stone-300',
+      ].join(' ')}
     >
-      {/* Color accent */}
-      <div
-        className="mb-4 h-1.5 w-10 rounded-full"
-        style={{ backgroundColor: book.color ?? '#f59e0b' }}
-      />
+      {/* Color accent + attention indicator */}
+      <div className="mb-4 flex items-center justify-between">
+        <div
+          className="h-1.5 w-10 rounded-full"
+          style={{ backgroundColor: book.color ?? '#f59e0b' }}
+        />
+        {needsAttention && (
+          <span
+            title={issues.map((i) => i.replace(/-/g, ' ')).join(', ')}
+            className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500"
+          >
+            <AlertCircle className="h-3 w-3" />
+            Fix
+          </span>
+        )}
+      </div>
 
       <div className="flex-1">
-        <h3 className="font-semibold text-stone-900 leading-snug group-hover:text-amber-700 transition-colors line-clamp-2">
+        <h3 className="line-clamp-2 font-semibold leading-snug text-stone-900 transition-colors group-hover:text-amber-700">
           {book.title}
         </h3>
-        {book.author && (
-          <p className="mt-1 text-sm text-stone-500 line-clamp-1">{book.author}</p>
+        {book.author ? (
+          <p className="mt-1 line-clamp-1 text-sm text-stone-500">{book.author}</p>
+        ) : (
+          <p className="mt-1 text-sm italic text-stone-400">No author</p>
         )}
       </div>
 
@@ -145,7 +167,7 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
         <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">
           {book.totalHighlights} highlights
         </span>
-        <span className="text-xs text-stone-400 capitalize">{book.source}</span>
+        <span className="text-xs capitalize text-stone-400">{book.source}</span>
       </div>
     </button>
   );
