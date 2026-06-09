@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Upload, BookOpen, Search, Map, AlertCircle } from 'lucide-react';
+import { Upload, BookOpen, Search, Map, AlertCircle, Plus } from 'lucide-react';
 import { db } from '../db/db';
 import { BookDetailView } from '../components/book/BookDetailView';
+import { AddBookModal } from '../components/book/AddBookModal';
 import { detectAttentionIssues } from '../utils/cleanBookMetadata';
 import type { Book } from '../types/book';
 
@@ -13,6 +14,7 @@ type Props = {
 
 export function LibraryPage({ onImport, onMapsView }: Props) {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [showAddBook, setShowAddBook] = useState(false);
   const [query, setQuery] = useState('');
 
   const books = useLiveQuery(() => db.books.orderBy('title').toArray(), []);
@@ -57,11 +59,18 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
               </button>
             )}
             <button
+              onClick={() => setShowAddBook(true)}
+              className="flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add book</span>
+            </button>
+            <button
               onClick={onImport}
               className="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
             >
               <Upload className="h-4 w-4" />
-              Import
+              <span className="hidden sm:inline">Import</span>
             </button>
           </div>
         </div>
@@ -84,15 +93,24 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
             </div>
             <h2 className="text-lg font-semibold text-stone-800">No books yet</h2>
             <p className="mt-2 max-w-xs text-sm text-stone-500">
-              Import your Kindle highlights to start building your reading map.
+              Import your Kindle highlights or add a book manually.
             </p>
-            <button
-              onClick={onImport}
-              className="mt-6 flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-amber-600"
-            >
-              <Upload className="h-4 w-4" />
-              Import My Clippings.txt
-            </button>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={onImport}
+                className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-amber-600"
+              >
+                <Upload className="h-4 w-4" />
+                Import My Clippings.txt
+              </button>
+              <button
+                onClick={() => setShowAddBook(true)}
+                className="flex items-center gap-2 rounded-xl border border-stone-200 px-5 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+              >
+                <Plus className="h-4 w-4" />
+                Add book manually
+              </button>
+            </div>
           </div>
         )}
 
@@ -117,6 +135,9 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
       {selectedBook && (
         <BookDetailView book={selectedBook} onClose={() => setSelectedBook(null)} />
       )}
+
+      {/* Add book manually modal */}
+      {showAddBook && <AddBookModal onClose={() => setShowAddBook(false)} />}
     </div>
   );
 }

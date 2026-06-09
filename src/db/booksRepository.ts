@@ -1,6 +1,22 @@
 import { db } from './db';
 import type { Book } from '../types/book';
 
+export async function createBook(
+  data: Pick<Book, 'title'> & Partial<Pick<Book, 'author' | 'description' | 'tags' | 'color'>>,
+): Promise<Book> {
+  const now = new Date().toISOString();
+  const book: Book = {
+    id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    source: 'manual',
+    totalHighlights: 0,
+    createdAt: now,
+    updatedAt: now,
+    ...data,
+  };
+  await db.books.add(book);
+  return book;
+}
+
 export async function upsertBook(book: Book): Promise<void> {
   const existing = await db.books.get(book.id);
   if (existing) {
