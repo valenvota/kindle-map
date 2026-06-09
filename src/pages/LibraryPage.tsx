@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Upload, BookOpen, Search, LayoutDashboard, AlertCircle } from 'lucide-react';
+import { Upload, BookOpen, Search, Map, AlertCircle } from 'lucide-react';
 import { db } from '../db/db';
 import { BookDetailView } from '../components/book/BookDetailView';
 import { detectAttentionIssues } from '../utils/cleanBookMetadata';
@@ -8,10 +8,10 @@ import type { Book } from '../types/book';
 
 type Props = {
   onImport: () => void;
-  onCanvasView?: () => void;
+  onMapsView?: () => void;
 };
 
-export function LibraryPage({ onImport, onCanvasView }: Props) {
+export function LibraryPage({ onImport, onMapsView }: Props) {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [query, setQuery] = useState('');
 
@@ -47,13 +47,13 @@ export function LibraryPage({ onImport, onCanvasView }: Props) {
               />
             </div>
 
-            {onCanvasView && (
+            {onMapsView && (
               <button
-                onClick={onCanvasView}
+                onClick={onMapsView}
                 className="flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
               >
-                <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden sm:inline">Canvas</span>
+                <Map className="h-4 w-4" />
+                <span className="hidden sm:inline">Maps</span>
               </button>
             )}
             <button

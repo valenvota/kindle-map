@@ -1,29 +1,29 @@
-import { Upload, LayoutGrid, List } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Library } from 'lucide-react';
 
 type Props = {
-  view: 'canvas' | 'list';
-  onToggleView: () => void;
-  onImport: () => void;
+  mapName: string;
+  onBack: () => void;       // back to Maps list
+  onLibrary: () => void;    // jump straight to Library
   onAutoArrange: () => void;
 };
 
-export function CanvasToolbar({ view, onToggleView, onImport, onAutoArrange }: Props) {
+export function CanvasToolbar({ mapName, onBack, onLibrary, onAutoArrange }: Props) {
   return (
     <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">
       <div className="flex items-center gap-1 rounded-2xl border border-stone-200 bg-white/90 px-2 py-2 shadow-lg backdrop-blur-sm">
-        {/* Brand */}
-        <div className="flex items-center gap-1.5 px-2 pr-3 border-r border-stone-100 mr-1">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500">
-            <span className="text-xs font-bold text-white">K</span>
-          </div>
-          <span className="text-sm font-semibold text-stone-800">KindleMap</span>
-        </div>
-
+        {/* Back to Maps */}
         <ToolbarButton
-          icon={<Upload className="h-4 w-4" />}
-          label="Import"
-          onClick={onImport}
+          icon={<ArrowLeft className="h-4 w-4" />}
+          label="Maps"
+          onClick={onBack}
         />
+
+        {/* Divider + map name */}
+        <div className="mx-1 flex items-center border-x border-stone-100 px-3">
+          <span className="max-w-[140px] truncate text-sm font-semibold text-stone-800">
+            {mapName}
+          </span>
+        </div>
 
         <ToolbarButton
           icon={<LayoutGrid className="h-4 w-4" />}
@@ -32,10 +32,9 @@ export function CanvasToolbar({ view, onToggleView, onImport, onAutoArrange }: P
         />
 
         <ToolbarButton
-          icon={<List className="h-4 w-4" />}
-          label={view === 'canvas' ? 'List view' : 'Canvas view'}
-          onClick={onToggleView}
-          active={view === 'list'}
+          icon={<Library className="h-4 w-4" />}
+          label="Library"
+          onClick={onLibrary}
         />
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
   ReactFlow,
   Background,
@@ -10,14 +10,16 @@ import {
   BackgroundVariant,
 } from '@xyflow/react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { Plus } from 'lucide-react';
 import { db } from '../../db/db';
 import { upsertCanvasNode } from '../../db/canvasRepository';
 import { BookNode, type BookNodeData } from './BookNode';
 import { CanvasToolbar } from './CanvasToolbar';
+import { AddBookModal } from './AddBookModal';
 import { BookDetailView } from '../book/BookDetailView';
 import type { Book } from '../../types/book';
 
-const NODE_WIDTH = 208; // w-52 = 208px
+const NODE_WIDTH = 208;
 const NODE_HEIGHT = 180;
 const GRID_COL_GAP = 40;
 const GRID_ROW_GAP = 40;
@@ -34,117 +36,147 @@ function buildInitialPosition(index: number): { x: number; y: number } {
   };
 }
 
-function bookToNode(book: Book, position: { x: number; y: number }): Node<BookNodeData> {
+function bookToNode(
+  nodeId: string,
+  book: Book,
+  position: { x: number; y: number },
+): Node<BookNodeData> {
   return {
-    id: book.id,
+    id: nodeId,
     type: 'book',
     position,
     data: { book },
-    // Prevent React Flow from drawing any handles/edges
     connectable: false,
   };
 }
 
 type Props = {
-  view: 'canvas' | 'list';
-  onToggleView: () => void;
-  onImport: () => void;
+  mapId: string;
+  onBack: () => void;    // → Maps list
+  onLibrary: () => void; // → Library
 };
 
-export function ReadingCanvas({ view, onToggleView, onImport }: Props) {
+export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<BookNodeData>>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [showAddBook, setShowAddBook] = useState(false);
   const initialized = useRef(false);
+  const prevMapIdRef = useRef(mapId);
 
-  const books = useLiveQuery(() => db.books.orderBy('title').toArray(), []);
+  // Live data
+  const mapNodes = useLiveQuery(
+    () => db.canvasNodes.where('mapId').equals(mapId).toArray(),
+    [mapId],
+  );
+  const allBooks = useLiveQuery(() => db.books.toArray(), []);
+  const map = useLiveQuery(() => db.maps.get(mapId), [mapId]);
 
-  // Initialize nodes from Dexie — runs once when books first load
+  // Reset when navigating to a different map
   useEffect(() => {
-    if (!books || initialized.current) return;
+    if (prevMapIdRef.current !== mapId) {
+      initialized.current = false;
+      setNodes([]);
+      prevMapIdRef.current = mapId;
+    }
+  }, [mapId]);
 
-    const init = async () => {
-      const savedPositions = await db.canvasNodes.toArray();
-      const posMap = new Map(savedPositions.map((n) => [n.bookId, n.position]));
-
-      const initialNodes = books.map((book, i) => {
-        const position = posMap.get(book.id) ?? buildInitialPosition(i);
-        return bookToNode(book, position);
-      });
-
-      setNodes(initialNodes);
-      initialized.current = true;
-    };
-
-    init();
-  }, [books]);
-
-  // When new books are added after initialization, append them without resetting existing nodes
+  // ── Initialize nodes from Dexie once ──────────────────────────────────────
   useEffect(() => {
-    if (!initialized.current || !books) return;
+    if (!mapNodes || !allBooks || initialized.current) return;
+
+    const bookMap = new Map(allBooks.map((b) => [b.id, b]));
+    const initialNodes = mapNodes
+      .map((mn) => {
+        const book = bookMap.get(mn.bookId);
+        if (!book) return null;
+        return bookToNode(mn.id, book, mn.position);
+      })
+      .filter((n): n is Node<BookNodeData> => n !== null);
+
+    setNodes(initialNodes);
+    initialized.current = true;
+  }, [mapNodes, allBooks]);
+
+  // ── Append newly added nodes without resetting existing ones ──────────────
+  useEffect(() => {
+    if (!initialized.current || !mapNodes || !allBooks) return;
 
     setNodes((prev) => {
       const existingIds = new Set(prev.map((n) => n.id));
-      const newBooks = books.filter((b) => !existingIds.has(b.id));
+      const newMapNodes = mapNodes.filter((mn) => !existingIds.has(mn.id));
+      if (newMapNodes.length === 0) return prev;
 
-      if (newBooks.length === 0) return prev;
-
-      const newNodes = newBooks.map((book, i) =>
-        bookToNode(book, buildInitialPosition(prev.length + i)),
-      );
+      const bookMap = new Map(allBooks.map((b) => [b.id, b]));
+      const newNodes = newMapNodes
+        .map((mn, i) => {
+          const book = bookMap.get(mn.bookId);
+          if (!book) return null;
+          return bookToNode(
+            mn.id,
+            book,
+            mn.position ?? buildInitialPosition(prev.length + i),
+          );
+        })
+        .filter((n): n is Node<BookNodeData> => n !== null);
 
       return [...prev, ...newNodes];
     });
-  }, [books]);
+  }, [mapNodes, allBooks]);
 
-  // Persist position only on drag stop
-  const onNodeDragStop: OnNodeDrag<Node<BookNodeData>> = useCallback(async (_, node) => {
-    await upsertCanvasNode({
-      id: node.id,
-      bookId: node.id,
-      type: 'book',
-      position: node.position,
-    });
-  }, []);
-
-  // Double click → open book detail
-  const onNodeDoubleClick: NodeMouseHandler<Node<BookNodeData>> = useCallback(
-    (_, node) => {
-      const book = (node.data as BookNodeData).book;
-      setSelectedBook(book);
+  // ── Persist position on drag stop ─────────────────────────────────────────
+  const onNodeDragStop: OnNodeDrag<Node<BookNodeData>> = useCallback(
+    async (_, node) => {
+      const bookId = (node.data as BookNodeData).book.id;
+      await upsertCanvasNode({
+        id: node.id,
+        bookId,
+        mapId,
+        type: 'book',
+        position: node.position,
+      });
     },
-    [],
+    [mapId],
   );
 
-  // Auto arrange — grid layout, persists all positions
+  // ── Double click → open book detail ───────────────────────────────────────
+  const onNodeDoubleClick: NodeMouseHandler<Node<BookNodeData>> = useCallback((_, node) => {
+    setSelectedBook((node.data as BookNodeData).book);
+  }, []);
+
+  // ── Auto arrange ──────────────────────────────────────────────────────────
   const handleAutoArrange = useCallback(async () => {
     const arranged = nodes.map((node, i) => ({
       ...node,
       position: buildInitialPosition(i),
     }));
-
     setNodes(arranged);
-
-    // Persist all positions
     await Promise.all(
       arranged.map((node) =>
         upsertCanvasNode({
           id: node.id,
-          bookId: node.id,
+          bookId: (node.data as BookNodeData).book.id,
+          mapId,
           type: 'book',
           position: node.position,
         }),
       ),
     );
-  }, [nodes, setNodes]);
+  }, [nodes, setNodes, mapId]);
 
-  const isEmpty = books && books.length === 0;
+  // ── Derived state for AddBookModal ────────────────────────────────────────
+  const existingBookIds = useMemo(
+    () => new Set(nodes.map((n) => (n.data as BookNodeData).book.id)),
+    [nodes],
+  );
+
+  const isEmpty = nodes.length === 0;
 
   return (
     <div className="relative h-screen w-full bg-stone-50">
       <CanvasToolbar
-        view={view}
-        onToggleView={onToggleView}
-        onImport={onImport}
+        mapName={map?.name ?? '…'}
+        onBack={onBack}
+        onLibrary={onLibrary}
         onAutoArrange={handleAutoArrange}
       />
 
@@ -159,11 +191,11 @@ export function ReadingCanvas({ view, onToggleView, onImport }: Props) {
         fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
         minZoom={0.1}
         maxZoom={2}
-        deleteKeyCode={null}     // disable delete key removing nodes
-        selectionKeyCode={null}  // disable shift-select box
+        deleteKeyCode={null}
+        selectionKeyCode={null}
         panOnScroll
         panOnDrag
-        zoomOnScroll={false}     // scroll = pan, pinch = zoom (more natural)
+        zoomOnScroll={false}
         zoomOnPinch
       >
         <Background
@@ -183,10 +215,31 @@ export function ReadingCanvas({ view, onToggleView, onImport }: Props) {
       {isEmpty && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-lg font-semibold text-stone-400">Your canvas is empty</p>
-            <p className="mt-1 text-sm text-stone-400">Import a Kindle file to get started</p>
+            <p className="text-lg font-semibold text-stone-400">This map is empty</p>
+            <p className="mt-1 text-sm text-stone-400">
+              Tap <span className="font-semibold">+</span> to add books from your Library
+            </p>
           </div>
         </div>
+      )}
+
+      {/* Floating + button */}
+      <button
+        onClick={() => setShowAddBook(true)}
+        title="Add book to map"
+        className="absolute bottom-6 left-1/2 z-10 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg transition-transform hover:scale-105 hover:bg-amber-600 active:scale-95"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+
+      {/* Add Book modal */}
+      {showAddBook && (
+        <AddBookModal
+          mapId={mapId}
+          existingBookIds={existingBookIds}
+          existingNodeCount={nodes.length}
+          onClose={() => setShowAddBook(false)}
+        />
       )}
 
       {/* Book detail drawer */}

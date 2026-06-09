@@ -1,8 +1,9 @@
 export type CanvasNodeData = {
+  /** Format: `${mapId}:${bookId}` — scoped so the same book can exist in multiple maps */
   id: string;
-  bookId?: string;
-  groupId?: string;
-  type: 'book' | 'group' | 'topic';
+  mapId: string;
+  bookId: string;
+  type: 'book' | 'topic' | 'note';
   position: { x: number; y: number };
   width?: number;
   height?: number;
