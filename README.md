@@ -108,29 +108,56 @@ Group         → visual grouping inside a Map (future)
 - [ ] "Add Book" → searchable book picker from Library
 - [ ] Selecting a book adds it as a node to the current map only
 
-### 🔜 Sprint 4 — "+" Menu (canvas primitives)
-- [ ] Add Topic node (text label, no book attached)
-- [ ] Add Note node (free text)
-- [ ] Add Quote node (pull a highlight out of a book into the canvas)
-- [ ] Add Group / Area (visual bounding box with label)
-- [ ] Add Connection (edge between any two nodes) — may use React Flow edges
+### ✅ Sprint 4 — "+" Menu (canvas primitives)
+- [x] Floating "+" FAB → animated menu (Book, Topic, Note, Quote)
+- [x] TopicNode — inline double-click editing, saves on blur
+- [x] NoteNode — inline textarea editing, saves on blur / Ctrl+Enter
+- [x] QuoteNode — two-step picker (book → highlight); preserves bookId + highlightId
+- [x] All nodes scoped to mapId; IDs are `${mapId}:${type}-${id}`
 
-### 🔜 Sprint 5 — Library filters
-- [ ] Filter by author
+### ✅ Sprint 5 — Library filters + Tags v1
+- [x] Filter bar: Source chips (All / Kindle / Manual)
+- [x] Toggle chips: Needs attention, No highlights
+- [x] Sort dropdown: Title A–Z/Z–A, Most/Fewest highlights, Recently added
+- [x] Tag filter: derived from all unique tags across books; single-select chip row
+- [x] Tag display on BookCard (max 2 chips + overflow count)
+- [x] Tag display in BookDetailView header
+- [x] Active book count: "12 of 47 books" when filters are active
+- [x] "Clear filters" shortcut when any filter is active
+- [x] Tags already editable via BookEditForm and AddBookModal (from Sprint 3/6)
+
+### ✅ Sprint 6 — Add book manually
+- [x] "+ Add book" button in Library header
+- [x] Modal: title, author, description, tags, color swatch
+- [x] source = 'manual'; appears in Library and can be added to any map
+
+### 🔜 Sprint 7 — Library filters (advanced)
+- [ ] Filter by author (dropdown with search)
 - [ ] Filter by tags
-- [ ] Filter by source (Kindle / manual)
-- [ ] Filter by highlight count
-- [ ] Filter by recently imported / recently opened
-- [ ] Filter by needs metadata cleanup (missing author, etc.)
-- [ ] Filter by language (future)
 - [ ] Filter by included / not included in a specific map
+- [ ] Filter by language (future)
 
-### 🔜 Sprint 6 — Add book manually
-- [ ] "Add book" button in Library
-- [ ] Fields: title, author, description, tags, color, first note
-- [ ] Book appears in Library; can be added to any map
+### 🔜 Sprint 8 — Canvas Folders (future)
+Visual containers inside a map for organizing groups of books.
+- [ ] Folder node on the canvas (visual bounding box with label)
+- [ ] User can place books inside a folder by dragging
+- [ ] Double-click folder → list-style view of its books
+- [ ] Data model TBD (extends CanvasNodeData or new table)
 
-### 🔜 Sprint 7 — Global search (Cmd+K)
+### 🔜 Sprint 9 — Canvas Styling (Figma-inspired)
+Intentional visual design tools for maps — not just data, but thinking through layout.
+- [ ] Change node color per-node (book, topic, note)
+- [ ] Change border style / text color
+- [ ] Basic shapes: circle, rectangle as standalone canvas primitives
+- [ ] Arrows / connections between nodes (React Flow edges)
+- [ ] Floating mini style toolbar when a node is selected
+
+### 🔜 Sprint 9 — Global search (Cmd+K)
+- [ ] Search books by title / author
+- [ ] Search highlights by text
+- [ ] Result → focus node in canvas or open book detail
+
+### 🔜 Sprint 10 — Study mode
 - [ ] Search books by title / author
 - [ ] Search highlights by text
 - [ ] Result → focus node in canvas or open book detail

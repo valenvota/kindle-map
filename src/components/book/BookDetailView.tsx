@@ -109,6 +109,20 @@ export function BookDetailView({ book: bookProp, onClose }: Props) {
             {liveBook.author && (
               <p className="mt-0.5 text-sm text-stone-500">{liveBook.author}</p>
             )}
+
+            {/* Tags */}
+            {!isEditing && (liveBook.tags ?? []).filter(Boolean).length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {(liveBook.tags ?? []).filter(Boolean).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
