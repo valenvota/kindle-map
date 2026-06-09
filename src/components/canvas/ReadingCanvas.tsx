@@ -10,14 +10,19 @@ import {
   BackgroundVariant,
 } from '@xyflow/react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus } from 'lucide-react';
 import { db } from '../../db/db';
-import { upsertCanvasNode } from '../../db/canvasRepository';
+import { updateCanvasNodePosition } from '../../db/canvasRepository';
 import { BookNode, type BookNodeData } from './BookNode';
+import { TopicNode, type TopicNodeData } from './nodes/TopicNode';
+import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
+import { QuoteNode, type QuoteNodeData } from './nodes/QuoteNode';
 import { CanvasToolbar } from './CanvasToolbar';
-import { AddBookModal } from './AddBookModal';
+import { PlusMenu } from './PlusMenu';
 import { BookDetailView } from '../book/BookDetailView';
 import type { Book } from '../../types/book';
+import type { CanvasNodeData } from '../../types/canvas';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const NODE_WIDTH = 208;
 const NODE_HEIGHT = 180;
@@ -25,7 +30,15 @@ const GRID_COL_GAP = 40;
 const GRID_ROW_GAP = 40;
 const COLS = 4;
 
-const nodeTypes = { book: BookNode };
+// Must be defined outside component to be stable across renders
+const nodeTypes = {
+  book: BookNode,
+  topic: TopicNode,
+  note: NoteNode,
+  quote: QuoteNode,
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildInitialPosition(index: number): { x: number; y: number } {
   const col = index % COLS;
@@ -36,19 +49,50 @@ function buildInitialPosition(index: number): { x: number; y: number } {
   };
 }
 
-function bookToNode(
-  nodeId: string,
-  book: Book,
-  position: { x: number; y: number },
-): Node<BookNodeData> {
-  return {
-    id: nodeId,
-    type: 'book',
-    position,
-    data: { book },
-    connectable: false,
-  };
+function buildReactFlowNode(
+  mn: CanvasNodeData,
+  bookMap: Map<string, Book>,
+): Node | null {
+  const base = { id: mn.id, position: mn.position, connectable: false as const };
+
+  switch (mn.type) {
+    case 'book': {
+      const book = bookMap.get(mn.bookId ?? '');
+      if (!book) return null;
+      return { ...base, type: 'book', data: { book } satisfies BookNodeData };
+    }
+    case 'topic':
+      return {
+        ...base,
+        type: 'topic',
+        data: { nodeId: mn.id, content: mn.content ?? '' } satisfies TopicNodeData,
+      };
+    case 'note':
+      return {
+        ...base,
+        type: 'note',
+        data: { nodeId: mn.id, content: mn.content ?? '' } satisfies NoteNodeData,
+      };
+    case 'quote': {
+      const book = bookMap.get(mn.bookId ?? '');
+      return {
+        ...base,
+        type: 'quote',
+        data: {
+          nodeId: mn.id,
+          content: mn.content ?? '',
+          bookTitle: book?.title ?? '(deleted book)',
+          bookId: mn.bookId ?? '',
+          highlightId: mn.highlightId ?? '',
+        } satisfies QuoteNodeData,
+      };
+    }
+    default:
+      return null;
+  }
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 type Props = {
   mapId: string;
@@ -57,13 +101,13 @@ type Props = {
 };
 
 export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<BookNodeData>>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<Record<string, any>>>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [showAddBook, setShowAddBook] = useState(false);
   const initialized = useRef(false);
   const prevMapIdRef = useRef(mapId);
 
-  // Live data
+  // Live queries
   const mapNodes = useLiveQuery(
     () => db.canvasNodes.where('mapId').equals(mapId).toArray(),
     [mapId],
@@ -71,7 +115,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
   const allBooks = useLiveQuery(() => db.books.toArray(), []);
   const map = useLiveQuery(() => db.maps.get(mapId), [mapId]);
 
-  // Reset when navigating to a different map
+  // Reset state when switching between maps
   useEffect(() => {
     if (prevMapIdRef.current !== mapId) {
       initialized.current = false;
@@ -80,24 +124,20 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
     }
   }, [mapId]);
 
-  // ── Initialize nodes from Dexie once ──────────────────────────────────────
+  // ── Initialize nodes from Dexie once ────────────────────────────────────
   useEffect(() => {
     if (!mapNodes || !allBooks || initialized.current) return;
 
     const bookMap = new Map(allBooks.map((b) => [b.id, b]));
-    const initialNodes = mapNodes
-      .map((mn) => {
-        const book = bookMap.get(mn.bookId);
-        if (!book) return null;
-        return bookToNode(mn.id, book, mn.position);
-      })
-      .filter((n): n is Node<BookNodeData> => n !== null);
+    const initial = mapNodes
+      .map((mn) => buildReactFlowNode(mn, bookMap))
+      .filter((n): n is Node => n !== null);
 
-    setNodes(initialNodes);
+    setNodes(initial);
     initialized.current = true;
   }, [mapNodes, allBooks]);
 
-  // ── Append newly added nodes without resetting existing ones ──────────────
+  // ── Append newly added nodes without resetting existing layout ───────────
   useEffect(() => {
     if (!initialized.current || !mapNodes || !allBooks) return;
 
@@ -109,41 +149,31 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
       const bookMap = new Map(allBooks.map((b) => [b.id, b]));
       const newNodes = newMapNodes
         .map((mn, i) => {
-          const book = bookMap.get(mn.bookId);
-          if (!book) return null;
-          return bookToNode(
-            mn.id,
-            book,
-            mn.position ?? buildInitialPosition(prev.length + i),
-          );
+          const withPosition = {
+            ...mn,
+            position: mn.position ?? buildInitialPosition(prev.length + i),
+          };
+          return buildReactFlowNode(withPosition, bookMap);
         })
-        .filter((n): n is Node<BookNodeData> => n !== null);
+        .filter((n): n is Node => n !== null);
 
       return [...prev, ...newNodes];
     });
   }, [mapNodes, allBooks]);
 
-  // ── Persist position on drag stop ─────────────────────────────────────────
-  const onNodeDragStop: OnNodeDrag<Node<BookNodeData>> = useCallback(
-    async (_, node) => {
-      const bookId = (node.data as BookNodeData).book.id;
-      await upsertCanvasNode({
-        id: node.id,
-        bookId,
-        mapId,
-        type: 'book',
-        position: node.position,
-      });
-    },
-    [mapId],
-  );
-
-  // ── Double click → open book detail ───────────────────────────────────────
-  const onNodeDoubleClick: NodeMouseHandler<Node<BookNodeData>> = useCallback((_, node) => {
-    setSelectedBook((node.data as BookNodeData).book);
+  // ── Persist position on drag stop (position-only update) ────────────────
+  const onNodeDragStop: OnNodeDrag = useCallback(async (_, node) => {
+    await updateCanvasNodePosition(node.id, node.position);
   }, []);
 
-  // ── Auto arrange ──────────────────────────────────────────────────────────
+  // ── Double-click book node → open detail drawer ──────────────────────────
+  const onNodeDoubleClick: NodeMouseHandler = useCallback((_, node) => {
+    if (node.type !== 'book') return;
+    const book = (node.data as BookNodeData).book;
+    setSelectedBook(book);
+  }, []);
+
+  // ── Auto arrange ─────────────────────────────────────────────────────────
   const handleAutoArrange = useCallback(async () => {
     const arranged = nodes.map((node, i) => ({
       ...node,
@@ -151,25 +181,20 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
     }));
     setNodes(arranged);
     await Promise.all(
-      arranged.map((node) =>
-        upsertCanvasNode({
-          id: node.id,
-          bookId: (node.data as BookNodeData).book.id,
-          mapId,
-          type: 'book',
-          position: node.position,
-        }),
-      ),
+      arranged.map((node) => updateCanvasNodePosition(node.id, node.position)),
     );
-  }, [nodes, setNodes, mapId]);
+  }, [nodes, setNodes]);
 
-  // ── Derived state for AddBookModal ────────────────────────────────────────
+  // ── Derived state for PlusMenu ────────────────────────────────────────────
   const existingBookIds = useMemo(
-    () => new Set(nodes.map((n) => (n.data as BookNodeData).book.id)),
+    () =>
+      new Set(
+        nodes
+          .filter((n) => n.type === 'book')
+          .map((n) => (n.data as BookNodeData).book.id),
+      ),
     [nodes],
   );
-
-  const isEmpty = nodes.length === 0;
 
   return (
     <div className="relative h-screen w-full bg-stone-50">
@@ -211,36 +236,24 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
         />
       </ReactFlow>
 
-      {/* Empty state overlay */}
-      {isEmpty && (
+      {/* Empty state */}
+      {nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg font-semibold text-stone-400">This map is empty</p>
             <p className="mt-1 text-sm text-stone-400">
-              Tap <span className="font-semibold">+</span> to add books from your Library
+              Tap <span className="font-semibold">+</span> to add books, topics, notes, or quotes
             </p>
           </div>
         </div>
       )}
 
-      {/* Floating + button */}
-      <button
-        onClick={() => setShowAddBook(true)}
-        title="Add book to map"
-        className="absolute bottom-6 left-1/2 z-10 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg transition-transform hover:scale-105 hover:bg-amber-600 active:scale-95"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
-
-      {/* Add Book modal */}
-      {showAddBook && (
-        <AddBookModal
-          mapId={mapId}
-          existingBookIds={existingBookIds}
-          existingNodeCount={nodes.length}
-          onClose={() => setShowAddBook(false)}
-        />
-      )}
+      {/* Floating + menu */}
+      <PlusMenu
+        mapId={mapId}
+        existingBookIds={existingBookIds}
+        existingNodeCount={nodes.length}
+      />
 
       {/* Book detail drawer */}
       {selectedBook && (

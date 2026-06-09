@@ -13,6 +13,17 @@ export async function deleteCanvasNode(id: string): Promise<void> {
   await db.canvasNodes.delete(id);
 }
 
+export async function updateCanvasNodeContent(id: string, content: string): Promise<void> {
+  await db.canvasNodes.update(id, { content });
+}
+
+export async function updateCanvasNodePosition(
+  id: string,
+  position: { x: number; y: number },
+): Promise<void> {
+  await db.canvasNodes.update(id, { position });
+}
+
 /** @deprecated use getCanvasNodesByMap */
 export async function getAllCanvasNodes(): Promise<CanvasNodeData[]> {
   return db.canvasNodes.toArray();
