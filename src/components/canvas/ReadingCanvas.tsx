@@ -4,7 +4,11 @@ import {
   Background,
   Controls,
   useNodesState,
+  useEdgesState,
+  addEdge,
   type Node,
+  type Edge,
+  type Connection,
   type OnNodeDrag,
   type NodeMouseHandler,
   type OnSelectionChangeFunc,
@@ -12,18 +16,23 @@ import {
 } from '@xyflow/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { updateCanvasNodePosition } from '../../db/canvasRepository';
+import {
+  updateCanvasNodePosition,
+  addCanvasEdge,
+  deleteCanvasEdge,
+} from '../../db/canvasRepository';
 import { BookNode, type BookNodeData } from './BookNode';
 import { TopicNode, type TopicNodeData } from './nodes/TopicNode';
 import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
 import { QuoteNode, type QuoteNodeData } from './nodes/QuoteNode';
+import { ShapeNode, type ShapeNodeData } from './nodes/ShapeNode';
 import { CanvasToolbar } from './CanvasToolbar';
 import { PlusMenu } from './PlusMenu';
 import { NodeStyleToolbar } from './NodeStyleToolbar';
 import type { Book } from '../../types/book';
 import type { CanvasNodeData } from '../../types/canvas';
 
-const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote']);
+const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape']);
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -39,6 +48,7 @@ const nodeTypes = {
   topic: TopicNode,
   note: NoteNode,
   quote: QuoteNode,
+  shape: ShapeNode,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -91,6 +101,19 @@ function buildReactFlowNode(
         } satisfies QuoteNodeData,
       };
     }
+    case 'shape':
+      return {
+        ...base,
+        type: 'shape',
+        width: mn.width ?? 160,
+        height: mn.height ?? 100,
+        style: { width: mn.width ?? 160, height: mn.height ?? 100 },
+        data: {
+          nodeId: mn.id,
+          shapeKind: mn.shapeKind ?? 'rectangle',
+          style: mn.style,
+        } satisfies ShapeNodeData,
+      };
     default:
       return null;
   }
@@ -108,12 +131,18 @@ type Props = {
 export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<Record<string, any>>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const initialized = useRef(false);
+  const edgesInitialized = useRef(false);
   const prevMapIdRef = useRef(mapId);
 
   // Live queries
   const mapNodes = useLiveQuery(
     () => db.canvasNodes.where('mapId').equals(mapId).toArray(),
+    [mapId],
+  );
+  const mapEdges = useLiveQuery(
+    () => db.canvasEdges.where('mapId').equals(mapId).toArray(),
     [mapId],
   );
   const allBooks = useLiveQuery(() => db.books.toArray(), []);
@@ -123,10 +152,54 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   useEffect(() => {
     if (prevMapIdRef.current !== mapId) {
       initialized.current = false;
+      edgesInitialized.current = false;
       setNodes([]);
+      setEdges([]);
       prevMapIdRef.current = mapId;
     }
   }, [mapId]);
+
+  // ── Initialize edges from Dexie once ────────────────────────────────────
+  useEffect(() => {
+    if (!mapEdges || edgesInitialized.current) return;
+    setEdges(
+      mapEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+    );
+    edgesInitialized.current = true;
+  }, [mapEdges]);
+
+  // ── Connect nodes with an arrow ──────────────────────────────────────────
+  const onConnect = useCallback(async (connection: Connection) => {
+    const id = `${mapId}:edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setEdges((eds) => addEdge({ ...connection, id }, eds));
+    await addCanvasEdge({
+      id,
+      mapId,
+      source: connection.source!,
+      target: connection.target!,
+      createdAt: new Date().toISOString(),
+    });
+  }, [mapId, setEdges]);
+
+  // ── Delete selected edges (persist removal) ──────────────────────────────
+  const onEdgesDelete = useCallback(async (deleted: Edge[]) => {
+    await Promise.all(deleted.map((e) => deleteCanvasEdge(e.id)));
+  }, []);
+
+  // ── Backspace/Delete removes selected edges only ─────────────────────────
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable) return;
+      const selected = edges.filter((edge) => edge.selected);
+      if (selected.length === 0) return;
+      setEdges((eds) => eds.filter((edge) => !edge.selected));
+      onEdgesDelete(selected);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [edges, setEdges, onEdgesDelete]);
 
   // ── Initialize nodes from Dexie once ────────────────────────────────────
   useEffect(() => {
@@ -239,8 +312,11 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
 
       <ReactFlow
         nodes={nodes}
-        edges={[]}
+        edges={edges}
         onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
         onSelectionChange={onSelectionChange}

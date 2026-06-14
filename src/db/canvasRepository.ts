@@ -1,5 +1,5 @@
 import { db } from './db';
-import type { CanvasNodeData } from '../types/canvas';
+import type { CanvasNodeData, CanvasEdge } from '../types/canvas';
 
 export async function upsertCanvasNode(node: CanvasNodeData): Promise<void> {
   await db.canvasNodes.put(node);
@@ -29,6 +29,28 @@ export async function updateCanvasNodePosition(
   position: { x: number; y: number },
 ): Promise<void> {
   await db.canvasNodes.update(id, { position });
+}
+
+export async function updateCanvasNodeSize(
+  id: string,
+  width: number,
+  height: number,
+): Promise<void> {
+  await db.canvasNodes.update(id, { width, height });
+}
+
+// ─── Edges ──────────────────────────────────────────────────────────────────
+
+export async function getCanvasEdgesByMap(mapId: string): Promise<CanvasEdge[]> {
+  return db.canvasEdges.where('mapId').equals(mapId).toArray();
+}
+
+export async function addCanvasEdge(edge: CanvasEdge): Promise<void> {
+  await db.canvasEdges.put(edge);
+}
+
+export async function deleteCanvasEdge(id: string): Promise<void> {
+  await db.canvasEdges.delete(id);
 }
 
 /** @deprecated use getCanvasNodesByMap */

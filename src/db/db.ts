@@ -1,13 +1,14 @@
 import Dexie, { type Table } from 'dexie';
 import type { Book, BookNote } from '../types/book';
 import type { Highlight } from '../types/highlight';
-import type { CanvasNodeData, Group } from '../types/canvas';
+import type { CanvasNodeData, CanvasEdge, Group } from '../types/canvas';
 import type { KindleMap } from '../types/map';
 
 export class KindleMapDB extends Dexie {
   books!: Table<Book, string>;
   highlights!: Table<Highlight, string>;
   canvasNodes!: Table<CanvasNodeData, string>;
+  canvasEdges!: Table<CanvasEdge, string>;
   maps!: Table<KindleMap, string>;
   groups!: Table<Group, string>;
   bookNotes!: Table<BookNote, string>;
@@ -63,6 +64,17 @@ export class KindleMapDB extends Dexie {
           );
         }
       });
+
+    // v3 — canvasEdges table (arrows/connections between nodes)
+    this.version(3).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
   }
 }
 

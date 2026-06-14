@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, X, BookOpen, Tag, FileText, Quote } from 'lucide-react';
+import { Plus, X, BookOpen, Tag, FileText, Quote, Square, Circle } from 'lucide-react';
 import { upsertCanvasNode } from '../../db/canvasRepository';
 import { AddBookModal } from './AddBookModal';
 import { AddQuoteModal } from './AddQuoteModal';
@@ -15,6 +15,18 @@ function newNodePosition(existingCount: number): { x: number; y: number } {
 }
 
 type ActiveModal = 'book' | 'topic' | 'note' | 'quote' | null;
+
+function addShape(mapId: string, shapeKind: 'rectangle' | 'circle', position: { x: number; y: number }) {
+  return upsertCanvasNode({
+    id: `${mapId}:shape-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    mapId,
+    type: 'shape',
+    shapeKind,
+    position,
+    width: 160,
+    height: shapeKind === 'circle' ? 160 : 100,
+  });
+}
 
 type Props = {
   mapId: string;
@@ -58,6 +70,18 @@ export function PlusMenu({ mapId, existingBookIds, existingNodeCount }: Props) {
         {/* Menu items — slide up from button */}
         {open && (
           <div className="mb-3 flex flex-col items-center gap-2">
+            <MenuItem
+              icon={<Circle className="h-4 w-4" />}
+              label="Circle"
+              color="bg-sky-500 hover:bg-sky-600"
+              onClick={() => { setOpen(false); addShape(mapId, 'circle', pos); }}
+            />
+            <MenuItem
+              icon={<Square className="h-4 w-4" />}
+              label="Rectangle"
+              color="bg-teal-500 hover:bg-teal-600"
+              onClick={() => { setOpen(false); addShape(mapId, 'rectangle', pos); }}
+            />
             <MenuItem
               icon={<Quote className="h-4 w-4" />}
               label="Quote"
