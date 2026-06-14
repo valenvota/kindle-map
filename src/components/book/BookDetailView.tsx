@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { X, Search, Download, BookOpen, Star, Pencil, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -8,35 +8,50 @@ import { exportBookToMarkdown, downloadMarkdown } from '../../utils/exportMarkdo
 import { detectAttentionIssues, issueLabel } from '../../utils/cleanBookMetadata';
 import { HighlightCard } from './HighlightCard';
 import { BookEditForm } from './BookEditForm';
-import type { Book } from '../../types/book';
 import type { Highlight } from '../../types/highlight';
 
 type Props = {
-  book: Book;
+  bookId: string;
+  focusHighlightId?: string | null;
   onClose: () => void;
 };
 
 type Filter = 'all' | 'important';
 
-export function BookDetailView({ book: bookProp, onClose }: Props) {
-  // Live book — auto-updates after metadata edits without needing a callback
-  const liveBook = useLiveQuery(() => db.books.get(bookProp.id), [bookProp.id]) ?? bookProp;
+export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
+  const liveBook = useLiveQuery(() => db.books.get(bookId), [bookId]);
 
   const [highlights, setHighlights]   = useState<Highlight[]>([]);
   const [loading, setLoading]         = useState(true);
   const [query, setQuery]             = useState('');
   const [filter, setFilter]           = useState<Filter>('all');
   const [isEditing, setIsEditing]     = useState(false);
+  const highlightRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const loadHighlights = async () => {
-    const data = await getHighlightsByBook(bookProp.id);
+    const data = await getHighlightsByBook(bookId);
     setHighlights(data);
     setLoading(false);
   };
 
   useEffect(() => {
     loadHighlights();
-  }, [bookProp.id]);
+  }, [bookId]);
+
+  // When opened to focus a specific highlight, make sure it's visible
+  useEffect(() => {
+    if (focusHighlightId) {
+      setFilter('all');
+      setQuery('');
+    }
+  }, [focusHighlightId]);
+
+  // Scroll the focused highlight into view once it's rendered
+  useEffect(() => {
+    if (!focusHighlightId || loading) return;
+    const el = highlightRefs.current.get(focusHighlightId);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [focusHighlightId, loading, highlights]);
 
   // Close on Escape — if editing, Escape cancels edit; otherwise closes drawer
   useEffect(() => {
@@ -59,12 +74,15 @@ export function BookDetailView({ book: bookProp, onClose }: Props) {
   }, [highlights, query, filter]);
 
   const exportMD = () => {
+    if (!liveBook) return;
     const md = exportBookToMarkdown(liveBook, highlights);
     downloadMarkdown(md, `${liveBook.title} - Highlights`);
   };
 
   const importantCount = highlights.filter((h) => h.important).length;
-  const attentionIssues = detectAttentionIssues(liveBook.title, liveBook.author);
+  const attentionIssues = liveBook ? detectAttentionIssues(liveBook.title, liveBook.author) : [];
+
+  if (!liveBook) return null;
 
   return (
     <AnimatePresence>
@@ -239,7 +257,13 @@ export function BookDetailView({ book: bookProp, onClose }: Props) {
               ) : (
                 <div className="flex flex-col gap-3">
                   {filtered.map((h) => (
-                    <HighlightCard key={h.id} highlight={h} onUpdate={loadHighlights} />
+                    <HighlightCard
+                      key={h.id}
+                      highlight={h}
+                      onUpdate={loadHighlights}
+                      focused={h.id === focusHighlightId}
+                      cardRef={(el) => highlightRefs.current.set(h.id, el)}
+                    />
                   ))}
                 </div>
               )}

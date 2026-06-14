@@ -17,6 +17,13 @@ export async function updateCanvasNodeContent(id: string, content: string): Prom
   await db.canvasNodes.update(id, { content });
 }
 
+export async function updateCanvasNodeStyle(
+  id: string,
+  style: CanvasNodeData['style'],
+): Promise<void> {
+  await db.canvasNodes.update(id, { style });
+}
+
 export async function updateCanvasNodePosition(
   id: string,
   position: { x: number; y: number },

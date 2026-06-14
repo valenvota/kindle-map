@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Upload, BookOpen, Search, Map, AlertCircle,
-  Plus, ChevronDown, X,
+  Plus, ChevronDown, X, User,
 } from 'lucide-react';
 import { db } from '../db/db';
-import { BookDetailView } from '../components/book/BookDetailView';
 import { AddBookModal } from '../components/book/AddBookModal';
 import { detectAttentionIssues } from '../utils/cleanBookMetadata';
 import type { Book } from '../types/book';
@@ -14,16 +13,19 @@ import type { Book } from '../types/book';
 
 type SortKey = 'title-asc' | 'title-desc' | 'highlights-desc' | 'highlights-asc' | 'recent';
 type SourceFilter = 'all' | 'kindle' | 'manual';
+type MapFilter = 'all' | 'in-map' | 'not-in-map';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type Props = {
   onImport: () => void;
   onMapsView?: () => void;
+  onOpenBook: (bookId: string) => void;
+  onOpenSearch?: () => void;
+  initialTag?: string | null;
 };
 
-export function LibraryPage({ onImport, onMapsView }: Props) {
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, initialTag }: Props) {
   const [showAddBook, setShowAddBook]   = useState(false);
 
   // Search
@@ -33,10 +35,23 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
   const [source, setSource]               = useState<SourceFilter>('all');
   const [needsAttention, setNeedsAttention] = useState(false);
   const [noHighlights, setNoHighlights]   = useState(false);
-  const [activeTag, setActiveTag]         = useState<string | null>(null);
+  const [activeTags, setActiveTags]       = useState<string[]>(initialTag ? [initialTag] : []);
+  const [author, setAuthor]               = useState<string | null>(null);
+  const [mapFilter, setMapFilter]         = useState<MapFilter>('all');
   const [sortKey, setSortKey]             = useState<SortKey>('title-asc');
 
   const books = useLiveQuery(() => db.books.toArray(), []);
+
+  // Book ids referenced by at least one book-node across all maps
+  const bookNodeIds = useLiveQuery(
+    () => db.canvasNodes.where('type').equals('book').toArray(),
+    [],
+  );
+  const bookIdsInMaps = useMemo(() => {
+    const set = new Set<string>();
+    bookNodeIds?.forEach((n) => { if (n.bookId) set.add(n.bookId); });
+    return set;
+  }, [bookNodeIds]);
 
   // All unique tags across the library
   const allTags = useMemo(() => {
@@ -44,6 +59,17 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
     books?.forEach((b) => (b.tags ?? []).filter(Boolean).forEach((t) => set.add(t)));
     return Array.from(set).sort();
   }, [books]);
+
+  // All unique authors across the library
+  const allAuthors = useMemo(() => {
+    const set = new Set<string>();
+    books?.forEach((b) => { if (b.author) set.add(b.author); });
+    return Array.from(set).sort();
+  }, [books]);
+
+  const toggleTag = (tag: string) => {
+    setActiveTags((tags) => (tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]));
+  };
 
   // Filter + sort in one pass
   const filtered = useMemo(() => {
@@ -58,7 +84,10 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
     if (source !== 'all')    list = list.filter((b) => b.source === source);
     if (needsAttention)      list = list.filter((b) => detectAttentionIssues(b.title, b.author).length > 0);
     if (noHighlights)        list = list.filter((b) => b.totalHighlights === 0);
-    if (activeTag)           list = list.filter((b) => (b.tags ?? []).includes(activeTag));
+    if (activeTags.length)   list = list.filter((b) => activeTags.every((t) => (b.tags ?? []).includes(t)));
+    if (author)              list = list.filter((b) => b.author === author);
+    if (mapFilter === 'in-map')     list = list.filter((b) => bookIdsInMaps.has(b.id));
+    if (mapFilter === 'not-in-map') list = list.filter((b) => !bookIdsInMaps.has(b.id));
 
     const sorted = [...list];
     switch (sortKey) {
@@ -69,17 +98,20 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
       case 'recent':            sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt)); break;
     }
     return sorted;
-  }, [books, query, source, needsAttention, noHighlights, activeTag, sortKey]);
+  }, [books, query, source, needsAttention, noHighlights, activeTags, author, mapFilter, bookIdsInMaps, sortKey]);
 
   const activeFilterCount = [
-    source !== 'all', needsAttention, noHighlights, activeTag !== null, query !== '',
+    source !== 'all', needsAttention, noHighlights, activeTags.length > 0,
+    author !== null, mapFilter !== 'all', query !== '',
   ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSource('all');
     setNeedsAttention(false);
     setNoHighlights(false);
-    setActiveTag(null);
+    setActiveTags([]);
+    setAuthor(null);
+    setMapFilter('all');
     setSortKey('title-asc');
     setQuery('');
   };
@@ -119,6 +151,17 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
                 </button>
               )}
             </div>
+
+            {/* Mobile search → opens global Cmd+K palette */}
+            {onOpenSearch && (
+              <button
+                onClick={onOpenSearch}
+                className="flex items-center justify-center rounded-lg border border-stone-200 p-2 text-stone-500 hover:bg-stone-50 sm:hidden"
+                title="Search (⌘K)"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            )}
 
             {onMapsView && (
               <button
@@ -191,6 +234,29 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
                 label="No highlights"
               />
 
+              {/* Map inclusion chips */}
+              <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5 text-xs">
+                {(['all', 'in-map', 'not-in-map'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMapFilter(m)}
+                    className={[
+                      'rounded-md px-3 py-1.5 font-medium transition-colors',
+                      mapFilter === m
+                        ? 'bg-white text-stone-900 shadow-sm'
+                        : 'text-stone-500 hover:text-stone-800',
+                    ].join(' ')}
+                  >
+                    {m === 'all' ? 'Any map' : m === 'in-map' ? 'In a map' : 'Not in a map'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Author dropdown */}
+              {allAuthors.length > 0 && (
+                <AuthorDropdown authors={allAuthors} value={author} onChange={setAuthor} />
+              )}
+
               {/* Spacer */}
               <div className="flex-1" />
 
@@ -227,10 +293,10 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
                 {allTags.map((tag) => (
                   <button
                     key={tag}
-                    onClick={() => setActiveTag((t) => (t === tag ? null : tag))}
+                    onClick={() => toggleTag(tag)}
                     className={[
                       'shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
-                      activeTag === tag
+                      activeTags.includes(tag)
                         ? 'border-amber-500 bg-amber-50 text-amber-700'
                         : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700',
                     ].join(' ')}
@@ -292,7 +358,7 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
         {filtered.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((book) => (
-              <BookCard key={book.id} book={book} onClick={() => setSelectedBook(book)} />
+              <BookCard key={book.id} book={book} onClick={() => onOpenBook(book.id)} />
             ))}
           </div>
         )}
@@ -311,13 +377,90 @@ export function LibraryPage({ onImport, onMapsView }: Props) {
         )}
       </main>
 
-      {/* Book detail drawer */}
-      {selectedBook && (
-        <BookDetailView book={selectedBook} onClose={() => setSelectedBook(null)} />
-      )}
-
       {/* Add book modal */}
       {showAddBook && <AddBookModal onClose={() => setShowAddBook(false)} />}
+    </div>
+  );
+}
+
+// ─── AuthorDropdown ───────────────────────────────────────────────────────────
+
+function AuthorDropdown({
+  authors,
+  value,
+  onChange,
+}: {
+  authors: string[];
+  value: string | null;
+  onChange: (author: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const filtered = authors.filter((a) => a.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={[
+          'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+          value
+            ? 'border-amber-500 bg-amber-50 text-amber-700'
+            : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700',
+        ].join(' ')}
+      >
+        <User className="h-3 w-3" />
+        {value ?? 'Author'}
+        <ChevronDown className="h-3 w-3" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
+          <input
+            autoFocus
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search authors…"
+            className="mb-1 w-full rounded-md border border-stone-200 px-2 py-1 text-xs outline-none focus:border-amber-400"
+          />
+          <div className="max-h-48 overflow-y-auto">
+            {value && (
+              <button
+                onClick={() => { onChange(null); setOpen(false); setSearch(''); }}
+                className="block w-full rounded-md px-2 py-1.5 text-left text-xs font-medium text-amber-600 hover:bg-stone-50"
+              >
+                Clear author filter
+              </button>
+            )}
+            {filtered.map((a) => (
+              <button
+                key={a}
+                onClick={() => { onChange(a); setOpen(false); setSearch(''); }}
+                className={[
+                  'block w-full truncate rounded-md px-2 py-1.5 text-left text-xs',
+                  value === a ? 'bg-amber-50 text-amber-700' : 'text-stone-600 hover:bg-stone-50',
+                ].join(' ')}
+              >
+                {a}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="px-2 py-1.5 text-xs text-stone-400">No authors found</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

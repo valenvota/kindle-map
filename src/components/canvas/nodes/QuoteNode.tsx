@@ -8,20 +8,28 @@ export type QuoteNodeData = {
   bookTitle: string;
   bookId: string;
   highlightId: string;
+  style?: { background?: string; border?: string; text?: string };
 };
 
 function QuoteNodeComponent({ data, selected }: NodeProps) {
   const d = data as QuoteNodeData;
+  const style = d.style;
 
   return (
     <div
       className={[
-        'w-56 rounded-2xl border bg-white shadow-md transition-shadow select-none',
+        'w-56 rounded-2xl border shadow-md transition-shadow select-none',
         'cursor-grab active:cursor-grabbing',
         selected
           ? 'border-violet-400 shadow-lg ring-2 ring-violet-200'
-          : 'border-violet-200 hover:border-violet-300 hover:shadow-lg',
+          : style?.border
+            ? 'hover:shadow-lg'
+            : 'border-violet-200 bg-white hover:border-violet-300 hover:shadow-lg',
       ].join(' ')}
+      style={{
+        backgroundColor: style?.background,
+        borderColor: !selected ? style?.border : undefined,
+      }}
     >
       {/* Top accent */}
       <div className="h-1 w-full rounded-t-2xl bg-violet-400" />
@@ -31,7 +39,10 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
         <Quote className="mb-1.5 h-3.5 w-3.5 text-violet-400" />
 
         {/* Quote text */}
-        <p className="line-clamp-5 text-sm leading-relaxed text-stone-700 italic">
+        <p
+          className={['line-clamp-5 text-sm leading-relaxed italic', style?.text ? '' : 'text-stone-700'].join(' ')}
+          style={{ color: style?.text }}
+        >
           {d.content || '(empty quote)'}
         </p>
 

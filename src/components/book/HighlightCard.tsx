@@ -6,9 +6,11 @@ import type { Highlight } from '../../types/highlight';
 type Props = {
   highlight: Highlight;
   onUpdate?: () => void;
+  focused?: boolean;
+  cardRef?: (el: HTMLDivElement | null) => void;
 };
 
-export function HighlightCard({ highlight, onUpdate }: Props) {
+export function HighlightCard({ highlight, onUpdate, focused, cardRef }: Props) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -24,9 +26,11 @@ export function HighlightCard({ highlight, onUpdate }: Props) {
 
   return (
     <div
+      ref={cardRef}
       className={[
         'group relative rounded-xl border bg-white p-5 transition-shadow hover:shadow-sm',
         highlight.important ? 'border-amber-300 bg-amber-50/40' : 'border-stone-100',
+        focused ? 'ring-2 ring-amber-400' : '',
       ].join(' ')}
     >
       <p className="text-[15px] leading-relaxed text-stone-800">{highlight.text}</p>

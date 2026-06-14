@@ -137,20 +137,50 @@ Group         → visual grouping inside a Map (future)
 - [ ] Filter by included / not included in a specific map
 - [ ] Filter by language (future)
 
-### 🔜 Sprint 8 — Canvas Folders (future)
-Visual containers inside a map for organizing groups of books.
+---
+
+## Canvas roadmap (Figma-like infinite thinking board)
+
+Built in layers: usability first, then styling, then shapes/arrows, then grouping/folders, then freehand ink.
+
+### ✅ Canvas Styling v1 (Sprint 9)
+- [x] Per-node background, border, text color for Topic/Note/Quote nodes
+- [x] Floating style toolbar on selection
+- [x] Reset to default
+
+### ✅ Canvas UX / Figma-like interactions (Sprint 10)
+- [x] Visible, context-appropriate cursor (default / grab / grabbing / crosshair / text)
+- [x] Better grab/select hit areas and hover/selection states
+- [x] Multi-select (drag-select box + shift/ctrl/cmd-click)
+- [x] Move selected nodes together, persist all positions on drag stop
+
+### 🔜 Shapes + Arrows
+- [ ] Rectangle / circle shapes as standalone canvas primitives
+- [ ] Arrows / connections between nodes (React Flow edges)
+- [ ] Basic arrow styling (color, thickness, arrowhead)
+
+### 🔜 Linked Movement / Lightweight Grouping
+- [ ] Select multiple nodes and "link" them together
+- [ ] Moving one linked node moves the whole linked set
+- [ ] Not full folder/group containers yet — a lighter precursor
+- [ ] Data model TBD (likely `linkedGroupId` on `canvasNodes`)
+
+### 🔜 Canvas Folders
 - [ ] Folder node on the canvas (visual bounding box with label)
 - [ ] User can place books inside a folder by dragging
-- [ ] Double-click folder → list-style view of its books
-- [ ] Data model TBD (extends CanvasNodeData or new table)
+- [ ] Opening a folder shows its contents in a list-style view
+- [ ] Books/highlights are never deleted — folders are purely organizational
+- [ ] Data model TBD (extends `CanvasNodeData` or new table)
 
-### 🔜 Sprint 9 — Canvas Styling (Figma-inspired)
-Intentional visual design tools for maps — not just data, but thinking through layout.
-- [ ] Change node color per-node (book, topic, note)
-- [ ] Change border style / text color
-- [ ] Basic shapes: circle, rectangle as standalone canvas primitives
-- [ ] Arrows / connections between nodes (React Flow edges)
-- [ ] Floating mini style toolbar when a node is selected
+### 🔜 Ink / Drawing Mode
+- [ ] Apple Pencil support
+- [ ] Mouse/touch freehand drawing
+- [ ] Pencil, marker/highlighter, eraser tools
+- [ ] Color and stroke size controls
+- [ ] Undo/redo
+- [ ] Implemented as a separate ink layer over/under the React Flow canvas, not mixed into the node system
+
+---
 
 ### 🔜 Sprint 9 — Global search (Cmd+K)
 - [ ] Search books by title / author

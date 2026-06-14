@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -7,6 +7,7 @@ import {
   type Node,
   type OnNodeDrag,
   type NodeMouseHandler,
+  type OnSelectionChangeFunc,
   BackgroundVariant,
 } from '@xyflow/react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -18,9 +19,11 @@ import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
 import { QuoteNode, type QuoteNodeData } from './nodes/QuoteNode';
 import { CanvasToolbar } from './CanvasToolbar';
 import { PlusMenu } from './PlusMenu';
-import { BookDetailView } from '../book/BookDetailView';
+import { NodeStyleToolbar } from './NodeStyleToolbar';
 import type { Book } from '../../types/book';
 import type { CanvasNodeData } from '../../types/canvas';
+
+const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote']);
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -65,13 +68,13 @@ function buildReactFlowNode(
       return {
         ...base,
         type: 'topic',
-        data: { nodeId: mn.id, content: mn.content ?? '' } satisfies TopicNodeData,
+        data: { nodeId: mn.id, content: mn.content ?? '', style: mn.style } satisfies TopicNodeData,
       };
     case 'note':
       return {
         ...base,
         type: 'note',
-        data: { nodeId: mn.id, content: mn.content ?? '' } satisfies NoteNodeData,
+        data: { nodeId: mn.id, content: mn.content ?? '', style: mn.style } satisfies NoteNodeData,
       };
     case 'quote': {
       const book = bookMap.get(mn.bookId ?? '');
@@ -84,6 +87,7 @@ function buildReactFlowNode(
           bookTitle: book?.title ?? '(deleted book)',
           bookId: mn.bookId ?? '',
           highlightId: mn.highlightId ?? '',
+          style: mn.style,
         } satisfies QuoteNodeData,
       };
     }
@@ -98,12 +102,12 @@ type Props = {
   mapId: string;
   onBack: () => void;    // → Maps list
   onLibrary: () => void; // → Library
+  onOpenBook: (bookId: string) => void;
 };
 
-export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
+export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<Record<string, any>>>([]);
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const initialized = useRef(false);
   const prevMapIdRef = useRef(mapId);
 
@@ -161,17 +165,45 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
     });
   }, [mapNodes, allBooks]);
 
-  // ── Persist position on drag stop (position-only update) ────────────────
-  const onNodeDragStop: OnNodeDrag = useCallback(async (_, node) => {
-    await updateCanvasNodePosition(node.id, node.position);
+  // ── Sync style overrides from Dexie into existing nodes ──────────────────
+  useEffect(() => {
+    if (!initialized.current || !mapNodes) return;
+
+    const styleById = new Map(mapNodes.map((mn) => [mn.id, mn.style]));
+    setNodes((prev) => {
+      let changed = false;
+      const next = prev.map((n) => {
+        if (!STYLEABLE_TYPES.has(n.type ?? '')) return n;
+        const newStyle = styleById.get(n.id);
+        if (JSON.stringify(newStyle) === JSON.stringify((n.data as { style?: unknown }).style)) return n;
+        changed = true;
+        return { ...n, data: { ...n.data, style: newStyle } };
+      });
+      return changed ? next : prev;
+    });
+  }, [mapNodes]);
+
+  // ── Track single selected node for the style toolbar ─────────────────────
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const onSelectionChange: OnSelectionChangeFunc = useCallback(({ nodes: selected }) => {
+    setSelectedNodeId(selected.length === 1 ? selected[0].id : null);
   }, []);
+
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+  const showStyleToolbar = selectedNode && STYLEABLE_TYPES.has(selectedNode.type ?? '');
+
+  // ── Persist position on drag stop — all selected nodes move together ────
+  const onNodeDragStop: OnNodeDrag = useCallback(async (_, node) => {
+    const moved = nodes.filter((n) => n.selected || n.id === node.id);
+    await Promise.all(moved.map((n) => updateCanvasNodePosition(n.id, n.position)));
+  }, [nodes]);
 
   // ── Double-click book node → open detail drawer ──────────────────────────
   const onNodeDoubleClick: NodeMouseHandler = useCallback((_, node) => {
     if (node.type !== 'book') return;
     const book = (node.data as BookNodeData).book;
-    setSelectedBook(book);
-  }, []);
+    onOpenBook(book.id);
+  }, [onOpenBook]);
 
   // ── Auto arrange ─────────────────────────────────────────────────────────
   const handleAutoArrange = useCallback(async () => {
@@ -211,6 +243,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
+        onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
@@ -218,8 +251,10 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
         maxZoom={2}
         deleteKeyCode={null}
         selectionKeyCode={null}
+        multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
+        selectionOnDrag
         panOnScroll
-        panOnDrag
+        panOnDrag={[1, 2]}
         zoomOnScroll={false}
         zoomOnPinch
       >
@@ -255,9 +290,12 @@ export function ReadingCanvas({ mapId, onBack, onLibrary }: Props) {
         existingNodeCount={nodes.length}
       />
 
-      {/* Book detail drawer */}
-      {selectedBook && (
-        <BookDetailView book={selectedBook} onClose={() => setSelectedBook(null)} />
+      {/* Style toolbar for selected topic/note/quote node */}
+      {showStyleToolbar && (
+        <NodeStyleToolbar
+          nodeId={selectedNode.id}
+          style={(selectedNode.data as { style?: CanvasNodeData['style'] }).style}
+        />
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { updateCanvasNodeContent } from '../../../db/canvasRepository';
 export type NoteNodeData = {
   nodeId: string;
   content: string;
+  style?: { background?: string; border?: string; text?: string };
 };
 
 function NoteNodeComponent({ id, data, selected }: NodeProps) {
@@ -25,6 +26,8 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
     if (e.key === 'Escape') { setEditing(false); setText(d.content); }
   };
 
+  const style = d.style;
+
   return (
     <div
       onDoubleClick={startEditing}
@@ -32,10 +35,15 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         'w-52 rounded-2xl border shadow-md transition-shadow select-none',
         selected
           ? 'border-yellow-400 shadow-lg ring-2 ring-yellow-200'
-          : 'border-yellow-300 hover:border-yellow-400 hover:shadow-lg',
+          : style?.border
+            ? 'hover:shadow-lg'
+            : 'border-yellow-300 hover:border-yellow-400 hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
-      style={{ backgroundColor: '#fefce8' }} // warm yellow, not harsh
+      style={{
+        backgroundColor: style?.background ?? '#fefce8', // warm yellow, not harsh
+        borderColor: !selected ? style?.border : undefined,
+      }}
     >
       {/* Header bar */}
       <div className="flex items-center justify-between rounded-t-2xl border-b border-yellow-200 px-3 py-2">
@@ -61,14 +69,16 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
             onKeyDown={handleKeyDown}
             placeholder="Write your note…"
             rows={4}
-            className="nodrag nopan w-full resize-none bg-transparent text-sm text-stone-800 outline-none placeholder:text-stone-400"
+            className="nodrag nopan w-full resize-none bg-transparent text-sm outline-none placeholder:text-stone-400"
+            style={{ color: style?.text }}
           />
         ) : (
           <p
             className={[
               'min-h-[60px] whitespace-pre-wrap text-sm leading-relaxed',
-              text ? 'text-stone-800' : 'italic text-stone-400',
+              text ? (style?.text ? '' : 'text-stone-800') : 'italic text-stone-400',
             ].join(' ')}
+            style={{ color: text ? style?.text : undefined }}
           >
             {text || 'Double-click to add a note'}
           </p>

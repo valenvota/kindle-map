@@ -19,3 +19,11 @@
     min-height: 100vh;
   }
 }
+
+.react-flow__pane {
+  cursor: default;
+}
+
+.react-flow__pane.selection {
+  cursor: crosshair;
+}

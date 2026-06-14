@@ -5,6 +5,7 @@ import { updateCanvasNodeContent } from '../../../db/canvasRepository';
 export type TopicNodeData = {
   nodeId: string;
   content: string;
+  style?: { background?: string; border?: string; text?: string };
 };
 
 function TopicNodeComponent({ id, data, selected }: NodeProps) {
@@ -30,17 +31,25 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
     if (e.key === 'Escape') { setEditing(false); setText(d.content); }
   };
 
+  const style = d.style;
+
   return (
     <div
       onDoubleClick={startEditing}
       className={[
-        'flex min-w-[140px] max-w-[260px] items-center justify-center rounded-2xl border-2',
+        'flex min-h-[44px] min-w-[140px] max-w-[260px] items-center justify-center rounded-2xl border-2',
         'px-4 py-2.5 shadow-md transition-shadow select-none',
         selected
           ? 'border-amber-500 shadow-lg ring-2 ring-amber-200'
-          : 'border-amber-400 bg-white hover:border-amber-500 hover:shadow-lg',
+          : style?.border
+            ? 'hover:shadow-lg'
+            : 'border-amber-400 bg-white hover:border-amber-500 hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
+      style={{
+        backgroundColor: style?.background,
+        borderColor: !selected ? style?.border : undefined,
+      }}
     >
       {editing ? (
         <input
@@ -51,15 +60,16 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
           placeholder="Topic label…"
-          className="nodrag nopan w-full bg-transparent text-center text-sm font-semibold text-stone-900 outline-none placeholder:text-stone-300"
-          style={{ minWidth: 80 }}
+          className="nodrag nopan w-full bg-transparent text-center text-sm font-semibold outline-none placeholder:text-stone-300"
+          style={{ minWidth: 80, color: style?.text }}
         />
       ) : (
         <span
           className={[
             'text-center text-sm font-semibold',
-            text ? 'text-stone-900' : 'italic text-stone-400',
+            text ? (style?.text ? '' : 'text-stone-900') : 'italic text-stone-400',
           ].join(' ')}
+          style={{ color: text ? style?.text : undefined }}
         >
           {text || 'Double-click to edit'}
         </span>

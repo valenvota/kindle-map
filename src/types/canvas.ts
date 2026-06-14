@@ -12,6 +12,12 @@ export type CanvasNodeData = {
   position: { x: number; y: number };
   width?: number;
   height?: number;
+  /** Optional style overrides — topic/note/quote nodes only */
+  style?: {
+    background?: string;
+    border?: string;
+    text?: string;
+  };
 };
 
 export type Group = {
