@@ -154,10 +154,17 @@ Built in layers: usability first, then styling, then shapes/arrows, then groupin
 - [x] Multi-select (drag-select box + shift/ctrl/cmd-click)
 - [x] Move selected nodes together, persist all positions on drag stop
 
-### 🔜 Shapes + Arrows
-- [ ] Rectangle / circle shapes as standalone canvas primitives
-- [ ] Arrows / connections between nodes (React Flow edges)
+### ✅ Sprint 11 — Shapes + Arrows v1
+- [x] Rectangle / circle shapes as standalone canvas primitives
+- [x] Shapes added from the "+" menu, draggable, support NodeStyleToolbar
+- [x] Shapes support resizing (persisted)
+- [x] Arrows / connections between nodes (React Flow edges)
+- [x] Edges persisted in IndexedDB (`canvasEdges` table, Dexie v3)
+- [x] Delete selected arrows with Backspace/Delete
+
+### 🔜 Arrow styling
 - [ ] Basic arrow styling (color, thickness, arrowhead)
+- [ ] Labels on arrows
 
 ### 🔜 Linked Movement / Lightweight Grouping
 - [ ] Select multiple nodes and "link" them together
@@ -203,6 +210,20 @@ Built in layers: usability first, then styling, then shapes/arrows, then groupin
 - [ ] Q&A over highlights
 - [ ] Suggest connections between books
 - [ ] Architecture already allows this (no backend coupling)
+
+### 🔜 Book Covers
+
+Books should be visually richer by supporting cover images.
+
+**Phase 1 — Manual covers**
+- [ ] Allow uploading a book cover from Edit Book Info
+- [ ] Store cover image locally (likely IndexedDB)
+- [ ] Display cover in Library cards, BookDetailView, and optionally BookNodes in maps
+
+**Phase 2 — Suggested covers on import**
+- [ ] When importing Kindle clippings, search for covers via title + author (Google Books API or Open Library Covers API)
+- [ ] Show suggested cover for user to confirm/change — never auto-apply
+- [ ] Always allow manual override
 
 ### 🔜 Sprint 10 — Polish + export
 - [ ] Empty states for all screens
