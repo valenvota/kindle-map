@@ -69,7 +69,7 @@ function buildReactFlowNode(
   mn: CanvasNodeData,
   bookMap: Map<string, Book>,
 ): Node | null {
-  const base = { id: mn.id, position: mn.position, connectable: false as const };
+  const base = { id: mn.id, position: mn.position };
 
   switch (mn.type) {
     case 'book': {
