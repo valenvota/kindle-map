@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { NodeResizer, Handle, Position, type NodeProps, type ResizeParams } from '@xyflow/react';
 import type { ShapeKind } from '../../../types/canvas';
 import { updateCanvasNodeSize } from '../../../db/canvasRepository';
+import { useCanvasTool } from '../CanvasToolContext';
 
 export type ShapeNodeData = {
   nodeId: string;
@@ -12,6 +13,9 @@ export type ShapeNodeData = {
 function ShapeNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as ShapeNodeData;
   const style = d.style;
+
+  const { activeTool } = useCanvasTool();
+  const arrowMode = activeTool === 'arrow';
 
   const handleResizeEnd = (_: unknown, params: ResizeParams) => {
     updateCanvasNodeSize(id, params.width, params.height);
@@ -27,14 +31,18 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
         lineClassName="!border-amber-400"
         handleClassName="!h-2.5 !w-2.5 !rounded-full !border-2 !border-amber-400 !bg-white"
       />
-      <Handle type="source" position={Position.Top} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
-      <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
-      <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
-      <Handle type="target" position={Position.Bottom} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
-      <Handle type="source" position={Position.Left} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
-      <Handle type="target" position={Position.Left} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
-      <Handle type="source" position={Position.Right} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
-      <Handle type="target" position={Position.Right} className="!h-2 !w-2 !border-2 !border-amber-400 !bg-white" />
+      {arrowMode && (
+        <>
+          <Handle type="source" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+          <Handle type="target" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+          <Handle type="source" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+          <Handle type="target" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+          <Handle type="source" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+          <Handle type="target" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+          <Handle type="source" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+          <Handle type="target" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        </>
+      )}
       <div
         className={[
           'h-full w-full cursor-grab border-2 active:cursor-grabbing',

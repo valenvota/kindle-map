@@ -27,8 +27,10 @@ import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
 import { QuoteNode, type QuoteNodeData } from './nodes/QuoteNode';
 import { ShapeNode, type ShapeNodeData } from './nodes/ShapeNode';
 import { CanvasToolbar } from './CanvasToolbar';
+import { CanvasLeftToolbar } from './CanvasLeftToolbar';
 import { PlusMenu } from './PlusMenu';
 import { NodeStyleToolbar } from './NodeStyleToolbar';
+import { CanvasToolContext, type CanvasTool } from './CanvasToolContext';
 import type { Book } from '../../types/book';
 import type { CanvasNodeData } from '../../types/canvas';
 
@@ -130,6 +132,7 @@ type Props = {
 
 export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [activeTool, setActiveTool] = useState<CanvasTool>('select');
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<Record<string, any>>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const initialized = useRef(false);
@@ -301,7 +304,11 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     [nodes],
   );
 
+  const arrowMode = activeTool === 'arrow';
+  const panMode = activeTool === 'pan';
+
   return (
+    <CanvasToolContext.Provider value={{ activeTool, setActiveTool }}>
     <div className="relative h-screen w-full bg-stone-50">
       <CanvasToolbar
         mapName={map?.name ?? '…'}
@@ -310,12 +317,14 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         onAutoArrange={handleAutoArrange}
       />
 
+      <CanvasLeftToolbar />
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onConnect={arrowMode ? onConnect : undefined}
         onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
@@ -328,11 +337,13 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         deleteKeyCode={null}
         selectionKeyCode={null}
         multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
-        selectionOnDrag
+        selectionOnDrag={!arrowMode && !panMode}
         panOnScroll
-        panOnDrag={[1, 2]}
+        panOnDrag={panMode ? [0, 1, 2] : [1, 2]}
         zoomOnScroll={false}
         zoomOnPinch
+        connectOnClick={arrowMode}
+        nodesDraggable={!arrowMode}
       >
         <Background
           variant={BackgroundVariant.Dots}
@@ -353,7 +364,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
           <div className="text-center">
             <p className="text-lg font-semibold text-stone-400">This map is empty</p>
             <p className="mt-1 text-sm text-stone-400">
-              Tap <span className="font-semibold">+</span> to add books, topics, notes, or quotes
+              Use the toolbar on the left to add books, topics, notes, or shapes
             </p>
           </div>
         </div>
@@ -364,9 +375,11 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         mapId={mapId}
         existingBookIds={existingBookIds}
         existingNodeCount={nodes.length}
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
       />
 
-      {/* Style toolbar for selected topic/note/quote node */}
+      {/* Style toolbar for selected topic/note/quote/shape node */}
       {showStyleToolbar && (
         <NodeStyleToolbar
           nodeId={selectedNode.id}
@@ -374,5 +387,6 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         />
       )}
     </div>
+    </CanvasToolContext.Provider>
   );
 }

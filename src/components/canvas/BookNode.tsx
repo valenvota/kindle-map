@@ -1,7 +1,8 @@
 import { memo } from 'react';
-import { type NodeProps } from '@xyflow/react';
+import { type NodeProps, Handle, Position } from '@xyflow/react';
 import { BookOpen } from 'lucide-react';
 import type { Book } from '../../types/book';
+import { useCanvasTool } from './CanvasToolContext';
 
 export type BookNodeData = {
   book: Book;
@@ -28,8 +29,23 @@ function getAccentColor(book: Book): string {
 function BookNodeComponent({ data, selected }: NodeProps) {
   const { book } = data as BookNodeData;
   const accent = getAccentColor(book);
+  const { activeTool } = useCanvasTool();
+  const arrowMode = activeTool === 'arrow';
 
   return (
+    <>
+    {arrowMode && (
+      <>
+        <Handle type="source" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+      </>
+    )}
     <div
       className={[
         'group relative w-52 rounded-2xl border bg-white shadow-sm transition-shadow',
@@ -78,6 +94,7 @@ function BookNodeComponent({ data, selected }: NodeProps) {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

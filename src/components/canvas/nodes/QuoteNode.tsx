@@ -1,6 +1,7 @@
 import { memo } from 'react';
-import { type NodeProps } from '@xyflow/react';
+import { type NodeProps, Handle, Position } from '@xyflow/react';
 import { Quote } from 'lucide-react';
+import { useCanvasTool } from '../CanvasToolContext';
 
 export type QuoteNodeData = {
   nodeId: string;
@@ -14,8 +15,23 @@ export type QuoteNodeData = {
 function QuoteNodeComponent({ data, selected }: NodeProps) {
   const d = data as QuoteNodeData;
   const style = d.style;
+  const { activeTool } = useCanvasTool();
+  const arrowMode = activeTool === 'arrow';
 
   return (
+    <>
+    {arrowMode && (
+      <>
+        <Handle type="source" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+      </>
+    )}
     <div
       className={[
         'w-56 rounded-2xl border shadow-md transition-shadow select-none',
@@ -54,6 +70,7 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

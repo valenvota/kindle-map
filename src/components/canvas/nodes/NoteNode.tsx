@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
-import { type NodeProps } from '@xyflow/react';
+import { type NodeProps, Handle, Position } from '@xyflow/react';
 import { updateCanvasNodeContent } from '../../../db/canvasRepository';
+import { useCanvasTool } from '../CanvasToolContext';
 
 export type NoteNodeData = {
   nodeId: string;
@@ -12,6 +13,8 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as NoteNodeData;
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(d.content);
+  const { activeTool } = useCanvasTool();
+  const arrowMode = activeTool === 'arrow';
 
   const startEditing = () => setEditing(true);
 
@@ -29,6 +32,19 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const style = d.style;
 
   return (
+    <>
+    {arrowMode && (
+      <>
+        <Handle type="source" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="source" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle type="target" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+      </>
+    )}
     <div
       onDoubleClick={startEditing}
       className={[
@@ -85,6 +101,7 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         )}
       </div>
     </div>
+    </>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, X, BookOpen, Tag, FileText, Quote, Square, Circle } from 'lucide-react';
+import type { CanvasTool } from './CanvasToolContext';
 import { upsertCanvasNode } from '../../db/canvasRepository';
 import { AddBookModal } from './AddBookModal';
 import { AddQuoteModal } from './AddQuoteModal';
@@ -32,11 +33,25 @@ type Props = {
   mapId: string;
   existingBookIds: Set<string>;
   existingNodeCount: number;
+  activeTool?: CanvasTool;
+  setActiveTool?: (tool: CanvasTool) => void;
 };
 
-export function PlusMenu({ mapId, existingBookIds, existingNodeCount }: Props) {
+export function PlusMenu({ mapId, existingBookIds, existingNodeCount, activeTool, setActiveTool }: Props) {
   const [open, setOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+
+  // Open modal when left toolbar selects a creation tool
+  useEffect(() => {
+    if (!activeTool || !setActiveTool) return;
+    if (activeTool === 'book') { setActiveModal('book'); setActiveTool('select'); }
+    else if (activeTool === 'topic') { setActiveModal('topic'); setActiveTool('select'); }
+    else if (activeTool === 'note') { setActiveModal('note'); setActiveTool('select'); }
+    else if (activeTool === 'quote') { setActiveModal('quote'); setActiveTool('select'); }
+    else if (activeTool === 'rectangle') { addShape(mapId, 'rectangle', pos); setActiveTool('select'); }
+    else if (activeTool === 'circle') { addShape(mapId, 'circle', pos); setActiveTool('select'); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTool]);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape or outside click
