@@ -6,6 +6,7 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  ConnectionMode,
   type Node,
   type Edge,
   type Connection,
@@ -342,8 +343,8 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         panOnDrag={panMode ? [0, 1, 2] : [1, 2]}
         zoomOnScroll={false}
         zoomOnPinch
+        connectionMode={ConnectionMode.Loose}
         connectOnClick={arrowMode}
-        nodesDraggable={!arrowMode}
       >
         <Background
           variant={BackgroundVariant.Dots}

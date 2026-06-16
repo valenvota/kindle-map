@@ -22,14 +22,10 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
     <>
     {arrowMode && (
       <>
-        <Handle type="source" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
-        <Handle type="source" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
-        <Handle type="source" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
-        <Handle type="source" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
-        <Handle type="target" position={Position.Top}    className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
-        <Handle type="target" position={Position.Bottom} className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
-        <Handle type="target" position={Position.Left}   className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
-        <Handle type="target" position={Position.Right}  className="!h-2.5 !w-2.5 !border-2 !border-amber-400 !bg-white" />
+        <Handle id="top"    type="source" position={Position.Top}    className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
+        <Handle id="bottom" type="source" position={Position.Bottom} className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
+        <Handle id="left"   type="source" position={Position.Left}   className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
+        <Handle id="right"  type="source" position={Position.Right}  className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
       </>
     )}
     <div
