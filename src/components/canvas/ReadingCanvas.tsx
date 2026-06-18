@@ -400,7 +400,18 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
 
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={[
+          ...edges,
+          // Hardcoded test edge — always injected when 2+ nodes exist
+          // Remove once edge rendering is confirmed working
+          ...(nodes.length >= 2 ? [{
+            id: '__hardcoded_test__',
+            source: nodes[0].id,
+            target: nodes[1].id,
+            style: { stroke: '#ff0000', strokeWidth: 4 },
+            animated: true,
+          }] : []),
+        ]}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -470,13 +481,30 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
 
       {/* ── DEBUG OVERLAY (arrow mode) ───────────────────────── */}
       {arrowMode && (
-        <div className="pointer-events-none absolute left-1/2 top-20 z-50 -translate-x-1/2">
-          <div className="rounded-xl bg-black/80 px-4 py-2 text-center text-xs font-mono text-white shadow-xl">
+        <div className="pointer-events-none absolute left-1/2 top-20 z-50 -translate-x-1/2 w-[480px]">
+          <div className="rounded-xl bg-black/90 px-4 py-3 text-xs font-mono text-white shadow-xl">
             <div className="mb-1 font-bold text-amber-400">🔗 ARROW DEBUG</div>
-            <div>{debugMsg}</div>
-            <div className="mt-1 text-stone-400">
-              tool={activeTool} | src={arrowSourceId ?? 'none'} | nodes={nodes.length} | edges={edges.length}
+            <div className="text-green-300">{debugMsg}</div>
+            <div className="mt-1 text-stone-300">
+              tool={activeTool} | src={arrowSourceId ?? 'none'}
             </div>
+            <div className="mt-1 text-stone-300">
+              nodes={nodes.length} | rfEdges={edges.length} | dbEdges={mapEdges?.length ?? '?'}
+            </div>
+            <div className="mt-1 text-yellow-300">
+              hardcoded red edge: {nodes.length >= 2 ? `${nodes[0].id.slice(-8)} → ${nodes[1].id.slice(-8)}` : 'need 2 nodes'}
+            </div>
+            {/* First 3 RF edges */}
+            <div className="mt-2 text-stone-400 text-[10px]">── RF edges (first 3) ──</div>
+            {edges.slice(0, 3).map((e) => {
+              const srcExists = nodes.some((n) => n.id === e.source);
+              const tgtExists = nodes.some((n) => n.id === e.target);
+              return (
+                <div key={e.id} className={`text-[10px] ${srcExists && tgtExists ? 'text-green-400' : 'text-red-400'}`}>
+                  {e.id.slice(-12)}: {e.source.slice(-8)} → {e.target.slice(-8)} | src✓={String(srcExists)} tgt✓={String(tgtExists)}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
