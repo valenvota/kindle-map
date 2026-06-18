@@ -312,22 +312,36 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     await Promise.all(moved.map((n) => updateCanvasNodePosition(n.id, n.position)));
   }, [nodes]);
 
-  // ── Node click: arrow mode two-click flow ────────────────────────────────
-  const onNodeClick: NodeMouseHandler = useCallback((_, node) => {
-    if (activeToolRef.current !== 'arrow') return;
+  // ── Arrow node click — called directly from node components ─────────────
+  // (does NOT rely on ReactFlow onNodeClick which can be eaten by drag system)
+  const [debugMsg, setDebugMsg] = useState('Arrow mode: select a source node');
+
+  const onArrowNodeClick = useCallback((nodeId: string) => {
+    console.log('[arrow] onArrowNodeClick fired, nodeId:', nodeId, 'source:', arrowSourceRef.current);
     const src = arrowSourceRef.current;
     if (!src) {
-      console.log('[arrow] source selected:', node.id);
-      setArrowSourceId(node.id);
-    } else if (src === node.id) {
-      console.log('[arrow] same node clicked — deselecting source');
+      console.log('[arrow] → source set to', nodeId);
+      setDebugMsg(`Source: ${nodeId} — now click target`);
+      setArrowSourceId(nodeId);
+    } else if (src === nodeId) {
+      console.log('[arrow] → same node — cancelled');
+      setDebugMsg('Cancelled — click a different node as target');
       setArrowSourceId(null);
     } else {
-      console.log('[arrow] target selected:', node.id, '— creating edge from', src);
+      console.log('[arrow] → creating edge', src, '→', nodeId);
+      setDebugMsg(`Creating edge: ${src} → ${nodeId}`);
       setArrowSourceId(null);
-      createEdge(src, node.id);
+      createEdge(src, nodeId).then(() => {
+        setDebugMsg(`Edge created ✓ — click another source`);
+      });
     }
   }, [createEdge]);
+
+  // ── ReactFlow onNodeClick (backup — may or may not fire) ─────────────────
+  const onNodeClick: NodeMouseHandler = useCallback((_, node) => {
+    console.log('[arrow] ReactFlow onNodeClick fired for', node.id, 'tool:', activeToolRef.current);
+    if (activeToolRef.current === 'arrow') onArrowNodeClick(node.id);
+  }, [onArrowNodeClick]);
 
   // ── Double-click book node → open detail drawer ──────────────────────────
   const onNodeDoubleClick: NodeMouseHandler = useCallback((_, node) => {
@@ -362,8 +376,18 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const arrowMode = activeTool === 'arrow';
   const panMode = activeTool === 'pan';
 
+  // ── Test button: create edge between first two nodes ─────────────────────
+  const handleTestArrow = useCallback(async () => {
+    if (nodes.length < 2) { alert('Need at least 2 nodes on the canvas'); return; }
+    const [a, b] = nodes;
+    console.log('[arrow] TEST ARROW between', a.id, 'and', b.id);
+    setDebugMsg(`TEST: creating edge ${a.id} → ${b.id}`);
+    await createEdge(a.id, b.id);
+    setDebugMsg(`TEST edge created ✓`);
+  }, [nodes, createEdge]);
+
   return (
-    <CanvasToolContext.Provider value={{ activeTool, setActiveTool, arrowSourceId }}>
+    <CanvasToolContext.Provider value={{ activeTool, setActiveTool, arrowSourceId, onArrowNodeClick }}>
     <div className="relative h-screen w-full bg-stone-50">
       <CanvasToolbar
         mapName={map?.name ?? '…'}
@@ -442,6 +466,31 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
           nodeId={selectedNode.id}
           style={(selectedNode.data as { style?: CanvasNodeData['style'] }).style}
         />
+      )}
+
+      {/* ── DEBUG OVERLAY (arrow mode) ───────────────────────── */}
+      {arrowMode && (
+        <div className="pointer-events-none absolute left-1/2 top-20 z-50 -translate-x-1/2">
+          <div className="rounded-xl bg-black/80 px-4 py-2 text-center text-xs font-mono text-white shadow-xl">
+            <div className="mb-1 font-bold text-amber-400">🔗 ARROW DEBUG</div>
+            <div>{debugMsg}</div>
+            <div className="mt-1 text-stone-400">
+              tool={activeTool} | src={arrowSourceId ?? 'none'} | nodes={nodes.length} | edges={edges.length}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TEST ARROW BUTTON ────────────────────────────────── */}
+      {arrowMode && nodes.length >= 2 && (
+        <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
+          <button
+            onClick={handleTestArrow}
+            className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-xl hover:bg-red-700"
+          >
+            🧪 Test Arrow (node 0→1)
+          </button>
+        </div>
       )}
     </div>
     </CanvasToolContext.Provider>

@@ -15,7 +15,7 @@ export type QuoteNodeData = {
 function QuoteNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as QuoteNodeData;
   const style = d.style;
-  const { activeTool, arrowSourceId } = useCanvasTool();
+  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
   const isArrowSource = arrowSourceId === id;
 
@@ -30,6 +30,7 @@ function QuoteNodeComponent({ id, data, selected }: NodeProps) {
       </>
     )}
     <div
+      onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] QuoteNode onClick', id); onArrowNodeClick(id); } : undefined}
       className={[
         'w-56 rounded-2xl border shadow-md transition-shadow select-none',
         'cursor-grab active:cursor-grabbing',

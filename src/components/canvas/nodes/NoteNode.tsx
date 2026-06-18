@@ -13,7 +13,7 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as NoteNodeData;
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(d.content);
-  const { activeTool, arrowSourceId } = useCanvasTool();
+  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
   const isArrowSource = arrowSourceId === id;
 
@@ -43,6 +43,7 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
       </>
     )}
     <div
+      onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] NoteNode onClick', id); onArrowNodeClick(id); } : undefined}
       onDoubleClick={startEditing}
       className={[
         'w-52 rounded-2xl border shadow-md transition-shadow select-none',

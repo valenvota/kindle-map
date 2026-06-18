@@ -29,7 +29,7 @@ function getAccentColor(book: Book): string {
 function BookNodeComponent({ id, data, selected }: NodeProps) {
   const { book } = data as BookNodeData;
   const accent = getAccentColor(book);
-  const { activeTool, arrowSourceId } = useCanvasTool();
+  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
   const isArrowSource = arrowSourceId === id;
 
@@ -44,6 +44,7 @@ function BookNodeComponent({ id, data, selected }: NodeProps) {
       </>
     )}
     <div
+      onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] BookNode onClick', id); onArrowNodeClick(id); } : undefined}
       className={[
         'group relative w-52 rounded-2xl border bg-white shadow-sm transition-shadow',
         'cursor-grab active:cursor-grabbing select-none',

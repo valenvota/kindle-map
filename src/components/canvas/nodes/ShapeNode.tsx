@@ -14,7 +14,7 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as ShapeNodeData;
   const style = d.style;
 
-  const { activeTool, arrowSourceId } = useCanvasTool();
+  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
   const isArrowSource = arrowSourceId === id;
 
@@ -41,6 +41,7 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
         </>
       )}
       <div
+        onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] ShapeNode onClick', id); onArrowNodeClick(id); } : undefined}
         className={[
           'h-full w-full cursor-grab border-2 active:cursor-grabbing',
           d.shapeKind === 'circle' ? 'rounded-full' : 'rounded-lg',

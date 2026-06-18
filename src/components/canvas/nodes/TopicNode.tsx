@@ -14,7 +14,7 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(d.content);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { activeTool, arrowSourceId } = useCanvasTool();
+  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
   const isArrowSource = arrowSourceId === id;
 
@@ -48,6 +48,7 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
       </>
     )}
     <div
+      onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] TopicNode onClick', id); onArrowNodeClick(id); } : undefined}
       onDoubleClick={startEditing}
       className={[
         'flex min-h-[44px] min-w-[140px] max-w-[260px] items-center justify-center rounded-2xl border-2',
