@@ -7,6 +7,7 @@ import {
   useEdgesState,
   addEdge,
   ConnectionMode,
+  MarkerType,
   type Node,
   type Edge,
   type Connection,
@@ -436,6 +437,10 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         zoomOnPinch
         connectionMode={ConnectionMode.Loose}
         connectOnClick={arrowMode}
+        defaultEdgeOptions={{
+          style: { stroke: '#94a3b8', strokeWidth: 2 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+        }}
       >
         <Background
           variant={BackgroundVariant.Dots}

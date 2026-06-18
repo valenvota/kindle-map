@@ -27,3 +27,26 @@
 .react-flow__pane.selection {
   cursor: crosshair;
 }
+
+/* Ensure edges are visible regardless of Tailwind CSS variable conflicts */
+.react-flow__edge-path {
+  stroke: #94a3b8;
+  stroke-width: 2;
+  fill: none;
+}
+
+.react-flow__edge-path:hover {
+  stroke: #475569;
+  stroke-width: 3;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #f59e0b;
+  stroke-width: 3;
+}
+
+.react-flow__connection-path {
+  stroke: #94a3b8;
+  stroke-width: 2;
+  fill: none;
+}
