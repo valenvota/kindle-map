@@ -134,6 +134,7 @@ type Props = {
 export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
+  const [arrowSourceId, setArrowSourceId] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<Record<string, any>>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const initialized = useRef(false);
@@ -172,18 +173,54 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     edgesInitialized.current = true;
   }, [mapEdges]);
 
-  // ── Connect nodes with an arrow ──────────────────────────────────────────
-  const onConnect = useCallback(async (connection: Connection) => {
+  // ── Create an arrow between two node IDs ─────────────────────────────────
+  const createEdge = useCallback(async (sourceId: string, targetId: string) => {
     const id = `${mapId}:edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setEdges((eds) => addEdge({ ...connection, id }, eds));
-    await addCanvasEdge({
-      id,
-      mapId,
-      source: connection.source!,
-      target: connection.target!,
-      createdAt: new Date().toISOString(),
+    console.log('[arrow] createEdge called', { sourceId, targetId, id });
+    const newEdge: Edge = { id, source: sourceId, target: targetId };
+    setEdges((eds) => {
+      console.log('[arrow] addEdge to React Flow state, total edges after:', eds.length + 1);
+      return addEdge(newEdge, eds);
     });
+    console.log('[arrow] persisting edge to Dexie…');
+    await addCanvasEdge({ id, mapId, source: sourceId, target: targetId, createdAt: new Date().toISOString() });
+    console.log('[arrow] edge persisted to Dexie ✓');
   }, [mapId, setEdges]);
+
+  // ── Handle-drag connections (bonus — may work after connectable fix) ──────
+  const onConnect = useCallback(async (connection: Connection) => {
+    console.log('[arrow] onConnect fired (handle-drag)', connection);
+    if (connection.source && connection.target) {
+      await createEdge(connection.source, connection.target);
+    }
+  }, [createEdge]);
+
+  // ── Click-based arrow creation ────────────────────────────────────────────
+  const activeToolRef = useRef(activeTool);
+  const arrowSourceRef = useRef(arrowSourceId);
+  useEffect(() => { activeToolRef.current = activeTool; }, [activeTool]);
+  useEffect(() => { arrowSourceRef.current = arrowSourceId; }, [arrowSourceId]);
+
+  // Clear arrow source when leaving arrow mode
+  useEffect(() => {
+    if (activeTool !== 'arrow') {
+      setArrowSourceId(null);
+    } else {
+      console.log('[arrow] Arrow mode activated');
+    }
+  }, [activeTool]);
+
+  // Esc cancels arrow source selection
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && arrowSourceRef.current) {
+        console.log('[arrow] Esc — cancelled arrow source');
+        setArrowSourceId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // ── Delete selected edges (persist removal) ──────────────────────────────
   const onEdgesDelete = useCallback(async (deleted: Edge[]) => {
@@ -275,6 +312,23 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     await Promise.all(moved.map((n) => updateCanvasNodePosition(n.id, n.position)));
   }, [nodes]);
 
+  // ── Node click: arrow mode two-click flow ────────────────────────────────
+  const onNodeClick: NodeMouseHandler = useCallback((_, node) => {
+    if (activeToolRef.current !== 'arrow') return;
+    const src = arrowSourceRef.current;
+    if (!src) {
+      console.log('[arrow] source selected:', node.id);
+      setArrowSourceId(node.id);
+    } else if (src === node.id) {
+      console.log('[arrow] same node clicked — deselecting source');
+      setArrowSourceId(null);
+    } else {
+      console.log('[arrow] target selected:', node.id, '— creating edge from', src);
+      setArrowSourceId(null);
+      createEdge(src, node.id);
+    }
+  }, [createEdge]);
+
   // ── Double-click book node → open detail drawer ──────────────────────────
   const onNodeDoubleClick: NodeMouseHandler = useCallback((_, node) => {
     if (node.type !== 'book') return;
@@ -309,7 +363,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const panMode = activeTool === 'pan';
 
   return (
-    <CanvasToolContext.Provider value={{ activeTool, setActiveTool }}>
+    <CanvasToolContext.Provider value={{ activeTool, setActiveTool, arrowSourceId }}>
     <div className="relative h-screen w-full bg-stone-50">
       <CanvasToolbar
         mapName={map?.name ?? '…'}
@@ -325,8 +379,10 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={arrowMode ? onConnect : undefined}
+        onConnect={onConnect}
         onEdgesDelete={onEdgesDelete}
+        onNodeClick={onNodeClick}
+        onPaneClick={arrowMode ? () => { console.log('[arrow] pane clicked — cancelled source'); setArrowSourceId(null); } : undefined}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
         onSelectionChange={onSelectionChange}

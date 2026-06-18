@@ -13,8 +13,9 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as NoteNodeData;
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(d.content);
-  const { activeTool } = useCanvasTool();
+  const { activeTool, arrowSourceId } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
+  const isArrowSource = arrowSourceId === id;
 
   const startEditing = () => setEditing(true);
 
@@ -45,11 +46,13 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
       onDoubleClick={startEditing}
       className={[
         'w-52 rounded-2xl border shadow-md transition-shadow select-none',
-        selected
-          ? 'border-yellow-400 shadow-lg ring-2 ring-yellow-200'
-          : style?.border
-            ? 'hover:shadow-lg'
-            : 'border-yellow-300 hover:border-yellow-400 hover:shadow-lg',
+        isArrowSource
+          ? 'border-amber-500 shadow-lg ring-4 ring-amber-300'
+          : selected
+            ? 'border-yellow-400 shadow-lg ring-2 ring-yellow-200'
+            : style?.border
+              ? 'hover:shadow-lg'
+              : 'border-yellow-300 hover:border-yellow-400 hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
       style={{

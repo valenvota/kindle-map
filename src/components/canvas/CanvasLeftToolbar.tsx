@@ -31,10 +31,16 @@ const TOOLS: ToolItem[] = [
 ];
 
 export function CanvasLeftToolbar() {
-  const { activeTool, setActiveTool } = useCanvasTool();
+  const { activeTool, setActiveTool, arrowSourceId } = useCanvasTool();
+  const awaitingTarget = activeTool === 'arrow' && !!arrowSourceId;
 
   return (
     <div className="absolute left-4 top-1/2 z-20 -translate-y-1/2 flex flex-col items-center gap-1 rounded-2xl border border-stone-200 bg-white px-1.5 py-2 shadow-lg">
+      {awaitingTarget && (
+        <div className="mb-1 w-8 rounded-lg bg-amber-50 px-1 py-1 text-center">
+          <span className="block text-[9px] font-bold leading-tight text-amber-600">Pick target</span>
+        </div>
+      )}
       {TOOLS.map((item, i) => {
         if (item.kind === 'separator') {
           return <div key={i} className="my-1 h-px w-6 bg-stone-200" />;

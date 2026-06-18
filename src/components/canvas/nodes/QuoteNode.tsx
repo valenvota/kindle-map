@@ -12,11 +12,12 @@ export type QuoteNodeData = {
   style?: { background?: string; border?: string; text?: string };
 };
 
-function QuoteNodeComponent({ data, selected }: NodeProps) {
+function QuoteNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as QuoteNodeData;
   const style = d.style;
-  const { activeTool } = useCanvasTool();
+  const { activeTool, arrowSourceId } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
+  const isArrowSource = arrowSourceId === id;
 
   return (
     <>
@@ -32,11 +33,13 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
       className={[
         'w-56 rounded-2xl border shadow-md transition-shadow select-none',
         'cursor-grab active:cursor-grabbing',
-        selected
-          ? 'border-violet-400 shadow-lg ring-2 ring-violet-200'
-          : style?.border
-            ? 'hover:shadow-lg'
-            : 'border-violet-200 bg-white hover:border-violet-300 hover:shadow-lg',
+        isArrowSource
+          ? 'border-amber-500 shadow-lg ring-4 ring-amber-300 bg-white'
+          : selected
+            ? 'border-violet-400 shadow-lg ring-2 ring-violet-200'
+            : style?.border
+              ? 'hover:shadow-lg'
+              : 'border-violet-200 bg-white hover:border-violet-300 hover:shadow-lg',
       ].join(' ')}
       style={{
         backgroundColor: style?.background,

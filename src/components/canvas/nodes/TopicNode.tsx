@@ -14,8 +14,9 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(d.content);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { activeTool } = useCanvasTool();
+  const { activeTool, arrowSourceId } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
+  const isArrowSource = arrowSourceId === id;
 
   const startEditing = () => {
     setEditing(true);
@@ -51,11 +52,13 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
       className={[
         'flex min-h-[44px] min-w-[140px] max-w-[260px] items-center justify-center rounded-2xl border-2',
         'px-4 py-2.5 shadow-md transition-shadow select-none',
-        selected
-          ? 'border-amber-500 shadow-lg ring-2 ring-amber-200'
-          : style?.border
-            ? 'hover:shadow-lg'
-            : 'border-amber-400 bg-white hover:border-amber-500 hover:shadow-lg',
+        isArrowSource
+          ? 'border-amber-500 shadow-lg ring-4 ring-amber-300 bg-white'
+          : selected
+            ? 'border-amber-500 shadow-lg ring-2 ring-amber-200'
+            : style?.border
+              ? 'hover:shadow-lg'
+              : 'border-amber-400 bg-white hover:border-amber-500 hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
       style={{

@@ -14,11 +14,14 @@ export type CanvasTool =
 type CanvasToolContextValue = {
   activeTool: CanvasTool;
   setActiveTool: (tool: CanvasTool) => void;
+  /** ID of the node waiting to be the source of the next arrow, or null */
+  arrowSourceId: string | null;
 };
 
 export const CanvasToolContext = createContext<CanvasToolContextValue>({
   activeTool: 'select',
   setActiveTool: () => {},
+  arrowSourceId: null,
 });
 
 export function useCanvasTool() {

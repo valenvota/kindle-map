@@ -26,11 +26,12 @@ function getAccentColor(book: Book): string {
   return ACCENT_COLORS[idx];
 }
 
-function BookNodeComponent({ data, selected }: NodeProps) {
+function BookNodeComponent({ id, data, selected }: NodeProps) {
   const { book } = data as BookNodeData;
   const accent = getAccentColor(book);
-  const { activeTool } = useCanvasTool();
+  const { activeTool, arrowSourceId } = useCanvasTool();
   const arrowMode = activeTool === 'arrow';
+  const isArrowSource = arrowSourceId === id;
 
   return (
     <>
@@ -46,9 +47,11 @@ function BookNodeComponent({ data, selected }: NodeProps) {
       className={[
         'group relative w-52 rounded-2xl border bg-white shadow-sm transition-shadow',
         'cursor-grab active:cursor-grabbing select-none',
-        selected
-          ? 'border-stone-400 shadow-lg ring-2 ring-stone-300'
-          : 'border-stone-200 hover:border-stone-300 hover:shadow-md',
+        isArrowSource
+          ? 'border-amber-500 shadow-lg ring-4 ring-amber-300'
+          : selected
+            ? 'border-stone-400 shadow-lg ring-2 ring-stone-300'
+            : 'border-stone-200 hover:border-stone-300 hover:shadow-md',
       ].join(' ')}
       style={{ userSelect: 'none' }}
     >
