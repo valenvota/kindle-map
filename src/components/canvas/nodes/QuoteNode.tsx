@@ -1,7 +1,6 @@
 import { memo } from 'react';
-import { type NodeProps, Handle, Position } from '@xyflow/react';
+import { type NodeProps } from '@xyflow/react';
 import { Quote } from 'lucide-react';
-import { useCanvasTool } from '../CanvasToolContext';
 
 export type QuoteNodeData = {
   nodeId: string;
@@ -12,35 +11,20 @@ export type QuoteNodeData = {
   style?: { background?: string; border?: string; text?: string };
 };
 
-function QuoteNodeComponent({ id, data, selected }: NodeProps) {
+function QuoteNodeComponent({ data, selected }: NodeProps) {
   const d = data as QuoteNodeData;
   const style = d.style;
-  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
-  const arrowMode = activeTool === 'arrow';
-  const isArrowSource = arrowSourceId === id;
 
   return (
-    <>
-    {arrowMode && (
-      <>
-        <Handle id="top"    type="source" position={Position.Top}    className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="bottom" type="source" position={Position.Bottom} className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="left"   type="source" position={Position.Left}   className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="right"  type="source" position={Position.Right}  className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-      </>
-    )}
     <div
-      onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] QuoteNode onClick', id); onArrowNodeClick(id); } : undefined}
       className={[
         'w-56 rounded-2xl border shadow-md transition-shadow select-none',
         'cursor-grab active:cursor-grabbing',
-        isArrowSource
-          ? 'border-amber-500 shadow-lg ring-4 ring-amber-300 bg-white'
-          : selected
-            ? 'border-violet-400 shadow-lg ring-2 ring-violet-200'
-            : style?.border
-              ? 'hover:shadow-lg'
-              : 'border-violet-200 bg-white hover:border-violet-300 hover:shadow-lg',
+        selected
+          ? 'border-violet-400 shadow-lg ring-2 ring-violet-200'
+          : style?.border
+            ? 'hover:shadow-lg'
+            : 'border-violet-200 bg-white hover:border-violet-300 hover:shadow-lg',
       ].join(' ')}
       style={{
         backgroundColor: style?.background,
@@ -70,7 +54,6 @@ function QuoteNodeComponent({ id, data, selected }: NodeProps) {
         </div>
       </div>
     </div>
-    </>
   );
 }
 

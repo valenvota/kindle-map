@@ -1,8 +1,7 @@
 import { memo } from 'react';
-import { type NodeProps, Handle, Position } from '@xyflow/react';
+import { type NodeProps } from '@xyflow/react';
 import { BookOpen } from 'lucide-react';
 import type { Book } from '../../types/book';
-import { useCanvasTool } from './CanvasToolContext';
 
 export type BookNodeData = {
   book: Book;
@@ -26,33 +25,18 @@ function getAccentColor(book: Book): string {
   return ACCENT_COLORS[idx];
 }
 
-function BookNodeComponent({ id, data, selected }: NodeProps) {
+function BookNodeComponent({ data, selected }: NodeProps) {
   const { book } = data as BookNodeData;
   const accent = getAccentColor(book);
-  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
-  const arrowMode = activeTool === 'arrow';
-  const isArrowSource = arrowSourceId === id;
 
   return (
-    <>
-    {arrowMode && (
-      <>
-        <Handle id="top"    type="source" position={Position.Top}    className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="bottom" type="source" position={Position.Bottom} className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="left"   type="source" position={Position.Left}   className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="right"  type="source" position={Position.Right}  className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-      </>
-    )}
     <div
-      onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] BookNode onClick', id); onArrowNodeClick(id); } : undefined}
       className={[
         'group relative w-52 rounded-2xl border bg-white shadow-sm transition-shadow',
         'cursor-grab active:cursor-grabbing select-none',
-        isArrowSource
-          ? 'border-amber-500 shadow-lg ring-4 ring-amber-300'
-          : selected
-            ? 'border-stone-400 shadow-lg ring-2 ring-stone-300'
-            : 'border-stone-200 hover:border-stone-300 hover:shadow-md',
+        selected
+          ? 'border-stone-400 shadow-lg ring-2 ring-stone-300'
+          : 'border-stone-200 hover:border-stone-300 hover:shadow-md',
       ].join(' ')}
       style={{ userSelect: 'none' }}
     >
@@ -94,7 +78,6 @@ function BookNodeComponent({ id, data, selected }: NodeProps) {
         </p>
       </div>
     </div>
-    </>
   );
 }
 

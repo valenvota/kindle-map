@@ -154,15 +154,15 @@ Built in layers: usability first, then styling, then shapes/arrows, then groupin
 - [x] Multi-select (drag-select box + shift/ctrl/cmd-click)
 - [x] Move selected nodes together, persist all positions on drag stop
 
-### ✅ Sprint 11 — Shapes + Arrows v1
+### ✅ Sprint 11 — Shapes v1 (Arrows paused)
 - [x] Rectangle / circle shapes as standalone canvas primitives
 - [x] Shapes added from the "+" menu, draggable, support NodeStyleToolbar
 - [x] Shapes support resizing (persisted)
-- [x] Arrows / connections between nodes (React Flow edges)
-- [x] Edges persisted in IndexedDB (`canvasEdges` table, Dexie v3)
-- [x] Delete selected arrows with Backspace/Delete
+- [⏸️] Arrows / connections between nodes — **paused, see note below**
 
-### 🔜 Arrow styling
+> **Arrows / React Flow edges were attempted in Sprint 11 but paused.** Node click handling and edge data creation worked, but edges did not visibly render in production despite valid node IDs and CSS fixes. We are deferring arrows to a future isolated sprint, possibly with a custom SVG overlay instead of React Flow edges. The Arrow tool is hidden from the toolbar and edge-creation UI is disabled, but the `canvasEdges` Dexie table and underlying edge code remain in place (unused) to avoid migration churn.
+
+### 🔜 Arrow styling (post-relaunch)
 - [ ] Basic arrow styling (color, thickness, arrowhead)
 - [ ] Labels on arrows
 

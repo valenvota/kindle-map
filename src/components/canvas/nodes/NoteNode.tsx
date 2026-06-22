@@ -1,7 +1,6 @@
 import { memo, useState } from 'react';
-import { type NodeProps, Handle, Position } from '@xyflow/react';
+import { type NodeProps } from '@xyflow/react';
 import { updateCanvasNodeContent } from '../../../db/canvasRepository';
-import { useCanvasTool } from '../CanvasToolContext';
 
 export type NoteNodeData = {
   nodeId: string;
@@ -13,9 +12,6 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const d = data as NoteNodeData;
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(d.content);
-  const { activeTool, arrowSourceId, onArrowNodeClick } = useCanvasTool();
-  const arrowMode = activeTool === 'arrow';
-  const isArrowSource = arrowSourceId === id;
 
   const startEditing = () => setEditing(true);
 
@@ -33,27 +29,15 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const style = d.style;
 
   return (
-    <>
-    {arrowMode && (
-      <>
-        <Handle id="top"    type="source" position={Position.Top}    className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="bottom" type="source" position={Position.Bottom} className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="left"   type="source" position={Position.Left}   className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-        <Handle id="right"  type="source" position={Position.Right}  className="!h-3 !w-3 !border-2 !border-amber-400 !bg-white" />
-      </>
-    )}
     <div
-      onClick={arrowMode ? (e) => { e.stopPropagation(); console.log('[arrow] NoteNode onClick', id); onArrowNodeClick(id); } : undefined}
       onDoubleClick={startEditing}
       className={[
         'w-52 rounded-2xl border shadow-md transition-shadow select-none',
-        isArrowSource
-          ? 'border-amber-500 shadow-lg ring-4 ring-amber-300'
-          : selected
-            ? 'border-yellow-400 shadow-lg ring-2 ring-yellow-200'
-            : style?.border
-              ? 'hover:shadow-lg'
-              : 'border-yellow-300 hover:border-yellow-400 hover:shadow-lg',
+        selected
+          ? 'border-yellow-400 shadow-lg ring-2 ring-yellow-200'
+          : style?.border
+            ? 'hover:shadow-lg'
+            : 'border-yellow-300 hover:border-yellow-400 hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
       style={{
@@ -101,7 +85,6 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         )}
       </div>
     </div>
-    </>
   );
 }
 
