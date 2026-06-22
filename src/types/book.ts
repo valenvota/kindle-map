@@ -6,6 +6,8 @@ export type Book = {
   source: 'kindle' | 'manual';
   tags?: string[];
   color?: string;
+  /** Base64 data URI (compressed/downscaled before storing), manual upload only */
+  coverImage?: string;
   totalHighlights: number;
   createdAt: string;
   updatedAt: string;

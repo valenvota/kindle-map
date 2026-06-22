@@ -75,6 +75,18 @@ export class KindleMapDB extends Dexie {
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',
     });
+
+    // v4 — coverImage field on books (manual upload, base64 data URI). No index
+    // change needed, but Dexie requires a version bump to register schema intent.
+    this.version(4).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
   }
 }
 

@@ -211,14 +211,12 @@ Built in layers: usability first, then styling, then shapes/arrows, then groupin
 - [ ] Suggest connections between books
 - [ ] Architecture already allows this (no backend coupling)
 
-### 🔜 Book Covers
-
-Books should be visually richer by supporting cover images.
-
-**Phase 1 — Manual covers**
-- [ ] Allow uploading a book cover from Edit Book Info
-- [ ] Store cover image locally (likely IndexedDB)
-- [ ] Display cover in Library cards, BookDetailView, and optionally BookNodes in maps
+### ✅ Book Covers — Phase 1 (Manual covers)
+- [x] Allow uploading a book cover from Edit Book Info
+- [x] Compress/downscale image (max 600px, JPEG ~0.8) before storing
+- [x] Store cover image locally as base64 data URI on `Book.coverImage` (Dexie v4)
+- [x] Display cover in Library cards and BookDetailView
+- [ ] BookNode covers in maps — skipped this sprint, can reuse the same field later
 
 **Phase 2 — Suggested covers on import**
 - [ ] When importing Kindle clippings, search for covers via title + author (Google Books API or Open Library Covers API)

@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Sparkles, ImagePlus, X } from 'lucide-react';
 import { cleanBookMetadata } from '../../utils/cleanBookMetadata';
-import { updateBookMetadata } from '../../db/booksRepository';
+import { updateBookMetadata, updateBookCover } from '../../db/booksRepository';
+import { compressImageToDataUri } from '../../utils/compressImage';
 import type { Book } from '../../types/book';
 
 // Same palette as BookNode accent colors
@@ -37,10 +38,33 @@ export function BookEditForm({ book, onClose }: Props) {
   const [tags, setTags]             = useState((book.tags ?? []).join(', '));
   const [saving, setSaving]         = useState(false);
   const [suggestionApplied, setApplied] = useState(false);
+  const [coverImage, setCoverImage] = useState<string | null>(book.coverImage ?? null);
+  const [coverChanged, setCoverChanged] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const applySuggestion = () => {
     setTitle(suggestion.title);
     setApplied(true);
+  };
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setCoverError(null);
+    try {
+      const dataUri = await compressImageToDataUri(file);
+      setCoverImage(dataUri);
+      setCoverChanged(true);
+    } catch {
+      setCoverError('Could not read that image — try a different file.');
+    }
+  };
+
+  const handleRemoveCover = () => {
+    setCoverImage(null);
+    setCoverChanged(true);
   };
 
   const handleSave = async () => {
@@ -56,6 +80,9 @@ export function BookEditForm({ book, onClose }: Props) {
           .map((t) => t.trim())
           .filter(Boolean),
       });
+      if (coverChanged) {
+        await updateBookCover(book.id, coverImage);
+      }
       onClose();
     } finally {
       setSaving(false);
@@ -82,6 +109,45 @@ export function BookEditForm({ book, onClose }: Props) {
           </button>
         </div>
       )}
+
+      <Field label="Cover image">
+        <div className="flex items-center gap-3">
+          <div className="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
+            {coverImage ? (
+              <img src={coverImage} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <ImagePlus className="h-5 w-5 text-stone-300" />
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50"
+            >
+              {coverImage ? 'Replace image' : 'Upload image'}
+            </button>
+            {coverImage && (
+              <button
+                type="button"
+                onClick={handleRemoveCover}
+                className="flex items-center gap-1 text-xs font-medium text-stone-400 hover:text-stone-600"
+              >
+                <X className="h-3 w-3" />
+                Remove cover
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleCoverChange}
+            className="hidden"
+          />
+        </div>
+        {coverError && <p className="mt-1 text-xs text-red-500">{coverError}</p>}
+      </Field>
 
       <Field label="Title">
         <input

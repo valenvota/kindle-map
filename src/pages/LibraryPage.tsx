@@ -509,28 +509,47 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
     <button
       onClick={onClick}
       className={[
-        'group flex flex-col rounded-2xl border bg-white p-5 text-left transition-all hover:shadow-md',
+        'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-5 text-left transition-all hover:shadow-md',
         needsAttention
           ? 'border-orange-200 hover:border-orange-300'
           : 'border-stone-200 hover:border-stone-300',
       ].join(' ')}
     >
-      {/* Color accent + attention indicator */}
-      <div className="mb-4 flex items-center justify-between">
-        <div
-          className="h-1.5 w-10 rounded-full"
-          style={{ backgroundColor: book.color ?? '#f59e0b' }}
-        />
-        {needsAttention && (
-          <span
-            title={issues.map((i) => i.replace(/-/g, ' ')).join(', ')}
-            className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500"
-          >
-            <AlertCircle className="h-3 w-3" />
-            Fix
-          </span>
-        )}
-      </div>
+      {/* Cover image, or color accent + attention indicator */}
+      {book.coverImage ? (
+        <div className="mb-3 -mx-5 -mt-5 flex items-start justify-between">
+          <img
+            src={book.coverImage}
+            alt=""
+            className="h-28 w-full rounded-t-2xl object-cover"
+          />
+          {needsAttention && (
+            <span
+              title={issues.map((i) => i.replace(/-/g, ' ')).join(', ')}
+              className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500 shadow-sm"
+            >
+              <AlertCircle className="h-3 w-3" />
+              Fix
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="mb-4 flex items-center justify-between">
+          <div
+            className="h-1.5 w-10 rounded-full"
+            style={{ backgroundColor: book.color ?? '#f59e0b' }}
+          />
+          {needsAttention && (
+            <span
+              title={issues.map((i) => i.replace(/-/g, ' ')).join(', ')}
+              className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500"
+            >
+              <AlertCircle className="h-3 w-3" />
+              Fix
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="flex-1">
         <h3 className="line-clamp-2 font-semibold leading-snug text-stone-900 transition-colors group-hover:text-amber-700">

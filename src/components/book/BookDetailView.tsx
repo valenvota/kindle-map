@@ -104,6 +104,13 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
       >
         {/* Header */}
         <div className="flex items-start justify-between border-b border-stone-200 bg-white px-6 py-5">
+          {!isEditing && liveBook.coverImage && (
+            <img
+              src={liveBook.coverImage}
+              alt=""
+              className="mr-4 h-20 w-14 shrink-0 rounded-lg object-cover shadow-sm"
+            />
+          )}
           <div className="min-w-0 flex-1 pr-4">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 shrink-0 text-amber-500" />

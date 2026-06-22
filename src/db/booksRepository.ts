@@ -60,6 +60,13 @@ export async function updateBookMetadata(
   });
 }
 
+export async function updateBookCover(id: string, coverImage: string | null): Promise<void> {
+  await db.books.update(id, {
+    coverImage: coverImage ?? undefined,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function deleteBook(id: string): Promise<void> {
   await db.transaction('rw', db.books, db.highlights, db.canvasNodes, async () => {
     await db.books.delete(id);
