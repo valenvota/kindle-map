@@ -216,7 +216,7 @@ Built in layers: usability first, then styling, then shapes/arrows, then groupin
 - [x] Compress/downscale image (max 600px, JPEG ~0.8) before storing
 - [x] Store cover image locally as base64 data URI on `Book.coverImage` (Dexie v4)
 - [x] Display cover in Library cards and BookDetailView
-- [ ] BookNode covers in maps — skipped this sprint, can reuse the same field later
+- [x] BookNode covers in maps — thumbnail replaces the accent bar when a cover exists
 
 **Phase 2 — Suggested covers on import**
 - [ ] When importing Kindle clippings, search for covers via title + author (Google Books API or Open Library Covers API)

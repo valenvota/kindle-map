@@ -40,11 +40,19 @@ function BookNodeComponent({ data, selected }: NodeProps) {
       ].join(' ')}
       style={{ userSelect: 'none' }}
     >
-      {/* Color accent bar */}
-      <div
-        className="h-1.5 w-full rounded-t-2xl"
-        style={{ backgroundColor: accent }}
-      />
+      {/* Cover thumbnail, or color accent bar fallback */}
+      {book.coverImage ? (
+        <img
+          src={book.coverImage}
+          alt=""
+          className="h-12 w-full rounded-t-2xl object-cover"
+        />
+      ) : (
+        <div
+          className="h-1.5 w-full rounded-t-2xl"
+          style={{ backgroundColor: accent }}
+        />
+      )}
 
       <div className="p-4">
         {/* Source badge */}
