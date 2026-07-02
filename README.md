@@ -226,11 +226,12 @@ Built in layers: usability first, then styling, then shapes/arrows, then groupin
 - [ ] Show suggested cover for user to confirm/change — never auto-apply
 - [ ] Always allow manual override
 
-### 🔜 Sprint 10 — Polish + export
-- [ ] Empty states for all screens
-- [ ] Onboarding flow
-- [ ] Export map as image
-- [ ] Export book highlights to Markdown / Notion / Obsidian
+### ✅ Polish + Export sprint
+- [x] Export map as PNG (Export PNG button in CanvasToolbar, uses html-to-image, fits all nodes into a 2400×1600 canvas at 1.5× pixel ratio)
+- [x] Canvas empty state — improved with icon, clearer copy, emoji tool-type chips
+- [x] BookDetailView highlights empty state — distinguishes: no highlights (Kindle vs manual message), filter=important with no stars, search with no results (+ Clear search link)
+- [ ] Onboarding flow — deferred
+- [ ] Export to Notion / Obsidian — deferred
 
 ---
 

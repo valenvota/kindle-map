@@ -1,13 +1,15 @@
-import { ArrowLeft, LayoutGrid, Library } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Library, ImageDown } from 'lucide-react';
 
 type Props = {
   mapName: string;
-  onBack: () => void;       // back to Maps list
-  onLibrary: () => void;    // jump straight to Library
+  onBack: () => void;
+  onLibrary: () => void;
   onAutoArrange: () => void;
+  onExportImage: () => void;
+  exportingImage?: boolean;
 };
 
-export function CanvasToolbar({ mapName, onBack, onLibrary, onAutoArrange }: Props) {
+export function CanvasToolbar({ mapName, onBack, onLibrary, onAutoArrange, onExportImage, exportingImage }: Props) {
   return (
     <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">
       <div className="flex items-center gap-1 rounded-2xl border border-stone-200 bg-white/90 px-2 py-2 shadow-lg backdrop-blur-sm">
@@ -32,6 +34,13 @@ export function CanvasToolbar({ mapName, onBack, onLibrary, onAutoArrange }: Pro
         />
 
         <ToolbarButton
+          icon={<ImageDown className="h-4 w-4" />}
+          label={exportingImage ? 'Exporting…' : 'Export PNG'}
+          onClick={onExportImage}
+          disabled={exportingImage}
+        />
+
+        <ToolbarButton
           icon={<Library className="h-4 w-4" />}
           label="Library"
           onClick={onLibrary}
@@ -46,18 +55,21 @@ function ToolbarButton({
   label,
   onClick,
   active,
+  disabled,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
   active?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       title={label}
+      disabled={disabled}
       className={[
-        'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors',
+        'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
         active
           ? 'bg-stone-900 text-white'
           : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900',

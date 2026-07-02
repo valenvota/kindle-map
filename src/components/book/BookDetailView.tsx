@@ -268,10 +268,35 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                   Loading highlights…
                 </div>
               ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center text-stone-400">
-                  <p className="text-sm">
-                    {query ? `No highlights match "${query}"` : 'No highlights yet'}
-                  </p>
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  {query ? (
+                    <>
+                      <p className="text-sm text-stone-400">No highlights match "{query}"</p>
+                      <button
+                        onClick={() => setQuery('')}
+                        className="mt-2 text-xs font-medium text-amber-600 underline hover:text-amber-800"
+                      >
+                        Clear search
+                      </button>
+                    </>
+                  ) : filter === 'important' ? (
+                    <>
+                      <p className="text-sm font-medium text-stone-500">No important highlights yet</p>
+                      <p className="mt-1 text-xs text-stone-400">Star a highlight to mark it as important.</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-100">
+                        <span className="text-xl">✨</span>
+                      </div>
+                      <p className="text-sm font-medium text-stone-500">No highlights yet</p>
+                      <p className="mt-1 max-w-[220px] text-xs text-stone-400">
+                        {liveBook.source === 'kindle'
+                          ? 'Re-import your Clippings.txt to pull in highlights for this book.'
+                          : 'Manually added books don\'t have auto-imported highlights.'}
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">

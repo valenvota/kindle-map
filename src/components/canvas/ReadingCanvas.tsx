@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useMemo, useState } from 'react';
+import { exportMapAsPng } from '../../utils/exportMapImage';
 import {
   ReactFlow,
   Background,
@@ -251,6 +252,18 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
 
   const panMode = activeTool === 'pan';
 
+  // ── Export map as PNG ─────────────────────────────────────────────────────
+  const [exportingImage, setExportingImage] = useState(false);
+  const handleExportImage = useCallback(async () => {
+    if (nodes.length === 0) return;
+    setExportingImage(true);
+    try {
+      await exportMapAsPng(nodes, map?.name ?? 'map');
+    } finally {
+      setExportingImage(false);
+    }
+  }, [nodes, map?.name]);
+
   return (
     <CanvasToolContext.Provider value={{ activeTool, setActiveTool }}>
     <div className="relative h-screen w-full bg-stone-50">
@@ -259,6 +272,8 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         onBack={onBack}
         onLibrary={onLibrary}
         onAutoArrange={handleAutoArrange}
+        onExportImage={handleExportImage}
+        exportingImage={exportingImage}
       />
 
       <CanvasLeftToolbar />
@@ -302,10 +317,21 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       {nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-lg font-semibold text-stone-400">This map is empty</p>
-            <p className="mt-1 text-sm text-stone-400">
-              Use the toolbar on the left to add books, topics, notes, or shapes
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-stone-200 bg-white shadow-sm">
+              <span className="text-2xl">🗺️</span>
+            </div>
+            <p className="text-base font-semibold text-stone-500">This map is empty</p>
+            <p className="mt-1.5 text-sm text-stone-400">
+              Use the toolbar on the left to add books,
             </p>
+            <p className="text-sm text-stone-400">topics, notes, quotes, or shapes.</p>
+            <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-stone-300">
+              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">📖</span>
+              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">🏷️</span>
+              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">📝</span>
+              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">💬</span>
+              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">⬜</span>
+            </div>
           </div>
         </div>
       )}
