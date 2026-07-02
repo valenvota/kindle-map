@@ -199,11 +199,14 @@ Built in layers: usability first, then styling, then shapes/arrows, then groupin
 - [ ] Search highlights by text
 - [ ] Result → focus node in canvas or open book detail
 
-### 🔜 Sprint 8 — Study mode
-- [ ] "Study this book" button in book detail
-- [ ] Show random highlight, navigate with Next
-- [ ] Mark as important
-- [ ] Write a question / reflection per highlight
+### ✅ Study Mode
+- [x] "Study" button in BookDetailView (disabled when no highlights)
+- [x] Full-screen dark overlay with highlights shuffled randomly
+- [x] Navigate with Prev / Next / dot indicators (← → keyboard too)
+- [x] Mark as important (persisted via toggleImportant)
+- [x] Write a reflection per highlight — auto-saved to BookNote after 600ms debounce
+- [x] Pre-fills existing reflection when returning to a card
+- [x] Last card shows "Finish" button that closes the mode
 
 ### 🔜 Sprint 9 — AI layer (future)
 - [ ] Summarize a book's highlights

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Search, Download, BookOpen, Star, Pencil, AlertCircle } from 'lucide-react';
+import { X, Search, Download, BookOpen, Star, Pencil, AlertCircle, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
@@ -8,6 +8,7 @@ import { exportBookToMarkdown, downloadMarkdown } from '../../utils/exportMarkdo
 import { detectAttentionIssues, issueLabel } from '../../utils/cleanBookMetadata';
 import { HighlightCard } from './HighlightCard';
 import { BookEditForm } from './BookEditForm';
+import { StudyMode } from './StudyMode';
 import type { Highlight } from '../../types/highlight';
 
 type Props = {
@@ -26,6 +27,7 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
   const [query, setQuery]             = useState('');
   const [filter, setFilter]           = useState<Filter>('all');
   const [isEditing, setIsEditing]     = useState(false);
+  const [isStudying, setIsStudying]   = useState(false);
   const highlightRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const loadHighlights = async () => {
@@ -85,6 +87,7 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
   if (!liveBook) return null;
 
   return (
+    <>
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -166,6 +169,15 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                   className="rounded-lg border border-stone-200 p-2 text-stone-500 hover:bg-stone-50 hover:text-stone-700"
                 >
                   <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => highlights.length > 0 && setIsStudying(true)}
+                  title={highlights.length === 0 ? 'No highlights to study' : 'Study this book'}
+                  disabled={highlights.length === 0}
+                  className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  Study
                 </button>
               </>
             )}
@@ -279,5 +291,14 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
         )}
       </motion.div>
     </AnimatePresence>
+
+    {isStudying && (
+      <StudyMode
+        book={liveBook}
+        highlights={highlights}
+        onClose={() => setIsStudying(false)}
+      />
+    )}
+    </>
   );
 }
