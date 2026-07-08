@@ -6,10 +6,20 @@ import { db } from '../../db/db';
 import { getHighlightsByBook } from '../../db/highlightsRepository';
 import { exportBookToMarkdown, downloadMarkdown } from '../../utils/exportMarkdown';
 import { detectAttentionIssues, issueLabel } from '../../utils/cleanBookMetadata';
+import { updateReadingStatus } from '../../db/booksRepository';
+import { getGeneralBookNote, upsertGeneralBookNote } from '../../db/bookNotesRepository';
 import { HighlightCard } from './HighlightCard';
 import { BookEditForm } from './BookEditForm';
 import { StudyMode } from './StudyMode';
 import type { Highlight } from '../../types/highlight';
+import type { ReadingStatus } from '../../types/book';
+
+const STATUS_CONFIG: Record<ReadingStatus, { label: string; emoji: string; className: string }> = {
+  'want-to-read': { label: 'Want to read', emoji: '📚', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  'reading':      { label: 'Reading',       emoji: '📖', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  'finished':     { label: 'Finished',      emoji: '✅', className: 'bg-green-50 text-green-700 border-green-200' },
+};
+const STATUS_CYCLE: (ReadingStatus | null)[] = ['want-to-read', 'reading', 'finished', null];
 
 type Props = {
   bookId: string;
@@ -17,7 +27,7 @@ type Props = {
   onClose: () => void;
 };
 
-type Filter = 'all' | 'important';
+type Filter = 'all' | 'important' | 'notes';
 
 export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
   const liveBook = useLiveQuery(() => db.books.get(bookId), [bookId]);
@@ -28,6 +38,8 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
   const [filter, setFilter]           = useState<Filter>('all');
   const [isEditing, setIsEditing]     = useState(false);
   const [isStudying, setIsStudying]   = useState(false);
+  const [generalNote, setGeneralNote] = useState('');
+  const [noteSaved, setNoteSaved]     = useState(false);
   const highlightRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const loadHighlights = async () => {
@@ -38,7 +50,19 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
 
   useEffect(() => {
     loadHighlights();
+    getGeneralBookNote(bookId).then((n) => setGeneralNote(n?.text ?? ''));
   }, [bookId]);
+
+  // Debounced auto-save for general note
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      upsertGeneralBookNote(bookId, generalNote).then(() => {
+        setNoteSaved(true);
+        setTimeout(() => setNoteSaved(false), 1500);
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [generalNote, bookId]);
 
   // When opened to focus a specific highlight, make sure it's visible
   useEffect(() => {
@@ -75,9 +99,9 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
     });
   }, [highlights, query, filter]);
 
-  const exportMD = () => {
+  const exportMD = async () => {
     if (!liveBook) return;
-    const md = exportBookToMarkdown(liveBook, highlights);
+    const md = await exportBookToMarkdown(liveBook, highlights);
     downloadMarkdown(md, `${liveBook.title} - Highlights`);
   };
 
@@ -138,6 +162,33 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
               <p className="mt-0.5 text-sm text-stone-500">{liveBook.author}</p>
             )}
 
+            {/* Reading status pill */}
+            {!isEditing && (
+              <div className="mt-2">
+                <button
+                  onClick={async () => {
+                    const current = liveBook.readingStatus ?? null;
+                    const idx = STATUS_CYCLE.indexOf(current);
+                    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+                    await updateReadingStatus(liveBook.id, next);
+                  }}
+                  title="Click to change reading status"
+                  className={[
+                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80',
+                    liveBook.readingStatus
+                      ? STATUS_CONFIG[liveBook.readingStatus].className
+                      : 'border-stone-200 bg-stone-50 text-stone-400',
+                  ].join(' ')}
+                >
+                  {liveBook.readingStatus ? (
+                    <>{STATUS_CONFIG[liveBook.readingStatus].emoji} {STATUS_CONFIG[liveBook.readingStatus].label}</>
+                  ) : (
+                    '+ Set status'
+                  )}
+                </button>
+              </div>
+            )}
+
             {/* Tags */}
             {!isEditing && (liveBook.tags ?? []).filter(Boolean).length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -196,6 +247,7 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
             <BookEditForm
               book={liveBook}
               onClose={() => setIsEditing(false)}
+              onDeleted={onClose}
             />
           </div>
         ) : (
@@ -244,9 +296,39 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                     Important · {importantCount}
                   </button>
                 )}
+                <button
+                  onClick={() => setFilter('notes')}
+                  className={[
+                    'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                    filter === 'notes'
+                      ? 'bg-stone-900 text-white'
+                      : 'text-stone-500 hover:bg-stone-100',
+                  ].join(' ')}
+                >
+                  📝 Notes
+                </button>
               </div>
             </div>
 
+            {/* Notes panel */}
+            {filter === 'notes' ? (
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-400">
+                  Your notes on this book
+                </p>
+                <textarea
+                  value={generalNote}
+                  onChange={(e) => setGeneralNote(e.target.value)}
+                  placeholder="Write your thoughts, summary, or takeaways about this book…"
+                  className="w-full resize-none rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none placeholder:text-stone-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                  rows={12}
+                />
+                <p className="mt-1.5 text-right text-xs text-stone-300">
+                  {noteSaved ? '✓ Saved' : 'Auto-saves as you type'}
+                </p>
+              </div>
+            ) : (
+              <>
             {/* Search */}
             <div className="border-b border-stone-200 bg-white px-6 py-3">
               <div className="relative">
@@ -312,6 +394,8 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                 </div>
               )}
             </div>
+            </>
+            )}
           </>
         )}
       </motion.div>

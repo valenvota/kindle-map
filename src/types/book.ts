@@ -1,3 +1,5 @@
+export type ReadingStatus = 'want-to-read' | 'reading' | 'finished';
+
 export type Book = {
   id: string;
   title: string;
@@ -8,6 +10,7 @@ export type Book = {
   color?: string;
   /** Base64 data URI (compressed/downscaled before storing), manual upload only */
   coverImage?: string;
+  readingStatus?: ReadingStatus;
   totalHighlights: number;
   createdAt: string;
   updatedAt: string;

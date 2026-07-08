@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { Sparkles, ImagePlus, X } from 'lucide-react';
+import { Sparkles, ImagePlus, X, Trash2 } from 'lucide-react';
 import { cleanBookMetadata } from '../../utils/cleanBookMetadata';
-import { updateBookMetadata, updateBookCover } from '../../db/booksRepository';
+import { updateBookMetadata, updateBookCover, deleteBook } from '../../db/booksRepository';
 import { compressImageToDataUri } from '../../utils/compressImage';
 import type { Book } from '../../types/book';
 
@@ -26,9 +26,10 @@ const INPUT = [
 type Props = {
   book: Book;
   onClose: () => void;
+  onDeleted?: () => void;
 };
 
-export function BookEditForm({ book, onClose }: Props) {
+export function BookEditForm({ book, onClose, onDeleted }: Props) {
   const suggestion = cleanBookMetadata(book.title);
 
   const [title, setTitle]           = useState(book.title);
@@ -37,6 +38,8 @@ export function BookEditForm({ book, onClose }: Props) {
   const [color, setColor]           = useState(book.color ?? ACCENT_COLORS[0]);
   const [tags, setTags]             = useState((book.tags ?? []).join(', '));
   const [saving, setSaving]         = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
   const [suggestionApplied, setApplied] = useState(false);
   const [coverImage, setCoverImage] = useState<string | null>(book.coverImage ?? null);
   const [coverChanged, setCoverChanged] = useState(false);
@@ -204,6 +207,51 @@ export function BookEditForm({ book, onClose }: Props) {
           ))}
         </div>
       </Field>
+
+      {/* Delete zone */}
+      {onDeleted && (
+        <div className="border-t border-stone-100 pt-4">
+          {!confirmDelete ? (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete this book
+            </button>
+          ) : (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-medium text-red-800">Delete "{book.title}"?</p>
+              <p className="mt-0.5 text-xs text-red-600">
+                This will permanently remove the book and all its highlights. This cannot be undone.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={async () => {
+                    setDeleting(true);
+                    await deleteBook(book.id);
+                    onDeleted();
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  {deleting ? 'Deleting…' : 'Yes, delete'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-2 border-t border-stone-100 pt-2">

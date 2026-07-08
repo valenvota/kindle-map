@@ -4,11 +4,12 @@ import { db } from './db/db';
 import { ImportPage } from './pages/ImportPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MapsPage } from './pages/MapsPage';
+import { StatsPage } from './pages/StatsPage';
 import { ReadingCanvas } from './components/canvas/ReadingCanvas';
 import { BookDetailView } from './components/book/BookDetailView';
 import { CommandPalette } from './components/search/CommandPalette';
 
-type Screen = 'import' | 'library' | 'maps' | 'canvas';
+type Screen = 'import' | 'library' | 'maps' | 'canvas' | 'stats';
 
 export default function App() {
   const bookCount = useLiveQuery(() => db.books.count(), []);
@@ -62,6 +63,8 @@ export default function App() {
   let content;
   if (current === 'import') {
     content = <ImportPage onDone={() => setScreen('library')} />;
+  } else if (current === 'stats') {
+    content = <StatsPage onBack={() => setScreen('library')} />;
   } else if (current === 'maps') {
     content = (
       <MapsPage
@@ -83,6 +86,7 @@ export default function App() {
       <LibraryPage
         onImport={() => setScreen('import')}
         onMapsView={() => setScreen('maps')}
+        onStatsView={() => setScreen('stats')}
         onOpenBook={openBook}
         onOpenSearch={() => setPaletteOpen(true)}
         initialTag={pendingTag}

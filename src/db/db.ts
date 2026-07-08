@@ -87,6 +87,18 @@ export class KindleMapDB extends Dexie {
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',
     });
+
+    // v5 — readingStatus field on books ('want-to-read' | 'reading' | 'finished').
+    // No index needed; filtering is done in JS.
+    this.version(5).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
   }
 }
 

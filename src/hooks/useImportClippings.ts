@@ -14,11 +14,17 @@ export type ImportStats = {
   skippedBlocks: number;
 };
 
+export type NewBookInfo = {
+  id: string;
+  title: string;
+  author?: string;
+};
+
 export type ImportState =
   | { status: 'idle' }
   | { status: 'parsing' }
   | { status: 'saving' }
-  | { status: 'done'; stats: ImportStats }
+  | { status: 'done'; stats: ImportStats; newBookInfos: NewBookInfo[] }
   | { status: 'error'; message: string };
 
 export function useImportClippings() {
@@ -42,6 +48,7 @@ export function useImportClippings() {
         newHighlights: 0,
         skippedBlocks: skipped,
       };
+      const newBookInfos: NewBookInfo[] = [];
 
       for (const parsedBook of books) {
         const book: Book = {
@@ -57,7 +64,10 @@ export function useImportClippings() {
         // upsertBook returns void; we detect "new" by checking existence before
         const existsBefore = await db.books.get(parsedBook.id);
         await upsertBook(book);
-        if (!existsBefore) stats.newBooks++;
+        if (!existsBefore) {
+          stats.newBooks++;
+          newBookInfos.push({ id: parsedBook.id, title: parsedBook.title, author: parsedBook.author });
+        }
 
         for (const c of parsedBook.highlights) {
           const highlight: Highlight = {
@@ -79,7 +89,7 @@ export function useImportClippings() {
         }
       }
 
-      setState({ status: 'done', stats });
+      setState({ status: 'done', stats, newBookInfos });
     } catch (err) {
       setState({
         status: 'error',

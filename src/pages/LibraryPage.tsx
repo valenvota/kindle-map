@@ -2,30 +2,38 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Upload, BookOpen, Search, Map, AlertCircle,
-  Plus, ChevronDown, X, User,
+  Plus, ChevronDown, X, User, BarChart2,
 } from 'lucide-react';
 import { db } from '../db/db';
 import { AddBookModal } from '../components/book/AddBookModal';
 import { detectAttentionIssues } from '../utils/cleanBookMetadata';
-import type { Book } from '../types/book';
+import type { Book, ReadingStatus } from '../types/book';
+
+const STATUS_CONFIG: Record<ReadingStatus, { label: string; emoji: string }> = {
+  'want-to-read': { label: 'Want to read', emoji: '📚' },
+  'reading':      { label: 'Reading',      emoji: '📖' },
+  'finished':     { label: 'Finished',     emoji: '✅' },
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SortKey = 'title-asc' | 'title-desc' | 'highlights-desc' | 'highlights-asc' | 'recent';
 type SourceFilter = 'all' | 'kindle' | 'manual';
 type MapFilter = 'all' | 'in-map' | 'not-in-map';
+type StatusFilter = 'all' | ReadingStatus;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type Props = {
   onImport: () => void;
   onMapsView?: () => void;
+  onStatsView?: () => void;
   onOpenBook: (bookId: string) => void;
   onOpenSearch?: () => void;
   initialTag?: string | null;
 };
 
-export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, initialTag }: Props) {
+export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onOpenSearch, initialTag }: Props) {
   const [showAddBook, setShowAddBook]   = useState(false);
 
   // Search
@@ -38,6 +46,7 @@ export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, in
   const [activeTags, setActiveTags]       = useState<string[]>(initialTag ? [initialTag] : []);
   const [author, setAuthor]               = useState<string | null>(null);
   const [mapFilter, setMapFilter]         = useState<MapFilter>('all');
+  const [statusFilter, setStatusFilter]   = useState<StatusFilter>('all');
   const [sortKey, setSortKey]             = useState<SortKey>('title-asc');
 
   const books = useLiveQuery(() => db.books.toArray(), []);
@@ -88,6 +97,7 @@ export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, in
     if (author)              list = list.filter((b) => b.author === author);
     if (mapFilter === 'in-map')     list = list.filter((b) => bookIdsInMaps.has(b.id));
     if (mapFilter === 'not-in-map') list = list.filter((b) => !bookIdsInMaps.has(b.id));
+    if (statusFilter !== 'all')     list = list.filter((b) => b.readingStatus === statusFilter);
 
     const sorted = [...list];
     switch (sortKey) {
@@ -98,11 +108,11 @@ export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, in
       case 'recent':            sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt)); break;
     }
     return sorted;
-  }, [books, query, source, needsAttention, noHighlights, activeTags, author, mapFilter, bookIdsInMaps, sortKey]);
+  }, [books, query, source, needsAttention, noHighlights, activeTags, author, mapFilter, statusFilter, bookIdsInMaps, sortKey]);
 
   const activeFilterCount = [
     source !== 'all', needsAttention, noHighlights, activeTags.length > 0,
-    author !== null, mapFilter !== 'all', query !== '',
+    author !== null, mapFilter !== 'all', statusFilter !== 'all', query !== '',
   ].filter(Boolean).length;
 
   const clearFilters = () => {
@@ -112,6 +122,7 @@ export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, in
     setActiveTags([]);
     setAuthor(null);
     setMapFilter('all');
+    setStatusFilter('all');
     setSortKey('title-asc');
     setQuery('');
   };
@@ -160,6 +171,16 @@ export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, in
                 title="Search (⌘K)"
               >
                 <Search className="h-4 w-4" />
+              </button>
+            )}
+
+            {onStatsView && hasBooks && (
+              <button
+                onClick={onStatsView}
+                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
+              >
+                <BarChart2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Stats</span>
               </button>
             )}
 
@@ -248,6 +269,24 @@ export function LibraryPage({ onImport, onMapsView, onOpenBook, onOpenSearch, in
                     ].join(' ')}
                   >
                     {m === 'all' ? 'Any map' : m === 'in-map' ? 'In a map' : 'Not in a map'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Status filter */}
+              <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5 text-xs">
+                {(['all', 'want-to-read', 'reading', 'finished'] as StatusFilter[]).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={[
+                      'rounded-md px-3 py-1.5 font-medium transition-colors',
+                      statusFilter === s
+                        ? 'bg-white text-stone-900 shadow-sm'
+                        : 'text-stone-500 hover:text-stone-800',
+                    ].join(' ')}
+                  >
+                    {s === 'all' ? 'Any status' : `${STATUS_CONFIG[s].emoji} ${STATUS_CONFIG[s].label}`}
                   </button>
                 ))}
               </div>
@@ -579,11 +618,18 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">
           {book.totalHighlights} highlights
         </span>
-        <span className="text-xs capitalize text-stone-400">{book.source}</span>
+        <div className="flex items-center gap-1.5">
+          {book.readingStatus && (
+            <span className="text-xs">
+              {STATUS_CONFIG[book.readingStatus].emoji}
+            </span>
+          )}
+          <span className="text-xs capitalize text-stone-400">{book.source}</span>
+        </div>
       </div>
     </button>
   );

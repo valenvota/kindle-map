@@ -1,5 +1,6 @@
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import type { ImportState } from '../../hooks/useImportClippings';
+import { CoverSuggestionFlow } from './CoverSuggestionFlow';
 
 type Props = {
   state: ImportState;
@@ -39,7 +40,7 @@ export function ImportSummary({ state, onDone, onReset }: Props) {
     );
   }
 
-  const { stats } = state;
+  const { stats, newBookInfos } = state;
 
   return (
     <div className="rounded-xl border border-green-200 bg-green-50 p-6">
@@ -57,6 +58,10 @@ export function ImportSummary({ state, onDone, onReset }: Props) {
         <p className="mt-3 text-xs text-stone-500">
           {stats.skippedBlocks} blocks skipped (empty or malformed)
         </p>
+      )}
+
+      {newBookInfos.length > 0 && (
+        <CoverSuggestionFlow newBooks={newBookInfos} />
       )}
 
       <div className="mt-5 flex gap-3">

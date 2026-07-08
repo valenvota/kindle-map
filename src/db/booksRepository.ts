@@ -1,5 +1,5 @@
 import { db } from './db';
-import type { Book } from '../types/book';
+import type { Book, ReadingStatus } from '../types/book';
 
 export async function createBook(
   data: Pick<Book, 'title'> & Partial<Pick<Book, 'author' | 'description' | 'tags' | 'color'>>,
@@ -56,6 +56,13 @@ export async function updateBookMetadata(
   ) as Partial<Book>;
   await db.books.update(id, {
     ...clean,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function updateReadingStatus(id: string, status: ReadingStatus | null): Promise<void> {
+  await db.books.update(id, {
+    readingStatus: status ?? undefined,
     updatedAt: new Date().toISOString(),
   });
 }
