@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { type NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Quote } from 'lucide-react';
 
 export type QuoteNodeData = {
@@ -16,6 +16,9 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
   const style = d.style;
 
   return (
+    <>
+    <Handle type="source" position={Position.Left} />
+    <Handle type="target" position={Position.Right} />
     <div
       className={[
         'w-56 rounded-2xl border shadow-md transition-shadow select-none',
@@ -54,6 +57,7 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

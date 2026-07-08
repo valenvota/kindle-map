@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { type NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { BookOpen } from 'lucide-react';
 import type { Book } from '../../types/book';
 
@@ -30,6 +30,9 @@ function BookNodeComponent({ data, selected }: NodeProps) {
   const accent = getAccentColor(book);
 
   return (
+    <>
+    <Handle type="source" position={Position.Left} />
+    <Handle type="target" position={Position.Right} />
     <div
       className={[
         'group relative w-52 rounded-2xl border bg-white shadow-sm transition-shadow',
@@ -86,6 +89,7 @@ function BookNodeComponent({ data, selected }: NodeProps) {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

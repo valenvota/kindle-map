@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { NodeResizer, type NodeProps, type ResizeParams } from '@xyflow/react';
+import { Handle, Position, NodeResizer, type NodeProps, type ResizeParams } from '@xyflow/react';
 import type { ShapeKind } from '../../../types/canvas';
 import { updateCanvasNodeSize } from '../../../db/canvasRepository';
 
@@ -19,6 +19,8 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
 
   return (
     <>
+      <Handle type="source" position={Position.Left} />
+      <Handle type="target" position={Position.Right} />
       <NodeResizer
         isVisible={selected}
         minWidth={60}

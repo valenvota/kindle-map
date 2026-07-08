@@ -6,15 +6,24 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
+  addEdge,
+  ConnectionMode,
+  MarkerType,
   type Node,
   type Edge,
+  type Connection,
   type NodeMouseHandler,
   type OnSelectionChangeFunc,
   BackgroundVariant,
 } from '@xyflow/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { updateCanvasNodePosition } from '../../db/canvasRepository';
+import {
+  updateCanvasNodePosition,
+  getCanvasEdgesByMap,
+  addCanvasEdge,
+  deleteCanvasEdge,
+} from '../../db/canvasRepository';
 import { BookNode, type BookNodeData } from './BookNode';
 import { TopicNode, type TopicNodeData } from './nodes/TopicNode';
 import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
@@ -128,9 +137,9 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<Record<string, any>>>([]);
-  // Edges are loaded read-only from Dexie. Arrow creation UI is paused — see README roadmap note.
-  const [edges] = useEdgesState<Edge>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const initialized = useRef(false);
+  const edgesInitialized = useRef(false);
   const prevMapIdRef = useRef(mapId);
 
   // Live queries
@@ -145,9 +154,26 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   useEffect(() => {
     if (prevMapIdRef.current !== mapId) {
       initialized.current = false;
+      edgesInitialized.current = false;
       setNodes([]);
+      setEdges([]);
       prevMapIdRef.current = mapId;
     }
+  }, [mapId]);
+
+  // ── Load edges from Dexie once per map ───────────────────────────────────
+  useEffect(() => {
+    if (edgesInitialized.current) return;
+    edgesInitialized.current = true;
+    getCanvasEdgesByMap(mapId).then((dbEdges) => {
+      setEdges(dbEdges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+      })));
+    });
   }, [mapId]);
 
   // ── Initialize nodes from Dexie once ────────────────────────────────────
@@ -252,6 +278,30 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
 
   const panMode = activeTool === 'pan';
 
+  // ── Create edge on connect ────────────────────────────────────────────────
+  const onConnect = useCallback(async (connection: Connection) => {
+    const newEdge: Edge = {
+      id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
+      source: connection.source!,
+      target: connection.target!,
+      style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+    };
+    setEdges((eds) => addEdge(newEdge, eds));
+    await addCanvasEdge({
+      id: newEdge.id,
+      mapId,
+      source: newEdge.source,
+      target: newEdge.target,
+      createdAt: new Date().toISOString(),
+    });
+  }, [mapId, setEdges]);
+
+  // ── Delete edges ──────────────────────────────────────────────────────────
+  const onEdgesDelete = useCallback(async (deletedEdges: Edge[]) => {
+    await Promise.all(deletedEdges.map((e) => deleteCanvasEdge(e.id)));
+  }, []);
+
   // ── Export map as PNG ─────────────────────────────────────────────────────
   const [exportingImage, setExportingImage] = useState(false);
   const handleExportImage = useCallback(async () => {
@@ -282,15 +332,19 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
         onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
+        connectionMode={ConnectionMode.Loose}
         fitView
         fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
         minZoom={0.1}
         maxZoom={2}
-        deleteKeyCode={null}
+        deleteKeyCode="Backspace"
         selectionKeyCode={null}
         multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
         selectionOnDrag={!panMode}
@@ -298,7 +352,6 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         panOnDrag={panMode ? [0, 1, 2] : [1, 2]}
         zoomOnScroll={false}
         zoomOnPinch
-        nodesConnectable={false}
       >
         <Background
           variant={BackgroundVariant.Dots}

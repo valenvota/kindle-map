@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { type NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { updateCanvasNodeContent } from '../../../db/canvasRepository';
 
 export type NoteNodeData = {
@@ -29,6 +29,9 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const style = d.style;
 
   return (
+    <>
+    <Handle type="source" position={Position.Left} />
+    <Handle type="target" position={Position.Right} />
     <div
       onDoubleClick={startEditing}
       className={[
@@ -85,6 +88,7 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         )}
       </div>
     </div>
+    </>
   );
 }
 

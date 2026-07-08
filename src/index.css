@@ -50,3 +50,20 @@
   stroke-width: 2;
   fill: none;
 }
+
+/* Connection handles — hidden by default, revealed on node hover */
+.react-flow__handle {
+  width: 10px !important;
+  height: 10px !important;
+  background: #f59e0b !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.react-flow__node:hover .react-flow__handle,
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto {
+  opacity: 1;
+}
