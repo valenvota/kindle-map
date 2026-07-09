@@ -193,27 +193,33 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     initialized.current = true;
   }, [mapNodes, allBooks]);
 
-  // ── Append newly added nodes without resetting existing layout ───────────
+  // ── Sync additions and deletions from Dexie without resetting layout ─────
   useEffect(() => {
     if (!initialized.current || !mapNodes || !allBooks) return;
 
-    setNodes((prev) => {
-      const existingIds = new Set(prev.map((n) => n.id));
-      const newMapNodes = mapNodes.filter((mn) => !existingIds.has(mn.id));
-      if (newMapNodes.length === 0) return prev;
+    const mapNodeIds = new Set(mapNodes.map((mn) => mn.id));
+    const bookMap = new Map(allBooks.map((b) => [b.id, b]));
 
-      const bookMap = new Map(allBooks.map((b) => [b.id, b]));
+    setNodes((prev) => {
+      // Remove nodes deleted from Dexie
+      const remaining = prev.filter((n) => mapNodeIds.has(n.id));
+      // Add nodes not yet in React Flow state
+      const existingIds = new Set(remaining.map((n) => n.id));
+      const newMapNodes = mapNodes.filter((mn) => !existingIds.has(mn.id));
+
+      if (newMapNodes.length === 0 && remaining.length === prev.length) return prev;
+
       const newNodes = newMapNodes
         .map((mn, i) => {
           const withPosition = {
             ...mn,
-            position: mn.position ?? buildInitialPosition(prev.length + i),
+            position: mn.position ?? buildInitialPosition(remaining.length + i),
           };
           return buildReactFlowNode(withPosition, bookMap);
         })
         .filter((n): n is Node => n !== null);
 
-      return [...prev, ...newNodes];
+      return [...remaining, ...newNodes];
     });
   }, [mapNodes, allBooks]);
 
@@ -340,6 +346,36 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     await Promise.all(deletedEdges.map((e) => deleteCanvasEdge(e.id)));
   }, []);
 
+  // ── Context menu ─────────────────────────────────────────────────────────
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
+
+  const onNodeContextMenu: NodeMouseHandler = useCallback((e, node) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, nodeId: node.id });
+  }, []);
+
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
+
+  const handleContextDuplicate = useCallback(async () => {
+    if (!contextMenu || !mapNodes) return;
+    closeContextMenu();
+    const original = mapNodes.find((mn) => mn.id === contextMenu.nodeId);
+    if (!original) return;
+    await upsertCanvasNode({
+      ...original,
+      id: `${original.id}-copy-${Date.now()}`,
+      position: { x: original.position.x + 30, y: original.position.y + 30 },
+    });
+  }, [contextMenu, mapNodes, closeContextMenu]);
+
+  const handleContextDelete = useCallback(async () => {
+    if (!contextMenu) return;
+    const nodeId = contextMenu.nodeId;
+    closeContextMenu();
+    setNodes((prev) => prev.filter((n) => n.id !== nodeId));
+    await deleteCanvasNode(nodeId);
+  }, [contextMenu, closeContextMenu, setNodes]);
+
   // ── Export map as PNG ─────────────────────────────────────────────────────
   const [exportingImage, setExportingImage] = useState(false);
   const handleExportImage = useCallback(async () => {
@@ -376,6 +412,8 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
+        onNodeContextMenu={onNodeContextMenu}
+        onPaneClick={closeContextMenu}
         onSelectionChange={onSelectionChange}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
@@ -436,6 +474,31 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         activeTool={activeTool}
         setActiveTool={setActiveTool}
       />
+
+      {/* Right-click context menu */}
+      {contextMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={closeContextMenu} />
+          <div
+            className="fixed z-50 min-w-[160px] overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl"
+            style={{ top: contextMenu.y, left: contextMenu.x }}
+          >
+            <button
+              onClick={handleContextDuplicate}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50"
+            >
+              <span className="text-base">⧉</span> Duplicar
+            </button>
+            <div className="mx-3 border-t border-stone-100" />
+            <button
+              onClick={handleContextDelete}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+            >
+              <span className="text-base">🗑</span> Eliminar
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Style toolbar for selected topic/note/quote/shape node */}
       {showStyleToolbar && (
