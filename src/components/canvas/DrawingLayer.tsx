@@ -6,14 +6,13 @@ import { addStroke, deleteStroke, getStrokesByMap } from '../../db/canvasStrokes
 type Props = {
   mapId: string;
   tool: StrokeTool | null;   // null = drawing mode off
+  isSelectMode: boolean;     // true when activeTool === 'select'
   color: string;
   width: number;
 };
 
-// Simplify points: keep only every Nth point during draw to reduce array size
 const SAMPLE_RATE = 2;
 
-// Convert screen coords → canvas coords accounting for React Flow viewport
 function toCanvas(
   clientX: number,
   clientY: number,
@@ -37,41 +36,73 @@ function pointsToPath(pts: StrokePoint[]): string {
   return d;
 }
 
-function strokeStyle(s: CanvasStroke) {
-  return {
-    stroke: s.color,
-    strokeWidth: s.width,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    fill: 'none',
-    opacity: s.tool === 'marker' ? 0.35 : 1,
-    pointerEvents: 'stroke' as const,
-  };
-}
-
-export function DrawingLayer({ mapId, tool, color, width }: Props) {
+export function DrawingLayer({ mapId, tool, isSelectMode, color, width }: Props) {
   const viewport = useViewport();
   const svgRef = useRef<SVGSVGElement>(null);
   const [strokes, setStrokes] = useState<CanvasStroke[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [current, setCurrent] = useState<StrokePoint[] | null>(null);
   const pointCount = useRef(0);
   const active = tool !== null;
 
-  // Load existing strokes for this map
-  useEffect(() => {
-    getStrokesByMap(mapId).then(setStrokes);
-  }, [mapId]);
-
-  // Reset when map changes
+  // Load / reload strokes when map changes
   useEffect(() => {
     setStrokes([]);
+    setSelectedIds(new Set());
     setCurrent(null);
     getStrokesByMap(mapId).then(setStrokes);
   }, [mapId]);
 
+  // Deselect when leaving select mode
+  useEffect(() => {
+    if (!isSelectMode) setSelectedIds(new Set());
+  }, [isSelectMode]);
+
+  // Backspace / Delete → remove selected strokes
+  useEffect(() => {
+    const handler = async (e: KeyboardEvent) => {
+      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+      if (selectedIds.size === 0) return;
+      const ids = [...selectedIds];
+      setSelectedIds(new Set());
+      setStrokes((prev) => prev.filter((s) => !selectedIds.has(s.id)));
+      await Promise.all(ids.map(deleteStroke));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedIds]);
+
+  // ── Click to select a stroke ──────────────────────────────────────────────
+  const handleStrokeClick = useCallback((e: React.MouseEvent, id: string) => {
+    if (!isSelectMode) return;
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (e.shiftKey) {
+        next.has(id) ? next.delete(id) : next.add(id);
+      } else {
+        if (next.has(id) && next.size === 1) {
+          next.clear(); // click selected → deselect
+        } else {
+          next.clear();
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  }, [isSelectMode]);
+
+  // Click on empty SVG area → deselect all
+  const handleSvgClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isSelectMode) return;
+    if ((e.target as SVGElement).tagName === 'svg' || (e.target as SVGElement).tagName === 'g') {
+      setSelectedIds(new Set());
+    }
+  }, [isSelectMode]);
+
+  // ── Drawing pointer handlers ──────────────────────────────────────────────
   const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (!active) return;
-    // Touch = finger → let React Flow handle pan/zoom; pen/mouse → draw
     if (e.pointerType === 'touch' && tool !== 'eraser') return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -92,14 +123,13 @@ export function DrawingLayer({ mapId, tool, color, width }: Props) {
     const pt = { ...toCanvas(e.clientX, e.clientY, rect, viewport), pressure: e.pressure || 0.5 };
 
     if (tool === 'eraser') {
-      // Erase any stroke close to pointer
       const RADIUS = 20 / viewport.zoom;
       setStrokes((prev) => {
-        const toDelete = prev.filter((s) =>
+        const toErase = prev.filter((s) =>
           s.points.some((p) => Math.hypot(p.x - pt.x, p.y - pt.y) < RADIUS),
         );
-        toDelete.forEach((s) => deleteStroke(s.id));
-        return prev.filter((s) => !toDelete.some((d) => d.id === s.id));
+        toErase.forEach((s) => deleteStroke(s.id));
+        return prev.filter((s) => !toErase.some((d) => d.id === s.id));
       });
       return;
     }
@@ -128,6 +158,8 @@ export function DrawingLayer({ mapId, tool, color, width }: Props) {
     await addStroke(stroke);
   }, [active, current, tool, mapId, color, width]);
 
+  const hasInteraction = active || isSelectMode;
+
   return (
     <svg
       ref={svgRef}
@@ -136,20 +168,51 @@ export function DrawingLayer({ mapId, tool, color, width }: Props) {
         inset: 0,
         width: '100%',
         height: '100%',
-        pointerEvents: active ? 'all' : 'none',
+        pointerEvents: hasInteraction ? 'all' : 'none',
         touchAction: active ? 'none' : 'auto',
         zIndex: 10,
         overflow: 'visible',
+        cursor: isSelectMode ? 'default' : active ? 'crosshair' : 'default',
       }}
+      onClick={handleSvgClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
       <g transform={`translate(${viewport.x},${viewport.y}) scale(${viewport.zoom})`}>
-        {strokes.map((s) => (
-          <path key={s.id} d={pointsToPath(s.points)} style={strokeStyle(s)} />
-        ))}
+        {strokes.map((s) => {
+          const selected = selectedIds.has(s.id);
+          return (
+            <g key={s.id} onClick={(e) => handleStrokeClick(e, s.id)} style={{ cursor: isSelectMode ? 'pointer' : 'default' }}>
+              {/* Wide invisible hit area for easier clicking */}
+              <path
+                d={pointsToPath(s.points)}
+                style={{ stroke: 'transparent', strokeWidth: Math.max(s.width, 12), fill: 'none', pointerEvents: isSelectMode ? 'stroke' : 'none' }}
+              />
+              {/* Selection highlight */}
+              {selected && (
+                <path
+                  d={pointsToPath(s.points)}
+                  style={{ stroke: '#f59e0b', strokeWidth: s.width + 4, fill: 'none', opacity: 0.5, strokeLinecap: 'round', strokeLinejoin: 'round' }}
+                />
+              )}
+              {/* Actual stroke */}
+              <path
+                d={pointsToPath(s.points)}
+                style={{
+                  stroke: s.color,
+                  strokeWidth: s.width,
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                  fill: 'none',
+                  opacity: s.tool === 'marker' ? 0.35 : 1,
+                  pointerEvents: 'none',
+                }}
+              />
+            </g>
+          );
+        })}
         {current && current.length >= 2 && (
           <path
             d={pointsToPath(current)}
@@ -160,6 +223,7 @@ export function DrawingLayer({ mapId, tool, color, width }: Props) {
               strokeLinejoin: 'round',
               fill: 'none',
               opacity: tool === 'marker' ? 0.35 : 1,
+              pointerEvents: 'none',
             }}
           />
         )}

@@ -551,6 +551,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
           tool={(['pencil', 'marker', 'eraser'] as CanvasTool[]).includes(activeTool)
             ? (activeTool as StrokeTool)
             : null}
+          isSelectMode={activeTool === 'select'}
           color={activeTool === 'marker' ? drawColor + '99' : drawColor}
           width={activeTool === 'marker' ? drawWidth * 4 : drawWidth}
         />
