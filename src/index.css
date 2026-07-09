@@ -53,17 +53,26 @@
 
 /* Connection handles — hidden by default, revealed on node hover */
 .react-flow__handle {
-  width: 10px !important;
-  height: 10px !important;
+  width: 14px !important;
+  height: 14px !important;
   background: #f59e0b !important;
-  border: 2px solid white !important;
+  border: 2.5px solid white !important;
   border-radius: 50% !important;
+  box-shadow: 0 0 0 2px #f59e0b55 !important;
+  cursor: crosshair !important;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.1s;
+  transform: scale(0.8);
 }
 
 .react-flow__node:hover .react-flow__handle,
 .react-flow__handle.connectingfrom,
 .react-flow__handle.connectingto {
   opacity: 1;
+  transform: scale(1);
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.25) !important;
+  box-shadow: 0 0 0 4px #f59e0b44, 0 0 8px #f59e0b88 !important;
 }
