@@ -170,6 +170,8 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         id: e.id,
         source: e.source,
         target: e.target,
+        sourceHandle: e.sourceHandle ?? null,
+        targetHandle: e.targetHandle ?? null,
         style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
         markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
       })));
@@ -284,6 +286,8 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
       source: connection.source!,
       target: connection.target!,
+      sourceHandle: connection.sourceHandle,
+      targetHandle: connection.targetHandle,
       style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
       markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
     };
@@ -293,6 +297,8 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       mapId,
       source: newEdge.source,
       target: newEdge.target,
+      sourceHandle: newEdge.sourceHandle,
+      targetHandle: newEdge.targetHandle,
       createdAt: new Date().toISOString(),
     });
   }, [mapId, setEdges]);

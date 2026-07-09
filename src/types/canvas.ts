@@ -29,6 +29,8 @@ export type CanvasEdge = {
   mapId: string;
   source: string;
   target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
   createdAt: string;
 };
 
