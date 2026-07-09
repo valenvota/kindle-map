@@ -18,9 +18,23 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
   };
 
   return (
-    <>
-      <Handle type="source" position={Position.Left} />
-      <Handle type="target" position={Position.Right} />
+    <div
+      className={[
+        'h-full w-full cursor-grab border-2 active:cursor-grabbing',
+        d.shapeKind === 'circle' ? 'rounded-full' : 'rounded-lg',
+        selected
+          ? 'border-amber-500 ring-2 ring-amber-200'
+          : 'border-stone-400',
+      ].join(' ')}
+      style={{
+        backgroundColor: style?.background ?? 'rgba(120, 113, 108, 0.08)',
+        borderColor: !selected ? style?.border : undefined,
+      }}
+    >
+      <Handle type="source" id="top"    position={Position.Top} />
+      <Handle type="source" id="right"  position={Position.Right} />
+      <Handle type="source" id="bottom" position={Position.Bottom} />
+      <Handle type="source" id="left"   position={Position.Left} />
       <NodeResizer
         isVisible={selected}
         minWidth={60}
@@ -29,20 +43,7 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
         lineClassName="!border-amber-400"
         handleClassName="!h-2.5 !w-2.5 !rounded-full !border-2 !border-amber-400 !bg-white"
       />
-      <div
-        className={[
-          'h-full w-full cursor-grab border-2 active:cursor-grabbing',
-          d.shapeKind === 'circle' ? 'rounded-full' : 'rounded-lg',
-          selected
-            ? 'border-amber-500 ring-2 ring-amber-200'
-            : 'border-stone-400',
-        ].join(' ')}
-        style={{
-          backgroundColor: style?.background ?? 'rgba(120, 113, 108, 0.08)',
-          borderColor: !selected ? style?.border : undefined,
-        }}
-      />
-    </>
+    </div>
   );
 }
 

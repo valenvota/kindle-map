@@ -34,9 +34,6 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
   const style = d.style;
 
   return (
-    <>
-    <Handle type="source" position={Position.Left} />
-    <Handle type="target" position={Position.Right} />
     <div
       onDoubleClick={startEditing}
       className={[
@@ -54,6 +51,10 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
         borderColor: !selected ? style?.border : undefined,
       }}
     >
+      <Handle type="source" id="top"    position={Position.Top} />
+      <Handle type="source" id="right"  position={Position.Right} />
+      <Handle type="source" id="bottom" position={Position.Bottom} />
+      <Handle type="source" id="left"   position={Position.Left} />
       {editing ? (
         <input
           ref={inputRef}
@@ -78,7 +79,6 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
         </span>
       )}
     </div>
-    </>
   );
 }
 

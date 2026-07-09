@@ -29,9 +29,6 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
   const style = d.style;
 
   return (
-    <>
-    <Handle type="source" position={Position.Left} />
-    <Handle type="target" position={Position.Right} />
     <div
       onDoubleClick={startEditing}
       className={[
@@ -44,10 +41,14 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
       style={{
-        backgroundColor: style?.background ?? '#fefce8', // warm yellow, not harsh
+        backgroundColor: style?.background ?? '#fefce8',
         borderColor: !selected ? style?.border : undefined,
       }}
     >
+      <Handle type="source" id="top"    position={Position.Top} />
+      <Handle type="source" id="right"  position={Position.Right} />
+      <Handle type="source" id="bottom" position={Position.Bottom} />
+      <Handle type="source" id="left"   position={Position.Left} />
       {/* Header bar */}
       <div className="flex items-center justify-between rounded-t-2xl border-b border-yellow-200 px-3 py-2">
         <span className="text-[10px] font-bold uppercase tracking-wider text-yellow-600">Note</span>
@@ -88,7 +89,6 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         )}
       </div>
     </div>
-    </>
   );
 }
 

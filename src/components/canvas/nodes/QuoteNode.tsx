@@ -16,9 +16,6 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
   const style = d.style;
 
   return (
-    <>
-    <Handle type="source" position={Position.Left} />
-    <Handle type="target" position={Position.Right} />
     <div
       className={[
         'w-56 rounded-2xl border shadow-md transition-shadow select-none',
@@ -34,6 +31,10 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
         borderColor: !selected ? style?.border : undefined,
       }}
     >
+      <Handle type="source" id="top"    position={Position.Top} />
+      <Handle type="source" id="right"  position={Position.Right} />
+      <Handle type="source" id="bottom" position={Position.Bottom} />
+      <Handle type="source" id="left"   position={Position.Left} />
       {/* Top accent */}
       <div className="h-1 w-full rounded-t-2xl bg-violet-400" />
 
@@ -57,7 +58,6 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
         </div>
       </div>
     </div>
-    </>
   );
 }
 

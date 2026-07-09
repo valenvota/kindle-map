@@ -20,7 +20,6 @@ const ACCENT_COLORS = [
 
 function getAccentColor(book: Book): string {
   if (book.color) return book.color;
-  // Derive a stable color from the book id
   const idx = book.id.charCodeAt(0) % ACCENT_COLORS.length;
   return ACCENT_COLORS[idx];
 }
@@ -30,9 +29,6 @@ function BookNodeComponent({ data, selected }: NodeProps) {
   const accent = getAccentColor(book);
 
   return (
-    <>
-    <Handle type="source" position={Position.Left} />
-    <Handle type="target" position={Position.Right} />
     <div
       className={[
         'group relative w-52 rounded-2xl border bg-white shadow-sm transition-shadow',
@@ -43,6 +39,11 @@ function BookNodeComponent({ data, selected }: NodeProps) {
       ].join(' ')}
       style={{ userSelect: 'none' }}
     >
+      <Handle type="source" id="top"    position={Position.Top} />
+      <Handle type="source" id="right"  position={Position.Right} />
+      <Handle type="source" id="bottom" position={Position.Bottom} />
+      <Handle type="source" id="left"   position={Position.Left} />
+
       {/* Cover thumbnail, or color accent bar fallback */}
       {book.coverImage ? (
         <img
@@ -89,7 +90,6 @@ function BookNodeComponent({ data, selected }: NodeProps) {
         </p>
       </div>
     </div>
-    </>
   );
 }
 
