@@ -21,6 +21,7 @@ import { db } from '../../db/db';
 import {
   updateCanvasNodePosition,
   deleteCanvasNode,
+  upsertCanvasNode,
   getCanvasEdgesByMap,
   addCanvasEdge,
   deleteCanvasEdge,
@@ -308,6 +309,31 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const onNodesDelete = useCallback(async (deletedNodes: Node[]) => {
     await Promise.all(deletedNodes.map((n) => deleteCanvasNode(n.id)));
   }, []);
+
+  // ── Duplicate selected nodes (Ctrl+D) ────────────────────────────────────
+  useEffect(() => {
+    const handler = async (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key !== 'd') return;
+      e.preventDefault();
+      const selected = nodes.filter((n) => n.selected);
+      if (selected.length === 0 || !mapNodes) return;
+      const dbById = new Map(mapNodes.map((mn) => [mn.id, mn]));
+      await Promise.all(
+        selected.map((n) => {
+          const original = dbById.get(n.id);
+          if (!original) return Promise.resolve();
+          const clone = {
+            ...original,
+            id: `${original.id}-copy-${Date.now()}`,
+            position: { x: n.position.x + 30, y: n.position.y + 30 },
+          };
+          return upsertCanvasNode(clone);
+        }),
+      );
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [nodes, mapNodes]);
 
   // ── Delete edges ──────────────────────────────────────────────────────────
   const onEdgesDelete = useCallback(async (deletedEdges: Edge[]) => {
