@@ -40,8 +40,9 @@ import { CanvasLeftToolbar } from './CanvasLeftToolbar';
 import { PlusMenu } from './PlusMenu';
 import { NodeStyleToolbar } from './NodeStyleToolbar';
 import { CanvasToolContext, type CanvasTool } from './CanvasToolContext';
+import { DrawingLayer } from './DrawingLayer';
 import type { Book } from '../../types/book';
-import type { CanvasNodeData } from '../../types/canvas';
+import type { CanvasNodeData, StrokeTool } from '../../types/canvas';
 
 const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape']);
 
@@ -154,6 +155,8 @@ type Props = {
 
 export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
+  const [drawColor, setDrawColor] = useState('#1c1917');
+  const [drawWidth, setDrawWidth] = useState(3);
   const [editingLabelEdgeId, setEditingLabelEdgeId] = useState<string | null>(null);
   const [editingLabelText, setEditingLabelText] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -543,6 +546,14 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
           showInteractive={false}
           style={{ bottom: '24px', right: '24px' }}
         />
+        <DrawingLayer
+          mapId={mapId}
+          tool={(['pencil', 'marker', 'eraser'] as CanvasTool[]).includes(activeTool)
+            ? (activeTool as StrokeTool)
+            : null}
+          color={activeTool === 'marker' ? drawColor + '99' : drawColor}
+          width={activeTool === 'marker' ? drawWidth * 4 : drawWidth}
+        />
       </ReactFlow>
 
       {/* Empty state */}
@@ -635,6 +646,39 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
           nodeId={selectedNode.id}
           style={(selectedNode.data as { style?: CanvasNodeData['style'] }).style}
         />
+      )}
+
+      {/* Drawing toolbar — color + stroke width */}
+      {(activeTool === 'pencil' || activeTool === 'marker') && (
+        <div className="pointer-events-auto absolute bottom-6 left-1/2 z-30 -translate-x-1/2">
+          <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-2 shadow-lg">
+            {['#1c1917', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'].map((c) => (
+              <button
+                key={c}
+                onClick={() => setDrawColor(c)}
+                className="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110"
+                style={{
+                  backgroundColor: c,
+                  borderColor: drawColor === c ? '#f59e0b' : 'transparent',
+                  boxShadow: drawColor === c ? '0 0 0 2px white, 0 0 0 4px #f59e0b' : undefined,
+                }}
+              />
+            ))}
+            <div className="h-5 w-px bg-stone-200" />
+            {[2, 4, 7].map((w) => (
+              <button
+                key={w}
+                onClick={() => setDrawWidth(w)}
+                className={[
+                  'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
+                  drawWidth === w ? 'bg-amber-100' : 'hover:bg-stone-100',
+                ].join(' ')}
+              >
+                <div className="rounded-full bg-stone-700" style={{ width: w + 4, height: w + 4 }} />
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Direction toolbar for selected edge */}

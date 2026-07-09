@@ -1,7 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { Book, BookNote } from '../types/book';
 import type { Highlight } from '../types/highlight';
-import type { CanvasNodeData, CanvasEdge, Group } from '../types/canvas';
+import type { CanvasNodeData, CanvasEdge, CanvasStroke, Group } from '../types/canvas';
 import type { KindleMap } from '../types/map';
 
 export class KindleMapDB extends Dexie {
@@ -9,6 +9,7 @@ export class KindleMapDB extends Dexie {
   highlights!: Table<Highlight, string>;
   canvasNodes!: Table<CanvasNodeData, string>;
   canvasEdges!: Table<CanvasEdge, string>;
+  canvasStrokes!: Table<CanvasStroke, string>;
   maps!: Table<KindleMap, string>;
   groups!: Table<Group, string>;
   bookNotes!: Table<BookNote, string>;
@@ -95,6 +96,18 @@ export class KindleMapDB extends Dexie {
       highlights: 'id, bookId, type, addedAt, createdAt',
       canvasNodes: 'id, bookId, mapId, type',
       canvasEdges: 'id, mapId, source, target',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
+
+    // v6 — canvasStrokes table for freehand drawing (pencil/marker/eraser)
+    this.version(6).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      canvasStrokes: 'id, mapId',
       maps: 'id, name, createdAt',
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',

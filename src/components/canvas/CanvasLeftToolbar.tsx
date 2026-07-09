@@ -7,6 +7,9 @@ import {
   Quote,
   Square,
   Circle,
+  Pencil,
+  Highlighter,
+  Eraser,
 } from 'lucide-react';
 import { useCanvasTool, type CanvasTool } from './CanvasToolContext';
 
@@ -25,9 +28,11 @@ const TOOLS: ToolItem[] = [
   { kind: 'separator' },
   { kind: 'tool', tool: 'rectangle', icon: <Square className="h-4 w-4" />,         label: 'Rectangle' },
   { kind: 'tool', tool: 'circle',    icon: <Circle className="h-4 w-4" />,         label: 'Circle' },
+  { kind: 'separator' },
+  { kind: 'tool', tool: 'pencil',    icon: <Pencil className="h-4 w-4" />,         label: 'Pencil' },
+  { kind: 'tool', tool: 'marker',    icon: <Highlighter className="h-4 w-4" />,    label: 'Marker' },
+  { kind: 'tool', tool: 'eraser',    icon: <Eraser className="h-4 w-4" />,         label: 'Eraser' },
 ];
-
-// Arrows/edges were paused in Sprint 11 — see README roadmap note.
 
 export function CanvasLeftToolbar() {
   const { activeTool, setActiveTool } = useCanvasTool();
@@ -39,6 +44,7 @@ export function CanvasLeftToolbar() {
           return <div key={i} className="my-1 h-px w-6 bg-stone-200" />;
         }
         const active = activeTool === item.tool;
+        const isDrawTool = item.tool === 'pencil' || item.tool === 'marker' || item.tool === 'eraser';
         return (
           <button
             key={item.tool}
@@ -47,7 +53,9 @@ export function CanvasLeftToolbar() {
             className={[
               'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
               active
-                ? 'bg-amber-500 text-white shadow-sm'
+                ? isDrawTool
+                  ? 'bg-violet-500 text-white shadow-sm'
+                  : 'bg-amber-500 text-white shadow-sm'
                 : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800',
             ].join(' ')}
           >

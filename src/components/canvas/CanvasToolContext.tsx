@@ -8,7 +8,10 @@ export type CanvasTool =
   | 'note'
   | 'quote'
   | 'rectangle'
-  | 'circle';
+  | 'circle'
+  | 'pencil'
+  | 'marker'
+  | 'eraser';
 
 type CanvasToolContextValue = {
   activeTool: CanvasTool;

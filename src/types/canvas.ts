@@ -38,6 +38,19 @@ export type CanvasEdge = {
   createdAt: string;
 };
 
+export type StrokePoint = { x: number; y: number; pressure: number };
+export type StrokeTool = 'pencil' | 'marker' | 'eraser';
+
+export type CanvasStroke = {
+  id: string;
+  mapId: string;
+  tool: StrokeTool;
+  color: string;
+  width: number;
+  points: StrokePoint[];
+  createdAt: string;
+};
+
 export type Group = {
   id: string;
   title: string;
