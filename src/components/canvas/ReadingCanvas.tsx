@@ -20,6 +20,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import {
   updateCanvasNodePosition,
+  deleteCanvasNode,
   getCanvasEdgesByMap,
   addCanvasEdge,
   deleteCanvasEdge,
@@ -303,6 +304,11 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     });
   }, [mapId, setEdges]);
 
+  // ── Delete nodes ──────────────────────────────────────────────────────────
+  const onNodesDelete = useCallback(async (deletedNodes: Node[]) => {
+    await Promise.all(deletedNodes.map((n) => deleteCanvasNode(n.id)));
+  }, []);
+
   // ── Delete edges ──────────────────────────────────────────────────────────
   const onEdgesDelete = useCallback(async (deletedEdges: Edge[]) => {
     await Promise.all(deletedEdges.map((e) => deleteCanvasEdge(e.id)));
@@ -340,6 +346,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodesDelete={onNodesDelete}
         onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
