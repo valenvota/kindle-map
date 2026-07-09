@@ -144,6 +144,11 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const edgesInitialized = useRef(false);
   const prevMapIdRef = useRef(mapId);
 
+  // ── Undo/Redo history ─────────────────────────────────────────────────────
+  const historyStack = useRef<import('../../types/canvas').CanvasNodeData[][]>([]);
+  const historyIndex = useRef(-1);
+  const isRestoring = useRef(false);
+
   // Live queries
   const mapNodes = useLiveQuery(
     () => db.canvasNodes.where('mapId').equals(mapId).toArray(),
@@ -157,10 +162,51 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     if (prevMapIdRef.current !== mapId) {
       initialized.current = false;
       edgesInitialized.current = false;
+      historyStack.current = [];
+      historyIndex.current = -1;
       setNodes([]);
       setEdges([]);
       prevMapIdRef.current = mapId;
     }
+  }, [mapId]);
+
+  // ── Capture history snapshot when mapNodes changes (debounced 400ms) ──────
+  useEffect(() => {
+    if (!mapNodes || !initialized.current || isRestoring.current) return;
+    const timer = setTimeout(() => {
+      if (isRestoring.current) return;
+      const snapshot = mapNodes.map((n) => ({ ...n }));
+      // Trim any redo future when a new action occurs
+      historyStack.current = historyStack.current.slice(0, historyIndex.current + 1);
+      historyStack.current.push(snapshot);
+      historyIndex.current = historyStack.current.length - 1;
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [mapNodes]);
+
+  // ── Undo / Redo ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = async (e: KeyboardEvent) => {
+      const isUndo = (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z';
+      const isRedo = (e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'));
+      if (!isUndo && !isRedo) return;
+      e.preventDefault();
+
+      const newIndex = isUndo ? historyIndex.current - 1 : historyIndex.current + 1;
+      if (newIndex < 0 || newIndex >= historyStack.current.length) return;
+
+      historyIndex.current = newIndex;
+      const snapshot = historyStack.current[newIndex];
+      isRestoring.current = true;
+
+      const current = await db.canvasNodes.where('mapId').equals(mapId).toArray();
+      await db.canvasNodes.bulkDelete(current.map((n) => n.id));
+      if (snapshot.length > 0) await db.canvasNodes.bulkPut(snapshot);
+
+      setTimeout(() => { isRestoring.current = false; }, 600);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [mapId]);
 
   // ── Load edges from Dexie once per map ───────────────────────────────────
