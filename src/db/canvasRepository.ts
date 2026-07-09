@@ -53,6 +53,10 @@ export async function deleteCanvasEdge(id: string): Promise<void> {
   await db.canvasEdges.delete(id);
 }
 
+export async function updateCanvasEdgeDirection(id: string, direction: import('../types/canvas').EdgeDirection): Promise<void> {
+  await db.canvasEdges.update(id, { direction });
+}
+
 /** @deprecated use getCanvasNodesByMap */
 export async function getAllCanvasNodes(): Promise<CanvasNodeData[]> {
   return db.canvasNodes.toArray();

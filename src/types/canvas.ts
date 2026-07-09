@@ -24,6 +24,8 @@ export type CanvasNodeData = {
   };
 };
 
+export type EdgeDirection = 'forward' | 'backward' | 'both' | 'none';
+
 export type CanvasEdge = {
   id: string;
   mapId: string;
@@ -31,6 +33,7 @@ export type CanvasEdge = {
   target: string;
   sourceHandle?: string | null;
   targetHandle?: string | null;
+  direction?: EdgeDirection;
   createdAt: string;
 };
 

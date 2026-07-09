@@ -25,7 +25,9 @@ import {
   getCanvasEdgesByMap,
   addCanvasEdge,
   deleteCanvasEdge,
+  updateCanvasEdgeDirection,
 } from '../../db/canvasRepository';
+import type { EdgeDirection } from '../../types/canvas';
 import { BookNode, type BookNodeData } from './BookNode';
 import { TopicNode, type TopicNodeData } from './nodes/TopicNode';
 import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
@@ -59,6 +61,15 @@ const nodeTypes = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const ARROW = { type: MarkerType.ArrowClosed, color: '#94a3b8' };
+
+function edgeMarkersForDirection(dir: EdgeDirection = 'forward') {
+  return {
+    markerEnd:   (dir === 'forward'  || dir === 'both') ? ARROW : undefined,
+    markerStart: (dir === 'backward' || dir === 'both') ? ARROW : undefined,
+  };
+}
 
 function buildInitialPosition(index: number): { x: number; y: number } {
   const col = index % COLS;
@@ -221,7 +232,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         sourceHandle: e.sourceHandle ?? null,
         targetHandle: e.targetHandle ?? null,
         style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+        ...edgeMarkersForDirection(e.direction),
       })));
     });
   }, [mapId]);
@@ -287,14 +298,26 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     });
   }, [mapNodes]);
 
-  // ── Track single selected node for the style toolbar ─────────────────────
+  // ── Track selected node + edge for toolbars ──────────────────────────────
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const onSelectionChange: OnSelectionChangeFunc = useCallback(({ nodes: selected }) => {
-    setSelectedNodeId(selected.length === 1 ? selected[0].id : null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const onSelectionChange: OnSelectionChangeFunc = useCallback(({ nodes: selNodes, edges: selEdges }) => {
+    setSelectedNodeId(selNodes.length === 1 ? selNodes[0].id : null);
+    setSelectedEdgeId(selEdges.length === 1 ? selEdges[0].id : null);
   }, []);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const showStyleToolbar = selectedNode && STYLEABLE_TYPES.has(selectedNode.type ?? '');
+
+  const handleEdgeDirectionChange = useCallback(async (dir: EdgeDirection) => {
+    if (!selectedEdgeId) return;
+    await updateCanvasEdgeDirection(selectedEdgeId, dir);
+    setEdges((prev) => prev.map((e) =>
+      e.id === selectedEdgeId
+        ? { ...e, ...edgeMarkersForDirection(dir) }
+        : e,
+    ));
+  }, [selectedEdgeId, setEdges]);
 
   // ── Persist position on drag stop — all selected nodes move together ────
   const onNodeDragStop = useCallback(async (_: unknown, node: Node) => {
@@ -343,7 +366,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
       style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+      ...edgeMarkersForDirection('forward'),
     };
     setEdges((eds) => addEdge(newEdge, eds));
     await addCanvasEdge({
@@ -353,6 +376,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       target: newEdge.target,
       sourceHandle: newEdge.sourceHandle,
       targetHandle: newEdge.targetHandle,
+      direction: 'forward',
       createdAt: new Date().toISOString(),
     });
   }, [mapId, setEdges]);
@@ -552,6 +576,43 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
           nodeId={selectedNode.id}
           style={(selectedNode.data as { style?: CanvasNodeData['style'] }).style}
         />
+      )}
+
+      {/* Direction toolbar for selected edge */}
+      {selectedEdgeId && (
+        <div className="pointer-events-auto absolute bottom-20 left-1/2 z-30 -translate-x-1/2">
+          <div className="flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-2 py-1.5 shadow-lg">
+            <span className="mr-1.5 text-xs font-medium text-stone-400">Flecha</span>
+            {([
+              { dir: 'forward',  label: '→',  title: 'Adelante' },
+              { dir: 'backward', label: '←',  title: 'Atrás' },
+              { dir: 'both',     label: '↔',  title: 'Bidireccional' },
+              { dir: 'none',     label: '—',  title: 'Sin punta' },
+            ] as { dir: EdgeDirection; label: string; title: string }[]).map(({ dir, label, title }) => {
+              const active = edges.find((e) => e.id === selectedEdgeId);
+              const isActive =
+                active?.markerEnd && dir === 'forward' ? !active?.markerStart :
+                active?.markerStart && dir === 'backward' ? !active?.markerEnd :
+                dir === 'both' ? (active?.markerEnd && active?.markerStart) :
+                dir === 'none' ? (!active?.markerEnd && !active?.markerStart) : false;
+              return (
+                <button
+                  key={dir}
+                  title={title}
+                  onClick={() => handleEdgeDirectionChange(dir)}
+                  className={[
+                    'rounded-lg px-3 py-1 text-sm font-bold transition-colors',
+                    isActive
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'text-stone-600 hover:bg-stone-100',
+                  ].join(' ')}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
     </CanvasToolContext.Provider>
