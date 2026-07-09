@@ -57,6 +57,10 @@ export async function updateCanvasEdgeDirection(id: string, direction: import('.
   await db.canvasEdges.update(id, { direction });
 }
 
+export async function updateCanvasEdgeLabel(id: string, label: string): Promise<void> {
+  await db.canvasEdges.update(id, { label });
+}
+
 /** @deprecated use getCanvasNodesByMap */
 export async function getAllCanvasNodes(): Promise<CanvasNodeData[]> {
   return db.canvasNodes.toArray();

@@ -34,6 +34,7 @@ export type CanvasEdge = {
   sourceHandle?: string | null;
   targetHandle?: string | null;
   direction?: EdgeDirection;
+  label?: string;
   createdAt: string;
 };
 

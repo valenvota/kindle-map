@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { exportMapAsPng } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -26,9 +26,11 @@ import {
   addCanvasEdge,
   deleteCanvasEdge,
   updateCanvasEdgeDirection,
+  updateCanvasEdgeLabel,
 } from '../../db/canvasRepository';
 import type { EdgeDirection } from '../../types/canvas';
 import { BookNode, type BookNodeData } from './BookNode';
+import { LabeledEdge } from './LabeledEdge';
 import { TopicNode, type TopicNodeData } from './nodes/TopicNode';
 import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
 import { QuoteNode, type QuoteNodeData } from './nodes/QuoteNode';
@@ -58,6 +60,10 @@ const nodeTypes = {
   note: NoteNode,
   quote: QuoteNode,
   shape: ShapeNode,
+};
+
+const edgeTypes = {
+  labeled: LabeledEdge,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -148,6 +154,8 @@ type Props = {
 
 export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
+  const [editingLabelEdgeId, setEditingLabelEdgeId] = useState<string | null>(null);
+  const [editingLabelText, setEditingLabelText] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<Record<string, any>>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -227,10 +235,12 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     getCanvasEdgesByMap(mapId).then((dbEdges) => {
       setEdges(dbEdges.map((e) => ({
         id: e.id,
+        type: 'labeled',
         source: e.source,
         target: e.target,
         sourceHandle: e.sourceHandle ?? null,
         targetHandle: e.targetHandle ?? null,
+        data: { label: e.label ?? '' },
         style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
         ...edgeMarkersForDirection(e.direction),
       })));
@@ -361,10 +371,12 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const onConnect = useCallback(async (connection: Connection) => {
     const newEdge: Edge = {
       id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
+      type: 'labeled',
       source: connection.source!,
       target: connection.target!,
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
+      data: { label: '' },
       style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
       ...edgeMarkersForDirection('forward'),
     };
@@ -415,6 +427,24 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const onEdgesDelete = useCallback(async (deletedEdges: Edge[]) => {
     await Promise.all(deletedEdges.map((e) => deleteCanvasEdge(e.id)));
   }, []);
+
+  // ── Edge label editing ────────────────────────────────────────────────────
+  const onEdgeDoubleClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    const current = (edge.data as { label?: string })?.label ?? '';
+    setEditingLabelEdgeId(edge.id);
+    setEditingLabelText(current);
+  }, []);
+
+  const saveLabelEdit = useCallback(async () => {
+    if (!editingLabelEdgeId) return;
+    const id = editingLabelEdgeId;
+    const text = editingLabelText.trim();
+    setEditingLabelEdgeId(null);
+    await updateCanvasEdgeLabel(id, text);
+    setEdges((prev) => prev.map((e) =>
+      e.id === id ? { ...e, data: { ...(e.data ?? {}), label: text } } : e,
+    ));
+  }, [editingLabelEdgeId, editingLabelText, setEdges]);
 
   // ── Context menu ─────────────────────────────────────────────────────────
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
@@ -475,17 +505,19 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodesDelete={onNodesDelete}
         onEdgesDelete={onEdgesDelete}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeContextMenu={onNodeContextMenu}
         onPaneClick={closeContextMenu}
         onSelectionChange={onSelectionChange}
-        nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView
         fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
@@ -566,6 +598,33 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
             >
               <span className="text-base">🗑</span> Eliminar
             </button>
+          </div>
+        </>
+      )}
+
+      {/* Edge label edit input */}
+      {editingLabelEdgeId && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={saveLabelEdit} />
+          <div className="absolute left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2">
+            <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-2xl">
+              <p className="mb-2 text-xs font-medium text-stone-400">Etiqueta de flecha</p>
+              <input
+                autoFocus
+                value={editingLabelText}
+                onChange={(e) => setEditingLabelText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveLabelEdit();
+                  if (e.key === 'Escape') setEditingLabelEdgeId(null);
+                }}
+                placeholder="ej. influye en, contradice…"
+                className="w-64 rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+              />
+              <div className="mt-2 flex justify-end gap-2">
+                <button onClick={() => setEditingLabelEdgeId(null)} className="rounded-lg px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-100">Cancelar</button>
+                <button onClick={saveLabelEdit} className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600">Guardar</button>
+              </div>
+            </div>
           </div>
         </>
       )}
