@@ -159,7 +159,7 @@ function SuggestionCard({
         <div className="flex shrink-0 gap-1.5">
           <button
             onClick={onAccept}
-            className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+            className="flex items-center gap-1 rounded-lg bg-[#1C2B3A] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#2C4159]"
           >
             <Check className="h-3 w-3" />
             Add

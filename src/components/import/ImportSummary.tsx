@@ -14,7 +14,7 @@ export function ImportSummary({ state, onDone, onReset }: Props) {
   if (state.status === 'parsing' || state.status === 'saving') {
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-stone-600">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#3D6B8E]" />
         <p className="text-sm font-medium">
           {state.status === 'parsing' ? 'Parsing your highlights…' : 'Saving to library…'}
         </p>

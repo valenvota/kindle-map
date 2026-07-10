@@ -102,7 +102,7 @@ function AddTopicModal({ mapId, position, onClose }: { mapId: string; position: 
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Topic label…"
-          className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+          className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
         />
         <ModalActions onClose={onClose} submitLabel="Add to map" disabled={!label.trim() || saving} />
       </form>
@@ -139,7 +139,7 @@ function AddNoteModal({ mapId, position, onClose }: { mapId: string; position: {
           onChange={(e) => setText(e.target.value)}
           placeholder="Write your note…"
           rows={4}
-          className="w-full resize-none rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+          className="w-full resize-none rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
         />
         <ModalActions onClose={onClose} submitLabel="Add to map" disabled={!text.trim() || saving} />
       </form>

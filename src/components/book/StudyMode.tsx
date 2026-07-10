@@ -93,7 +93,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
       {/* Top bar */}
       <div className="flex shrink-0 items-center justify-between border-b border-stone-800 px-6 py-4">
         <div className="flex items-center gap-2 min-w-0">
-          <BookOpen className="h-4 w-4 shrink-0 text-amber-400" />
+          <BookOpen className="h-4 w-4 shrink-0 text-[#C4894A]" />
           <span className="truncate text-sm font-medium text-stone-300">{book.title}</span>
         </div>
         <div className="flex items-center gap-4 shrink-0 ml-4">
@@ -115,7 +115,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
             className={[
               'rounded-2xl border p-8 shadow-2xl transition-colors',
               important
-                ? 'border-amber-500/40 bg-amber-950/30'
+                ? 'border-[#C4894A]/40 bg-[#C4894A]/10'
                 : 'border-stone-800 bg-stone-900',
             ].join(' ')}
           >
@@ -136,8 +136,8 @@ export function StudyMode({ book, highlights, onClose }: Props) {
                 className={[
                   'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
                   important
-                    ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
-                    : 'text-stone-600 hover:bg-stone-800 hover:text-amber-400',
+                    ? 'bg-[#C4894A]/20 text-[#C4894A] hover:bg-[#C4894A]/30'
+                    : 'text-stone-600 hover:bg-stone-800 hover:text-[#C4894A]',
                 ].join(' ')}
               >
                 <Star
@@ -163,7 +163,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
                 'w-full resize-none rounded-xl border bg-stone-900 px-4 py-3',
                 'text-sm leading-relaxed text-stone-200 outline-none',
                 'placeholder:text-stone-700',
-                'focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30',
+                'focus:border-[#3D6B8E]/60 focus:ring-1 focus:ring-[#3D6B8E]/40',
                 'border-stone-800 transition-colors',
               ].join(' ')}
             />
@@ -197,7 +197,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
                     className={[
                       'rounded-full transition-all',
                       absIdx === index
-                        ? 'h-2.5 w-2.5 bg-amber-400'
+                        ? 'h-2.5 w-2.5 bg-[#C4894A]'
                         : 'h-1.5 w-1.5 bg-stone-700 hover:bg-stone-500',
                     ].join(' ')}
                   />
@@ -210,7 +210,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
               className={[
                 'flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-medium transition-colors',
                 isLast
-                  ? 'bg-amber-500 text-stone-950 hover:bg-amber-400'
+                  ? 'bg-[#C4894A] text-stone-950 hover:bg-[#d19a5e]'
                   : 'border border-stone-800 text-stone-400 hover:border-stone-700 hover:text-stone-200',
               ].join(' ')}
             >

@@ -289,7 +289,7 @@ export function CommandPalette({ open, onClose, onOpenBook, onOpenMap, onOpenTag
                       onMouseEnter={() => setActiveIndex(idx)}
                       className={[
                         'flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left transition-colors',
-                        idx === activeIndex ? 'bg-amber-50' : 'hover:bg-stone-50',
+                        idx === activeIndex ? 'bg-[#3D6B8E]/10' : 'hover:bg-stone-50',
                       ].join(' ')}
                     >
                       <span className="mt-0.5 shrink-0 text-stone-400">{GROUP_ICONS[r.type]}</span>

@@ -630,11 +630,11 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
                   if (e.key === 'Escape') setEditingLabelEdgeId(null);
                 }}
                 placeholder="ej. influye en, contradice…"
-                className="w-64 rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                className="w-64 rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
               />
               <div className="mt-2 flex justify-end gap-2">
                 <button onClick={() => setEditingLabelEdgeId(null)} className="rounded-lg px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-100">Cancelar</button>
-                <button onClick={saveLabelEdit} className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600">Guardar</button>
+                <button onClick={saveLabelEdit} className="rounded-lg bg-[#1C2B3A] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2C4159]">Guardar</button>
               </div>
             </div>
           </div>
@@ -712,7 +712,7 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
                   className={[
                     'rounded-lg px-3 py-1 text-sm font-bold transition-colors',
                     isActive
-                      ? 'bg-amber-100 text-amber-700'
+                      ? 'bg-[#3D6B8E]/15 text-[#3D6B8E]'
                       : 'text-stone-600 hover:bg-stone-100',
                   ].join(' ')}
                 >

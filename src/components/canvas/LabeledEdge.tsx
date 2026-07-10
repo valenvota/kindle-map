@@ -47,7 +47,7 @@ function LabeledEdgeComponent({
               className={[
                 'inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium',
                 'bg-white text-stone-700 shadow-sm',
-                selected ? 'border-amber-400' : 'border-stone-200',
+                selected ? 'border-[#3D6B8E]' : 'border-stone-200',
               ].join(' ')}
             >
               {label}

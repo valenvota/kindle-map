@@ -3,19 +3,19 @@ import { X } from 'lucide-react';
 import { createBook } from '../../db/booksRepository';
 
 const ACCENT_COLORS = [
-  '#f59e0b', // amber (default)
+  '#3D6B8E', // accent blue (default)
+  '#C4894A', // warm caramel
   '#3b82f6', // blue
   '#10b981', // emerald
   '#f43f5e', // rose
   '#8b5cf6', // violet
-  '#f97316', // orange
   '#06b6d4', // cyan
   '#84cc16', // lime
 ];
 
 const INPUT =
   'w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 ' +
-  'outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 ' +
+  'outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10 ' +
   'placeholder:text-stone-300 bg-white';
 
 type Props = {

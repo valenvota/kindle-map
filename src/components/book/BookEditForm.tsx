@@ -7,19 +7,19 @@ import type { Book } from '../../types/book';
 
 // Same palette as BookNode accent colors
 const ACCENT_COLORS = [
-  '#f59e0b', // amber (default)
+  '#3D6B8E', // accent blue (default)
+  '#C4894A', // warm caramel
   '#3b82f6', // blue
   '#10b981', // emerald
   '#f43f5e', // rose
   '#8b5cf6', // violet
-  '#f97316', // orange
   '#06b6d4', // cyan
   '#84cc16', // lime
 ];
 
 const INPUT = [
   'w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900',
-  'outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100',
+  'outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10',
   'placeholder:text-stone-300 bg-white',
 ].join(' ');
 
@@ -98,15 +98,19 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
     <div className="flex flex-col gap-5 px-6 py-5">
       {/* Suggested cleanup banner */}
       {showBanner && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        <div
+          className="flex items-start gap-3 rounded-xl border px-4 py-3"
+          style={{ borderColor: 'var(--accent-border)', background: 'var(--accent-soft)' }}
+        >
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--accent)' }} />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-amber-800">Suggested cleanup</p>
-            <p className="mt-0.5 truncate text-xs text-amber-700">"{suggestion.title}"</p>
+            <p className="text-xs font-semibold" style={{ color: 'var(--brand)' }}>Suggested cleanup</p>
+            <p className="mt-0.5 truncate text-xs" style={{ color: 'var(--accent)' }}>"{suggestion.title}"</p>
           </div>
           <button
             onClick={applySuggestion}
-            className="shrink-0 text-xs font-semibold text-amber-700 underline hover:text-amber-900"
+            className="shrink-0 text-xs font-semibold underline"
+            style={{ color: 'var(--accent)' }}
           >
             Apply
           </button>
@@ -266,7 +270,7 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 rounded-xl bg-stone-900 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="flex-1 rounded-xl bg-[#1C2B3A] py-2 text-sm font-medium text-white hover:bg-[#2C4159] disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

@@ -21,13 +21,13 @@ function nextPosition(index: number): { x: number; y: number } {
 }
 
 const ACCENT_COLORS = [
-  '#f59e0b', '#3b82f6', '#10b981', '#f43f5e',
-  '#8b5cf6', '#f97316', '#06b6d4', '#84cc16',
+  '#3D6B8E', '#C4894A', '#3b82f6', '#10b981',
+  '#f43f5e', '#8b5cf6', '#06b6d4', '#84cc16',
 ];
 
 const INPUT =
   'w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 ' +
-  'outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 ' +
+  'outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10 ' +
   'placeholder:text-stone-300 bg-white';
 
 type Props = {
@@ -101,7 +101,7 @@ function BookPicker({
         <div className="border-b border-stone-100 px-3 py-2">
           <button
             onClick={onCreateNew}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[#3D6B8E] hover:bg-[#3D6B8E]/10 transition-colors"
           >
             <Plus className="h-4 w-4 shrink-0" />
             Add new book manually
@@ -118,7 +118,7 @@ function BookPicker({
               placeholder="Search your library…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+              className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
             />
           </div>
         </div>
@@ -144,14 +144,14 @@ function BookPicker({
                     alreadyAdded ? 'cursor-default opacity-40' : 'hover:bg-stone-50 active:bg-stone-100',
                   ].join(' ')}
                 >
-                  <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: book.color ?? '#f59e0b' }} />
+                  <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: book.color ?? '#3D6B8E' }} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-stone-900">{book.title}</p>
                     {book.author && <p className="truncate text-xs text-stone-500">{book.author}</p>}
                   </div>
                   {alreadyAdded
                     ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                    : <span className="shrink-0 text-xs font-medium text-amber-600">{isAdding ? 'Adding…' : 'Add'}</span>}
+                    : <span className="shrink-0 text-xs font-medium text-[#3D6B8E]">{isAdding ? 'Adding…' : 'Add'}</span>}
                 </button>
               );
             })

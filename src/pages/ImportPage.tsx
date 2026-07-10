@@ -17,12 +17,12 @@ export function ImportPage({ onDone }: Props) {
         {/* Logo / wordmark */}
         <div className="mb-10 text-center">
           <div className="inline-flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'var(--brand)' }}>
               <span className="text-lg font-bold text-white">K</span>
             </div>
-            <span className="text-xl font-semibold text-stone-900">KindleMap</span>
+            <span className="text-xl font-semibold" style={{ color: 'var(--text)' }}>KindleMap</span>
           </div>
-          <p className="mt-3 text-sm text-stone-500">A visual map of your reading mind.</p>
+          <p className="mt-3 text-sm font-light" style={{ color: 'var(--text-2)' }}>A visual map of your reading mind.</p>
         </div>
 
         {state.status === 'idle' || busy ? (
@@ -36,7 +36,7 @@ export function ImportPage({ onDone }: Props) {
         )}
 
         {state.status === 'idle' && (
-          <p className="mt-6 text-center text-xs text-stone-400">
+          <p className="mt-6 text-center text-xs" style={{ color: 'var(--text-3)' }}>
             Everything stays on your device. No uploads, no accounts.
           </p>
         )}

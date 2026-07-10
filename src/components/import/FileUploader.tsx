@@ -51,31 +51,31 @@ export function FileUploader({ onFile, disabled }: Props) {
         'relative flex flex-col items-center justify-center gap-4',
         'rounded-2xl border-2 border-dashed px-8 py-16 text-center transition-all',
         'cursor-pointer select-none',
-        dragging
-          ? 'border-amber-400 bg-amber-50'
-          : 'border-stone-200 bg-white hover:border-stone-400 hover:bg-stone-50',
         disabled ? 'pointer-events-none opacity-50' : '',
       ].join(' ')}
+      style={dragging
+        ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' }
+        : { borderColor: 'var(--border-md)', background: 'white' }}
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: 'var(--brand-soft)' }}>
         {dragging ? (
-          <FileText className="h-7 w-7 text-amber-600" />
+          <FileText className="h-7 w-7" style={{ color: 'var(--brand)' }} />
         ) : (
-          <Upload className="h-7 w-7 text-amber-600" />
+          <Upload className="h-7 w-7" style={{ color: 'var(--brand)' }} />
         )}
       </div>
 
       <div>
-        <p className="text-base font-medium text-stone-800">
+        <p className="text-base font-medium" style={{ color: 'var(--text)' }}>
           {dragging ? 'Drop your file here' : 'Upload My Clippings.txt'}
         </p>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm font-light" style={{ color: 'var(--text-2)' }}>
           Drag & drop or click to browse · Kindle exports only
         </p>
       </div>
 
-      <p className="text-xs text-stone-400">
-        Find it at: <code className="rounded bg-stone-100 px-1 py-0.5">Kindle/documents/My Clippings.txt</code>
+      <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+        Find it at: <code className="rounded px-1 py-0.5" style={{ background: 'var(--surface-2)' }}>Kindle/documents/My Clippings.txt</code>
       </p>
 
       <input

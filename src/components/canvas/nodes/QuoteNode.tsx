@@ -21,7 +21,7 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
         'w-56 rounded-2xl border shadow-md transition-shadow select-none',
         'cursor-grab active:cursor-grabbing',
         selected
-          ? 'border-violet-400 shadow-lg ring-2 ring-violet-200'
+          ? 'border-[#3D6B8E] shadow-lg ring-2 ring-[#3D6B8E]/30'
           : style?.border
             ? 'hover:shadow-lg'
             : 'border-violet-200 bg-white hover:border-violet-300 hover:shadow-lg',

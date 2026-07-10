@@ -40,10 +40,10 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
         'flex min-h-[44px] min-w-[140px] max-w-[260px] items-center justify-center rounded-2xl border-2',
         'px-4 py-2.5 shadow-md transition-shadow select-none',
         selected
-          ? 'border-amber-500 shadow-lg ring-2 ring-amber-200'
+          ? 'border-[#3D6B8E] shadow-lg ring-2 ring-[#3D6B8E]/30'
           : style?.border
             ? 'hover:shadow-lg'
-            : 'border-amber-400 bg-white hover:border-amber-500 hover:shadow-lg',
+            : 'border-[#3D6B8E]/60 bg-white hover:border-[#3D6B8E] hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
       style={{

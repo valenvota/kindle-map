@@ -29,8 +29,8 @@ export function HighlightCard({ highlight, onUpdate, focused, cardRef }: Props) 
       ref={cardRef}
       className={[
         'group relative rounded-xl border bg-white p-5 transition-shadow hover:shadow-sm',
-        highlight.important ? 'border-amber-300 bg-amber-50/40' : 'border-stone-100',
-        focused ? 'ring-2 ring-amber-400' : '',
+        highlight.important ? 'border-[#C4894A]/40 bg-[#C4894A]/5' : 'border-stone-100',
+        focused ? 'ring-2 ring-[#3D6B8E]/50' : '',
       ].join(' ')}
     >
       <p className="text-[15px] leading-relaxed text-stone-800">{highlight.text}</p>
@@ -49,8 +49,8 @@ export function HighlightCard({ highlight, onUpdate, focused, cardRef }: Props) 
             className={[
               'rounded-lg p-1.5 transition-colors',
               highlight.important
-                ? 'text-amber-500 hover:text-amber-600'
-                : 'text-stone-300 hover:text-amber-400',
+                ? 'text-[#C4894A] hover:text-[#a96f35]'
+                : 'text-stone-300 hover:text-[#C4894A]',
             ].join(' ')}
           >
             <Star className="h-4 w-4" fill={highlight.important ? 'currentColor' : 'none'} />

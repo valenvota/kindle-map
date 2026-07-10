@@ -194,7 +194,7 @@ export function DrawingLayer({ mapId, tool, isSelectMode, color, width }: Props)
               {selected && (
                 <path
                   d={pointsToPath(s.points)}
-                  style={{ stroke: '#f59e0b', strokeWidth: s.width + 4, fill: 'none', opacity: 0.5, strokeLinecap: 'round', strokeLinejoin: 'round' }}
+                  style={{ stroke: '#3D6B8E', strokeWidth: s.width + 4, fill: 'none', opacity: 0.5, strokeLinecap: 'round', strokeLinejoin: 'round' }}
                 />
               )}
               {/* Actual stroke */}

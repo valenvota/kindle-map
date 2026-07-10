@@ -23,7 +23,7 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
         'h-full w-full cursor-grab border-2 active:cursor-grabbing',
         d.shapeKind === 'circle' ? 'rounded-full' : 'rounded-lg',
         selected
-          ? 'border-amber-500 ring-2 ring-amber-200'
+          ? 'border-[#3D6B8E] ring-2 ring-[#3D6B8E]/30'
           : 'border-stone-400',
       ].join(' ')}
       style={{
@@ -40,8 +40,8 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
         minWidth={60}
         minHeight={60}
         onResizeEnd={handleResizeEnd}
-        lineClassName="!border-amber-400"
-        handleClassName="!h-2.5 !w-2.5 !rounded-full !border-2 !border-amber-400 !bg-white"
+        lineClassName="!border-[#3D6B8E]"
+        handleClassName="!h-2.5 !w-2.5 !rounded-full !border-2 !border-[#3D6B8E] !bg-white"
       />
     </div>
   );

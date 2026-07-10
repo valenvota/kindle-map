@@ -107,7 +107,7 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
                   placeholder="Search books…"
                   value={bookQuery}
                   onChange={(e) => setBookQuery(e.target.value)}
-                  className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                  className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
                 />
               </div>
             </div>
@@ -126,7 +126,7 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
                   >
                     <div
                       className="h-2 w-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: book.color ?? '#f59e0b' }}
+                      style={{ backgroundColor: book.color ?? '#3D6B8E' }}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-stone-900">{book.title}</p>
@@ -156,7 +156,7 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
                   placeholder="Search highlights…"
                   value={hlQuery}
                   onChange={(e) => setHlQuery(e.target.value)}
-                  className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                  className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
                 />
               </div>
             </div>

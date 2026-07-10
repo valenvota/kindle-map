@@ -3,16 +3,16 @@ import { updateCanvasNodeStyle } from '../../db/canvasRepository';
 import type { CanvasNodeData } from '../../types/canvas';
 
 const COLORS = [
-  '#f59e0b', // amber
+  '#3D6B8E', // accent blue
+  '#C4894A', // warm caramel
   '#3b82f6', // blue
   '#10b981', // emerald
   '#8b5cf6', // violet
   '#ef4444', // red
-  '#f97316', // orange
   '#06b6d4', // cyan
   '#ec4899', // pink
   '#78716c', // stone
-  '#1c1917', // near-black
+  '#181614', // ink black
 ];
 
 type StyleKey = 'background' | 'border' | 'text';
