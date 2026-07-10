@@ -14,10 +14,22 @@ import { StudyMode } from './StudyMode';
 import type { Highlight } from '../../types/highlight';
 import type { ReadingStatus } from '../../types/book';
 
-const STATUS_CONFIG: Record<ReadingStatus, { label: string; emoji: string; className: string }> = {
-  'want-to-read': { label: 'Want to read', emoji: '📚', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  'reading':      { label: 'Reading',       emoji: '📖', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  'finished':     { label: 'Finished',      emoji: '✅', className: 'bg-green-50 text-green-700 border-green-200' },
+const STATUS_CONFIG: Record<ReadingStatus, { label: string; emoji: string; style: React.CSSProperties; borderStyle: React.CSSProperties }> = {
+  'want-to-read': {
+    label: 'Want to read', emoji: '📚',
+    style: { background: 'rgba(122,106,84,0.10)', color: '#7A6A54' },
+    borderStyle: { borderColor: 'rgba(122,106,84,0.25)' },
+  },
+  'reading': {
+    label: 'Reading', emoji: '📖',
+    style: { background: 'rgba(61,107,142,0.10)', color: '#3D6B8E' },
+    borderStyle: { borderColor: 'rgba(61,107,142,0.25)' },
+  },
+  'finished': {
+    label: 'Finished', emoji: '✅',
+    style: { background: 'rgba(58,122,92,0.10)', color: '#3A7A5C' },
+    borderStyle: { borderColor: 'rgba(58,122,92,0.25)' },
+  },
 };
 const STATUS_CYCLE: (ReadingStatus | null)[] = ['want-to-read', 'reading', 'finished', null];
 
@@ -53,7 +65,6 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
     getGeneralBookNote(bookId).then((n) => setGeneralNote(n?.text ?? ''));
   }, [bookId]);
 
-  // Debounced auto-save for general note
   useEffect(() => {
     const timer = setTimeout(() => {
       upsertGeneralBookNote(bookId, generalNote).then(() => {
@@ -64,22 +75,16 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
     return () => clearTimeout(timer);
   }, [generalNote, bookId]);
 
-  // When opened to focus a specific highlight, make sure it's visible
   useEffect(() => {
-    if (focusHighlightId) {
-      setFilter('all');
-      setQuery('');
-    }
+    if (focusHighlightId) { setFilter('all'); setQuery(''); }
   }, [focusHighlightId]);
 
-  // Scroll the focused highlight into view once it's rendered
   useEffect(() => {
     if (!focusHighlightId || loading) return;
     const el = highlightRefs.current.get(focusHighlightId);
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [focusHighlightId, loading, highlights]);
 
-  // Close on Escape — if editing, Escape cancels edit; otherwise closes drawer
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -126,11 +131,15 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-2xl flex-col bg-stone-50 shadow-2xl"
+        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-2xl flex-col shadow-2xl"
+        style={{ background: 'var(--bg)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-stone-200 bg-white px-6 py-5">
+        <div
+          className="flex items-start justify-between border-b px-6 py-5"
+          style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
+        >
           {!isEditing && liveBook.coverImage && (
             <img
               src={liveBook.coverImage}
@@ -140,26 +149,22 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
           )}
           <div className="min-w-0 flex-1 pr-4">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 shrink-0 text-amber-500" />
-              <p className="text-xs font-medium uppercase tracking-wide text-amber-600">
+              <BookOpen className="h-4 w-4 shrink-0" style={{ color: 'var(--accent)' }} />
+              <p className="text-xs font-bold uppercase tracking-[0.15em]" style={{ color: 'var(--accent)' }}>
                 {liveBook.source === 'kindle' ? 'Kindle' : 'Manual'}
               </p>
-              {/* Attention badge */}
               {attentionIssues.length > 0 && !isEditing && (
-                <span
-                  title={attentionIssues.map(issueLabel).join(' · ')}
-                  className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-600"
-                >
+                <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-600">
                   <AlertCircle className="h-3 w-3" />
                   Needs attention
                 </span>
               )}
             </div>
-            <h2 className="mt-1 truncate text-lg font-semibold leading-snug text-stone-900">
+            <h2 className="mt-1 truncate text-lg font-semibold leading-snug" style={{ color: 'var(--text)' }}>
               {liveBook.title}
             </h2>
             {liveBook.author && (
-              <p className="mt-0.5 text-sm text-stone-500">{liveBook.author}</p>
+              <p className="mt-0.5 text-sm" style={{ color: 'var(--text-2)' }}>{liveBook.author}</p>
             )}
 
             {/* Reading status pill */}
@@ -173,12 +178,10 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                     await updateReadingStatus(liveBook.id, next);
                   }}
                   title="Click to change reading status"
-                  className={[
-                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80',
-                    liveBook.readingStatus
-                      ? STATUS_CONFIG[liveBook.readingStatus].className
-                      : 'border-stone-200 bg-stone-50 text-stone-400',
-                  ].join(' ')}
+                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-opacity hover:opacity-75"
+                  style={liveBook.readingStatus
+                    ? { ...STATUS_CONFIG[liveBook.readingStatus].style, ...STATUS_CONFIG[liveBook.readingStatus].borderStyle }
+                    : { borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
                 >
                   {liveBook.readingStatus ? (
                     <>{STATUS_CONFIG[liveBook.readingStatus].emoji} {STATUS_CONFIG[liveBook.readingStatus].label}</>
@@ -195,7 +198,8 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                 {(liveBook.tags ?? []).filter(Boolean).map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600"
+                    className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}
                   >
                     #{tag}
                   </span>
@@ -210,14 +214,16 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                 <button
                   onClick={exportMD}
                   title="Export to Markdown"
-                  className="rounded-lg border border-stone-200 p-2 text-stone-500 hover:bg-stone-50 hover:text-stone-700"
+                  className="rounded-lg border p-2 transition-colors hover:bg-stone-50"
+                  style={{ borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
                 >
                   <Download className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setIsEditing(true)}
                   title="Edit metadata"
-                  className="rounded-lg border border-stone-200 p-2 text-stone-500 hover:bg-stone-50 hover:text-stone-700"
+                  className="rounded-lg border p-2 transition-colors hover:bg-stone-50"
+                  style={{ borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -225,7 +231,10 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                   onClick={() => highlights.length > 0 && setIsStudying(true)}
                   title={highlights.length === 0 ? 'No highlights to study' : 'Study this book'}
                   disabled={highlights.length === 0}
-                  className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ borderColor: 'var(--accent-border)', background: 'var(--accent-soft)', color: 'var(--accent)' }}
+                  onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'rgba(61,107,142,0.16)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent-soft)'; }}
                 >
                   <GraduationCap className="h-3.5 w-3.5" />
                   Study
@@ -234,14 +243,15 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
             )}
             <button
               onClick={isEditing ? () => setIsEditing(false) : onClose}
-              className="rounded-lg border border-stone-200 p-2 text-stone-500 hover:bg-stone-50"
+              className="rounded-lg border p-2 transition-colors hover:bg-stone-50"
+              style={{ borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* ── Edit mode ── */}
+        {/* Edit mode */}
         {isEditing ? (
           <div className="flex-1 overflow-y-auto">
             <BookEditForm
@@ -252,7 +262,6 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
           </div>
         ) : (
           <>
-            {/* Attention issues detail (only when not editing) */}
             {attentionIssues.length > 0 && (
               <div className="border-b border-orange-100 bg-orange-50 px-6 py-2">
                 <p className="text-xs text-orange-600">
@@ -268,133 +277,126 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
               </div>
             )}
 
-            {/* Stats + filters */}
-            <div className="border-b border-stone-200 bg-white px-6 py-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={[
-                    'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                    filter === 'all'
-                      ? 'bg-stone-900 text-white'
-                      : 'text-stone-500 hover:bg-stone-100',
-                  ].join(' ')}
-                >
-                  All · {highlights.length}
-                </button>
-                {importantCount > 0 && (
+            {/* Tab bar */}
+            <div
+              className="border-b px-6"
+              style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
+            >
+              <div className="flex items-center gap-0">
+                {([
+                  { key: 'all', label: `All · ${highlights.length}` },
+                  ...(importantCount > 0 ? [{ key: 'important', label: `★ Important · ${importantCount}` }] : []),
+                  { key: 'notes', label: '📝 Notes' },
+                ] as { key: Filter; label: string }[]).map((tab) => (
                   <button
-                    onClick={() => setFilter('important')}
-                    className={[
-                      'flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                      filter === 'important'
-                        ? 'bg-amber-500 text-white'
-                        : 'text-stone-500 hover:bg-stone-100',
-                    ].join(' ')}
+                    key={tab.key}
+                    onClick={() => setFilter(tab.key)}
+                    className="relative px-4 py-3 text-xs font-semibold transition-colors"
+                    style={filter === tab.key
+                      ? { color: 'var(--brand)', borderBottom: '2px solid var(--brand)' }
+                      : { color: 'var(--text-3)', borderBottom: '2px solid transparent' }}
                   >
-                    <Star className="h-3 w-3" />
-                    Important · {importantCount}
+                    {tab.label}
                   </button>
-                )}
-                <button
-                  onClick={() => setFilter('notes')}
-                  className={[
-                    'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                    filter === 'notes'
-                      ? 'bg-stone-900 text-white'
-                      : 'text-stone-500 hover:bg-stone-100',
-                  ].join(' ')}
-                >
-                  📝 Notes
-                </button>
+                ))}
               </div>
             </div>
 
             {/* Notes panel */}
             {filter === 'notes' ? (
               <div className="flex-1 overflow-y-auto px-6 py-5">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-400">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: 'var(--text-3)' }}>
                   Your notes on this book
                 </p>
                 <textarea
                   value={generalNote}
                   onChange={(e) => setGeneralNote(e.target.value)}
                   placeholder="Write your thoughts, summary, or takeaways about this book…"
-                  className="w-full resize-none rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none placeholder:text-stone-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                  className="w-full resize-none rounded-xl border bg-white px-4 py-3 text-sm outline-none placeholder:text-stone-300 transition-colors"
+                  style={{ borderColor: 'var(--border-md)', color: 'var(--text)' }}
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(61,107,142,0.10)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-md)'; e.target.style.boxShadow = 'none'; }}
                   rows={12}
                 />
-                <p className="mt-1.5 text-right text-xs text-stone-300">
+                <p className="mt-1.5 text-right text-xs" style={{ color: 'var(--text-3)' }}>
                   {noteSaved ? '✓ Saved' : 'Auto-saves as you type'}
                 </p>
               </div>
             ) : (
               <>
-            {/* Search */}
-            <div className="border-b border-stone-200 bg-white px-6 py-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                <input
-                  type="text"
-                  placeholder="Search highlights…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
-                />
-              </div>
-            </div>
-
-            {/* Highlight list */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              {loading ? (
-                <div className="flex items-center justify-center py-16 text-sm text-stone-400">
-                  Loading highlights…
+                {/* Search */}
+                <div
+                  className="border-b px-6 py-3"
+                  style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
+                >
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--text-3)' }} />
+                    <input
+                      type="text"
+                      placeholder="Search highlights…"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="w-full rounded-lg border py-2 pl-9 pr-4 text-sm outline-none transition-colors"
+                      style={{ borderColor: 'var(--border-md)', color: 'var(--text)' }}
+                      onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(61,107,142,0.10)'; }}
+                      onBlur={(e) => { e.target.style.borderColor = 'var(--border-md)'; e.target.style.boxShadow = 'none'; }}
+                    />
+                  </div>
                 </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  {query ? (
-                    <>
-                      <p className="text-sm text-stone-400">No highlights match "{query}"</p>
-                      <button
-                        onClick={() => setQuery('')}
-                        className="mt-2 text-xs font-medium text-amber-600 underline hover:text-amber-800"
-                      >
-                        Clear search
-                      </button>
-                    </>
-                  ) : filter === 'important' ? (
-                    <>
-                      <p className="text-sm font-medium text-stone-500">No important highlights yet</p>
-                      <p className="mt-1 text-xs text-stone-400">Star a highlight to mark it as important.</p>
-                    </>
+
+                {/* Highlight list */}
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-16 text-sm" style={{ color: 'var(--text-3)' }}>
+                      Loading highlights…
+                    </div>
+                  ) : filtered.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      {query ? (
+                        <>
+                          <p className="text-sm" style={{ color: 'var(--text-3)' }}>No highlights match "{query}"</p>
+                          <button
+                            onClick={() => setQuery('')}
+                            className="mt-2 text-xs font-medium underline"
+                            style={{ color: 'var(--accent)' }}
+                          >
+                            Clear search
+                          </button>
+                        </>
+                      ) : filter === 'important' ? (
+                        <>
+                          <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>No important highlights yet</p>
+                          <p className="mt-1 text-xs" style={{ color: 'var(--text-3)' }}>Star a highlight to mark it as important.</p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'var(--surface-2)' }}>
+                            <span className="text-xl">✨</span>
+                          </div>
+                          <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>No highlights yet</p>
+                          <p className="mt-1 max-w-[220px] text-xs" style={{ color: 'var(--text-3)' }}>
+                            {liveBook.source === 'kindle'
+                              ? 'Re-import your Clippings.txt to pull in highlights for this book.'
+                              : "Manually added books don't have auto-imported highlights."}
+                          </p>
+                        </>
+                      )}
+                    </div>
                   ) : (
-                    <>
-                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-100">
-                        <span className="text-xl">✨</span>
-                      </div>
-                      <p className="text-sm font-medium text-stone-500">No highlights yet</p>
-                      <p className="mt-1 max-w-[220px] text-xs text-stone-400">
-                        {liveBook.source === 'kindle'
-                          ? 'Re-import your Clippings.txt to pull in highlights for this book.'
-                          : 'Manually added books don\'t have auto-imported highlights.'}
-                      </p>
-                    </>
+                    <div className="flex flex-col gap-3">
+                      {filtered.map((h) => (
+                        <HighlightCard
+                          key={h.id}
+                          highlight={h}
+                          onUpdate={loadHighlights}
+                          focused={h.id === focusHighlightId}
+                          cardRef={(el) => highlightRefs.current.set(h.id, el)}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {filtered.map((h) => (
-                    <HighlightCard
-                      key={h.id}
-                      highlight={h}
-                      onUpdate={loadHighlights}
-                      focused={h.id === focusHighlightId}
-                      cardRef={(el) => highlightRefs.current.set(h.id, el)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-            </>
+              </>
             )}
           </>
         )}

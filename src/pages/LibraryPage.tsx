@@ -15,14 +15,10 @@ const STATUS_CONFIG: Record<ReadingStatus, { label: string; emoji: string }> = {
   'finished':     { label: 'Finished',     emoji: '✅' },
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type SortKey = 'title-asc' | 'title-desc' | 'highlights-desc' | 'highlights-asc' | 'recent';
 type SourceFilter = 'all' | 'kindle' | 'manual';
 type MapFilter = 'all' | 'in-map' | 'not-in-map';
 type StatusFilter = 'all' | ReadingStatus;
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 type Props = {
   onImport: () => void;
@@ -34,12 +30,8 @@ type Props = {
 };
 
 export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onOpenSearch, initialTag }: Props) {
-  const [showAddBook, setShowAddBook]   = useState(false);
-
-  // Search
+  const [showAddBook, setShowAddBook] = useState(false);
   const [query, setQuery] = useState('');
-
-  // Filters
   const [source, setSource]               = useState<SourceFilter>('all');
   const [needsAttention, setNeedsAttention] = useState(false);
   const [noHighlights, setNoHighlights]   = useState(false);
@@ -51,7 +43,6 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
 
   const books = useLiveQuery(() => db.books.toArray(), []);
 
-  // Book ids referenced by at least one book-node across all maps
   const bookNodeIds = useLiveQuery(
     () => db.canvasNodes.where('type').equals('book').toArray(),
     [],
@@ -62,14 +53,12 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
     return set;
   }, [bookNodeIds]);
 
-  // All unique tags across the library
   const allTags = useMemo(() => {
     const set = new Set<string>();
     books?.forEach((b) => (b.tags ?? []).filter(Boolean).forEach((t) => set.add(t)));
     return Array.from(set).sort();
   }, [books]);
 
-  // All unique authors across the library
   const allAuthors = useMemo(() => {
     const set = new Set<string>();
     books?.forEach((b) => { if (b.author) set.add(b.author); });
@@ -80,10 +69,8 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
     setActiveTags((tags) => (tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]));
   };
 
-  // Filter + sort in one pass
   const filtered = useMemo(() => {
     let list = books ?? [];
-
     if (query) {
       const q = query.toLowerCase();
       list = list.filter(
@@ -130,44 +117,47 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
   const hasBooks = books && books.length > 0;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-sm" style={{ borderColor: 'var(--border-md)' }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'var(--brand)' }}>
               <span className="text-sm font-bold text-white">K</span>
             </div>
-            <span className="font-semibold text-stone-900">KindleMap</span>
+            <span className="font-semibold" style={{ color: 'var(--text)' }}>KindleMap</span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Search — visible on sm+ */}
             <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--text-3)' }} />
               <input
                 type="text"
                 placeholder="Search books…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-52 rounded-lg border border-stone-200 py-1.5 pl-9 pr-4 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                className="w-52 rounded-lg border py-1.5 pl-9 pr-4 text-sm outline-none transition-colors"
+                style={{ borderColor: 'var(--border-md)', color: 'var(--text)' }}
+                onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(61,107,142,0.10)'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'var(--border-md)'; e.target.style.boxShadow = 'none'; }}
               />
               {query && (
                 <button
                   onClick={() => setQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                  style={{ color: 'var(--text-3)' }}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Mobile search → opens global Cmd+K palette */}
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="flex items-center justify-center rounded-lg border border-stone-200 p-2 text-stone-500 hover:bg-stone-50 sm:hidden"
+                className="flex items-center justify-center rounded-lg border p-2 sm:hidden"
+                style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
                 title="Search (⌘K)"
               >
                 <Search className="h-4 w-4" />
@@ -177,7 +167,8 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
             {onStatsView && hasBooks && (
               <button
                 onClick={onStatsView}
-                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
+                className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-50"
+                style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
               >
                 <BarChart2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Stats</span>
@@ -187,7 +178,8 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
             {onMapsView && (
               <button
                 onClick={onMapsView}
-                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
+                className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-50"
+                style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
               >
                 <Map className="h-4 w-4" />
                 <span className="hidden sm:inline">Maps</span>
@@ -196,7 +188,8 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
 
             <button
               onClick={() => setShowAddBook(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
+              className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-50"
+              style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Add book</span>
@@ -204,7 +197,10 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
 
             <button
               onClick={onImport}
-              className="flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+              className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+              style={{ background: 'var(--brand)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-mid)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--brand)')}
             >
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Import</span>
@@ -213,60 +209,55 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
         </div>
       </header>
 
-      {/* ── Filter bar (only when library has books) ─────────────────────── */}
+      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       {hasBooks && (
-        <div className="border-b border-stone-100 bg-white">
+        <div className="border-b bg-white" style={{ borderColor: 'var(--border)' }}>
           <div className="mx-auto max-w-5xl px-6 py-3">
 
-            {/* Row 1: main controls */}
             <div className="flex flex-wrap items-center gap-2">
 
               {/* Source chips */}
-              <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5 text-xs">
+              <div className="flex rounded-lg border p-0.5 text-xs" style={{ borderColor: 'var(--border-md)', background: 'var(--surface-2)' }}>
                 {(['all', 'kindle', 'manual'] as const).map((s) => (
                   <button
                     key={s}
                     onClick={() => setSource(s)}
-                    className={[
-                      'rounded-md px-3 py-1.5 font-medium capitalize transition-colors',
-                      source === s
-                        ? 'bg-white text-stone-900 shadow-sm'
-                        : 'text-stone-500 hover:text-stone-800',
-                    ].join(' ')}
+                    className="rounded-md px-3 py-1.5 font-medium capitalize transition-colors"
+                    style={source === s
+                      ? { background: 'white', color: 'var(--text)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
+                      : { color: 'var(--text-3)' }}
                   >
                     {s === 'all' ? 'All' : s === 'kindle' ? 'Kindle' : 'Manual'}
                   </button>
                 ))}
               </div>
 
-              {/* Toggle: Needs attention */}
+              {/* Needs attention */}
               <ToggleChip
                 active={needsAttention}
                 onClick={() => setNeedsAttention((v) => !v)}
                 label="Needs attention"
                 icon={<AlertCircle className="h-3 w-3" />}
-                activeClass="border-orange-400 bg-orange-50 text-orange-700"
+                activeStyle={{ borderColor: '#f97316', background: '#fff7ed', color: '#c2410c' }}
               />
 
-              {/* Toggle: No highlights */}
+              {/* No highlights */}
               <ToggleChip
                 active={noHighlights}
                 onClick={() => setNoHighlights((v) => !v)}
                 label="No highlights"
               />
 
-              {/* Map inclusion chips */}
-              <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5 text-xs">
+              {/* Map filter */}
+              <div className="flex rounded-lg border p-0.5 text-xs" style={{ borderColor: 'var(--border-md)', background: 'var(--surface-2)' }}>
                 {(['all', 'in-map', 'not-in-map'] as const).map((m) => (
                   <button
                     key={m}
                     onClick={() => setMapFilter(m)}
-                    className={[
-                      'rounded-md px-3 py-1.5 font-medium transition-colors',
-                      mapFilter === m
-                        ? 'bg-white text-stone-900 shadow-sm'
-                        : 'text-stone-500 hover:text-stone-800',
-                    ].join(' ')}
+                    className="rounded-md px-3 py-1.5 font-medium transition-colors"
+                    style={mapFilter === m
+                      ? { background: 'white', color: 'var(--text)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
+                      : { color: 'var(--text-3)' }}
                   >
                     {m === 'all' ? 'Any map' : m === 'in-map' ? 'In a map' : 'Not in a map'}
                   </button>
@@ -274,47 +265,46 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
               </div>
 
               {/* Status filter */}
-              <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5 text-xs">
+              <div className="flex rounded-lg border p-0.5 text-xs" style={{ borderColor: 'var(--border-md)', background: 'var(--surface-2)' }}>
                 {(['all', 'want-to-read', 'reading', 'finished'] as StatusFilter[]).map((s) => (
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={[
-                      'rounded-md px-3 py-1.5 font-medium transition-colors',
-                      statusFilter === s
-                        ? 'bg-white text-stone-900 shadow-sm'
-                        : 'text-stone-500 hover:text-stone-800',
-                    ].join(' ')}
+                    className="rounded-md px-3 py-1.5 font-medium transition-colors"
+                    style={statusFilter === s
+                      ? { background: 'white', color: 'var(--text)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
+                      : { color: 'var(--text-3)' }}
                   >
                     {s === 'all' ? 'Any status' : `${STATUS_CONFIG[s].emoji} ${STATUS_CONFIG[s].label}`}
                   </button>
                 ))}
               </div>
 
-              {/* Author dropdown */}
               {allAuthors.length > 0 && (
                 <AuthorDropdown authors={allAuthors} value={author} onChange={setAuthor} />
               )}
 
-              {/* Spacer */}
               <div className="flex-1" />
 
-              {/* Clear filters */}
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearFilters}
-                  className="text-xs font-medium text-stone-400 hover:text-stone-700 underline"
+                  className="text-xs font-medium underline transition-colors"
+                  style={{ color: 'var(--text-3)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
                 >
                   Clear filters
                 </button>
               )}
 
-              {/* Sort dropdown */}
+              {/* Sort */}
               <div className="relative">
                 <select
                   value={sortKey}
                   onChange={(e) => setSortKey(e.target.value as SortKey)}
-                  className="appearance-none cursor-pointer rounded-lg border border-stone-200 bg-white py-1.5 pl-3 pr-7 text-xs font-medium text-stone-600 outline-none focus:border-amber-400"
+                  className="appearance-none cursor-pointer rounded-lg border bg-white py-1.5 pl-3 pr-7 text-xs font-medium outline-none"
+                  style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
                 >
                   <option value="title-asc">Title A–Z</option>
                   <option value="title-desc">Title Z–A</option>
@@ -322,23 +312,21 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
                   <option value="highlights-asc">Fewest highlights</option>
                   <option value="recent">Recently added</option>
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-stone-400" />
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2" style={{ color: 'var(--text-3)' }} />
               </div>
             </div>
 
-            {/* Row 2: tag chips (only when tags exist) */}
+            {/* Tag chips */}
             {allTags.length > 0 && (
               <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
                 {allTags.map((tag) => (
                   <button
                     key={tag}
                     onClick={() => toggleTag(tag)}
-                    className={[
-                      'shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
-                      activeTags.includes(tag)
-                        ? 'border-amber-500 bg-amber-50 text-amber-700'
-                        : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700',
-                    ].join(' ')}
+                    className="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors"
+                    style={activeTags.includes(tag)
+                      ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent)' }
+                      : { borderColor: 'var(--border-md)', background: 'white', color: 'var(--text-3)' }}
                   >
                     #{tag}
                   </button>
@@ -349,14 +337,13 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
         </div>
       )}
 
-      {/* ── Main content ─────────────────────────────────────────────────── */}
+      {/* ── Main content ──────────────────────────────────────────────────── */}
       <main className="mx-auto max-w-5xl px-6 py-8">
 
-        {/* Stats row */}
         {hasBooks && (
           <div className="mb-6 flex items-baseline gap-2">
-            <h1 className="text-2xl font-semibold text-stone-900">Your Library</h1>
-            <span className="text-sm text-stone-400">
+            <h1 className="text-2xl font-semibold" style={{ color: 'var(--text)' }}>Your Library</h1>
+            <span className="text-sm" style={{ color: 'var(--text-3)' }}>
               {filtered.length === books.length
                 ? `${books.length} book${books.length !== 1 ? 's' : ''}`
                 : `${filtered.length} of ${books.length} books`}
@@ -367,24 +354,28 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
         {/* Empty library */}
         {books && books.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100">
-              <BookOpen className="h-8 w-8 text-amber-600" />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: 'var(--brand-soft)' }}>
+              <BookOpen className="h-8 w-8" style={{ color: 'var(--brand)' }} />
             </div>
-            <h2 className="text-lg font-semibold text-stone-800">No books yet</h2>
-            <p className="mt-2 max-w-xs text-sm text-stone-500">
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>No books yet</h2>
+            <p className="mt-2 max-w-xs text-sm" style={{ color: 'var(--text-2)' }}>
               Import your Kindle highlights or add a book manually.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <button
                 onClick={onImport}
-                className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-amber-600"
+                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white"
+                style={{ background: 'var(--brand)' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-mid)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--brand)')}
               >
                 <Upload className="h-4 w-4" />
                 Import My Clippings.txt
               </button>
               <button
                 onClick={() => setShowAddBook(true)}
-                className="flex items-center gap-2 rounded-xl border border-stone-200 px-5 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+                className="flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-stone-50"
+                style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
               >
                 <Plus className="h-4 w-4" />
                 Add book manually
@@ -405,10 +396,11 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
         {/* No results */}
         {hasBooks && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm text-stone-400">No books match the current filters.</p>
+            <p className="text-sm" style={{ color: 'var(--text-3)' }}>No books match the current filters.</p>
             <button
               onClick={clearFilters}
-              className="mt-3 text-sm font-medium text-amber-600 hover:text-amber-800 underline"
+              className="mt-3 text-sm font-medium underline"
+              style={{ color: 'var(--accent)' }}
             >
               Clear filters
             </button>
@@ -416,7 +408,6 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
         )}
       </main>
 
-      {/* Add book modal */}
       {showAddBook && <AddBookModal onClose={() => setShowAddBook(false)} />}
     </div>
   );
@@ -452,12 +443,10 @@ function AuthorDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={[
-          'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
-          value
-            ? 'border-amber-500 bg-amber-50 text-amber-700'
-            : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700',
-        ].join(' ')}
+        className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
+        style={value
+          ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent)' }
+          : { borderColor: 'var(--border-md)', background: 'white', color: 'var(--text-3)' }}
       >
         <User className="h-3 w-3" />
         {value ?? 'Author'}
@@ -465,19 +454,23 @@ function AuthorDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
+        <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white p-2 shadow-lg" style={{ borderColor: 'var(--border-md)' }}>
           <input
             autoFocus
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search authors…"
-            className="mb-1 w-full rounded-md border border-stone-200 px-2 py-1 text-xs outline-none focus:border-amber-400"
+            className="mb-1 w-full rounded-md border px-2 py-1 text-xs outline-none"
+            style={{ borderColor: 'var(--border-md)' }}
+            onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'var(--border-md)'; }}
           />
           <div className="max-h-48 overflow-y-auto">
             {value && (
               <button
                 onClick={() => { onChange(null); setOpen(false); setSearch(''); }}
-                className="block w-full rounded-md px-2 py-1.5 text-left text-xs font-medium text-amber-600 hover:bg-stone-50"
+                className="block w-full rounded-md px-2 py-1.5 text-left text-xs font-medium"
+                style={{ color: 'var(--accent)' }}
               >
                 Clear author filter
               </button>
@@ -486,16 +479,14 @@ function AuthorDropdown({
               <button
                 key={a}
                 onClick={() => { onChange(a); setOpen(false); setSearch(''); }}
-                className={[
-                  'block w-full truncate rounded-md px-2 py-1.5 text-left text-xs',
-                  value === a ? 'bg-amber-50 text-amber-700' : 'text-stone-600 hover:bg-stone-50',
-                ].join(' ')}
+                className="block w-full truncate rounded-md px-2 py-1.5 text-left text-xs hover:bg-stone-50"
+                style={value === a ? { background: 'var(--accent-soft)', color: 'var(--accent)' } : { color: 'var(--text-2)' }}
               >
                 {a}
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="px-2 py-1.5 text-xs text-stone-400">No authors found</p>
+              <p className="px-2 py-1.5 text-xs" style={{ color: 'var(--text-3)' }}>No authors found</p>
             )}
           </div>
         </div>
@@ -511,23 +502,21 @@ function ToggleChip({
   onClick,
   label,
   icon,
-  activeClass = 'border-stone-900 bg-stone-900 text-white',
+  activeStyle,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   icon?: React.ReactNode;
-  activeClass?: string;
+  activeStyle?: React.CSSProperties;
 }) {
   return (
     <button
       onClick={onClick}
-      className={[
-        'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-        active
-          ? activeClass
-          : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300 hover:text-stone-700',
-      ].join(' ')}
+      className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+      style={active
+        ? (activeStyle ?? { borderColor: 'var(--brand)', background: 'var(--brand)', color: 'white' })
+        : { borderColor: 'var(--border-md)', background: 'white', color: 'var(--text-3)' }}
     >
       {icon}
       {label}
@@ -547,14 +536,13 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className={[
-        'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-5 text-left transition-all hover:shadow-md',
-        needsAttention
-          ? 'border-orange-200 hover:border-orange-300'
-          : 'border-stone-200 hover:border-stone-300',
-      ].join(' ')}
+      className="group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-5 text-left transition-all hover:shadow-md"
+      style={needsAttention
+        ? { borderColor: '#fed7aa' }
+        : { borderColor: 'var(--border-md)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = needsAttention ? '#fdba74' : 'var(--accent-border)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = needsAttention ? '#fed7aa' : 'var(--border-md)'; }}
     >
-      {/* Cover image, or color accent + attention indicator */}
       {book.coverImage ? (
         <div className="mb-3 -mx-5 -mt-5 flex items-start justify-between">
           <img
@@ -563,10 +551,7 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
             className="h-28 w-full rounded-t-2xl object-cover"
           />
           {needsAttention && (
-            <span
-              title={issues.map((i) => i.replace(/-/g, ' ')).join(', ')}
-              className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500 shadow-sm"
-            >
+            <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500 shadow-sm">
               <AlertCircle className="h-3 w-3" />
               Fix
             </span>
@@ -576,13 +561,10 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
         <div className="mb-4 flex items-center justify-between">
           <div
             className="h-1.5 w-10 rounded-full"
-            style={{ backgroundColor: book.color ?? '#f59e0b' }}
+            style={{ backgroundColor: book.color ?? 'var(--accent)' }}
           />
           {needsAttention && (
-            <span
-              title={issues.map((i) => i.replace(/-/g, ' ')).join(', ')}
-              className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500"
-            >
+            <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-500">
               <AlertCircle className="h-3 w-3" />
               Fix
             </span>
@@ -591,35 +573,41 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
       )}
 
       <div className="flex-1">
-        <h3 className="line-clamp-2 font-semibold leading-snug text-stone-900 transition-colors group-hover:text-amber-700">
+        <h3
+          className="line-clamp-2 font-semibold leading-snug transition-colors"
+          style={{ color: 'var(--text)' }}
+        >
           {book.title}
         </h3>
         {book.author ? (
-          <p className="mt-1 line-clamp-1 text-sm text-stone-500">{book.author}</p>
+          <p className="mt-1 line-clamp-1 text-sm" style={{ color: 'var(--text-2)' }}>{book.author}</p>
         ) : (
-          <p className="mt-1 text-sm italic text-stone-400">No author</p>
+          <p className="mt-1 text-sm italic" style={{ color: 'var(--text-3)' }}>No author</p>
         )}
 
-        {/* Tags */}
         {visibleTags.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1">
             {visibleTags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500"
+                className="rounded-full px-2 py-0.5 text-xs"
+                style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}
               >
                 #{tag}
               </span>
             ))}
             {extraTags > 0 && (
-              <span className="text-xs text-stone-400">+{extraTags}</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>+{extraTags}</span>
             )}
           </div>
         )}
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
+          style={{ background: 'var(--surface-2)', color: 'var(--text-2)' }}
+        >
           {book.totalHighlights} highlights
         </span>
         <div className="flex items-center gap-1.5">
@@ -628,7 +616,7 @@ function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
               {STATUS_CONFIG[book.readingStatus].emoji}
             </span>
           )}
-          <span className="text-xs capitalize text-stone-400">{book.source}</span>
+          <span className="text-xs capitalize" style={{ color: 'var(--text-3)' }}>{book.source}</span>
         </div>
       </div>
     </button>

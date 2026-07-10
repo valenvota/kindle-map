@@ -38,10 +38,13 @@ export function CanvasLeftToolbar() {
   const { activeTool, setActiveTool } = useCanvasTool();
 
   return (
-    <div className="absolute left-4 top-1/2 z-20 -translate-y-1/2 flex flex-col items-center gap-1 rounded-2xl border border-stone-200 bg-white px-1.5 py-2 shadow-lg">
+    <div
+      className="absolute left-4 top-1/2 z-20 -translate-y-1/2 flex flex-col items-center gap-1 rounded-2xl border bg-white px-1.5 py-2 shadow-lg"
+      style={{ borderColor: 'var(--border-md)' }}
+    >
       {TOOLS.map((item, i) => {
         if (item.kind === 'separator') {
-          return <div key={i} className="my-1 h-px w-6 bg-stone-200" />;
+          return <div key={i} className="my-1 h-px w-6" style={{ background: 'var(--border-md)' }} />;
         }
         const active = activeTool === item.tool;
         const isDrawTool = item.tool === 'pencil' || item.tool === 'marker' || item.tool === 'eraser';
@@ -50,14 +53,24 @@ export function CanvasLeftToolbar() {
             key={item.tool}
             title={item.label}
             onClick={() => setActiveTool(item.tool)}
-            className={[
-              'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-              active
-                ? isDrawTool
-                  ? 'bg-violet-500 text-white shadow-sm'
-                  : 'bg-amber-500 text-white shadow-sm'
-                : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800',
-            ].join(' ')}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+            style={active
+              ? isDrawTool
+                ? { background: 'rgba(196,137,74,0.15)', color: '#C4894A' }
+                : { background: 'var(--brand)', color: 'white' }
+              : { color: 'var(--text-3)' }}
+            onMouseEnter={(e) => {
+              if (!active) {
+                e.currentTarget.style.background = 'var(--brand-soft)';
+                e.currentTarget.style.color = 'var(--brand)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!active) {
+                e.currentTarget.style.background = '';
+                e.currentTarget.style.color = 'var(--text-3)';
+              }
+            }}
           >
             {item.icon}
           </button>

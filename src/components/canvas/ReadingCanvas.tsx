@@ -155,7 +155,7 @@ type Props = {
 
 export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
-  const [drawColor, setDrawColor] = useState('#1c1917');
+  const [drawColor, setDrawColor] = useState('#181614');
   const [drawWidth, setDrawWidth] = useState(3);
   const [editingLabelEdgeId, setEditingLabelEdgeId] = useState<string | null>(null);
   const [editingLabelText, setEditingLabelText] = useState('');
@@ -652,30 +652,35 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       {/* Drawing toolbar — color + stroke width */}
       {(activeTool === 'pencil' || activeTool === 'marker') && (
         <div className="pointer-events-auto absolute bottom-6 left-1/2 z-30 -translate-x-1/2">
-          <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-2 shadow-lg">
-            {['#1c1917', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'].map((c) => (
+          <div
+            className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-2 shadow-lg"
+            style={{ borderColor: 'var(--border-md)' }}
+          >
+            {['#FFFFFF', '#181614', '#ef4444', '#3b82f6', '#10b981', '#C4894A', '#8b5cf6'].map((c) => (
               <button
                 key={c}
                 onClick={() => setDrawColor(c)}
                 className="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110"
                 style={{
                   backgroundColor: c,
-                  borderColor: drawColor === c ? '#f59e0b' : 'transparent',
-                  boxShadow: drawColor === c ? '0 0 0 2px white, 0 0 0 4px #f59e0b' : undefined,
+                  borderColor: drawColor === c ? '#C4894A' : c === '#FFFFFF' ? 'rgba(24,22,20,0.20)' : 'transparent',
+                  boxShadow: drawColor === c ? '0 0 0 2px white, 0 0 0 4px #C4894A' : undefined,
                 }}
               />
             ))}
-            <div className="h-5 w-px bg-stone-200" />
+            <div className="h-5 w-px" style={{ background: 'var(--border-md)' }} />
             {[2, 4, 7].map((w) => (
               <button
                 key={w}
                 onClick={() => setDrawWidth(w)}
-                className={[
-                  'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
-                  drawWidth === w ? 'bg-amber-100' : 'hover:bg-stone-100',
-                ].join(' ')}
+                className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+                style={drawWidth === w
+                  ? { background: 'rgba(196,137,74,0.15)' }
+                  : {}}
+                onMouseEnter={(e) => { if (drawWidth !== w) e.currentTarget.style.background = 'var(--surface-2)'; }}
+                onMouseLeave={(e) => { if (drawWidth !== w) e.currentTarget.style.background = ''; }}
               >
-                <div className="rounded-full bg-stone-700" style={{ width: w + 4, height: w + 4 }} />
+                <div className="rounded-full" style={{ width: w + 4, height: w + 4, background: 'var(--text)' }} />
               </button>
             ))}
           </div>

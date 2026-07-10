@@ -34,9 +34,12 @@ function BookNodeComponent({ data, selected }: NodeProps) {
         'group relative w-52 rounded-2xl border bg-white shadow-sm transition-shadow',
         'cursor-grab active:cursor-grabbing select-none',
         selected
-          ? 'border-stone-400 shadow-lg ring-2 ring-stone-300'
-          : 'border-stone-200 hover:border-stone-300 hover:shadow-md',
+          ? 'shadow-lg'
+          : 'hover:shadow-md',
       ].join(' ')}
+      style={selected
+        ? { borderColor: '#3D6B8E', boxShadow: '0 0 0 2px rgba(61,107,142,0.35), 0 8px 24px rgba(0,0,0,0.10)' }
+        : { borderColor: 'rgba(24,22,20,0.13)' }}
       style={{ userSelect: 'none' }}
     >
       <Handle type="source" id="top"    position={Position.Top} />
