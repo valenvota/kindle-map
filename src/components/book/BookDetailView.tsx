@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Search, Download, BookOpen, Star, Pencil, AlertCircle, GraduationCap } from 'lucide-react';
+import { X, Search, Download, BookOpen, Pencil, AlertCircle, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';

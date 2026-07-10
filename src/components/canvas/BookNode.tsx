@@ -38,9 +38,8 @@ function BookNodeComponent({ data, selected }: NodeProps) {
           : 'hover:shadow-md',
       ].join(' ')}
       style={selected
-        ? { borderColor: '#3D6B8E', boxShadow: '0 0 0 2px rgba(61,107,142,0.35), 0 8px 24px rgba(0,0,0,0.10)' }
-        : { borderColor: 'rgba(24,22,20,0.13)' }}
-      style={{ userSelect: 'none' }}
+        ? { userSelect: 'none', borderColor: '#3D6B8E', boxShadow: '0 0 0 2px rgba(61,107,142,0.35), 0 8px 24px rgba(0,0,0,0.10)' }
+        : { userSelect: 'none', borderColor: 'rgba(24,22,20,0.13)' }}
     >
       <Handle type="source" id="top"    position={Position.Top} />
       <Handle type="source" id="right"  position={Position.Right} />
