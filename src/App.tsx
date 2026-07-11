@@ -104,7 +104,6 @@ export default function App() {
         <LibraryPage
           onImport={() => setScreen('import')}
           onOpenBook={openBook}
-          onOpenSearch={() => setPaletteOpen(true)}
           initialTag={pendingTag}
         />
       </AppShell>
