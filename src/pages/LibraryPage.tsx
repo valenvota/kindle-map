@@ -8,6 +8,7 @@ import { AddBookModal } from '../components/book/AddBookModal';
 import { BookCover } from '../components/book/BookCover';
 import { SegmentedControl } from '../components/ui';
 import { detectAttentionIssues } from '../utils/cleanBookMetadata';
+import { getDisplayTitle, fullTitle } from '../utils/displayTitle';
 import type { ReadingStatus } from '../types/book';
 
 const STATUS_LABEL: Record<ReadingStatus, string> = {
@@ -233,10 +234,10 @@ export function LibraryPage({ onImport, onOpenBook, initialTag }: Props) {
           {view === 'covers' && filtered.length > 0 && (
             <section className="lib-shelf">
               {filtered.map((book) => (
-                <button key={book.id} className="lib-book" onClick={() => onOpenBook(book.id)}>
+                <button key={book.id} className="lib-book" onClick={() => onOpenBook(book.id)} title={fullTitle(book.title)}>
                   <BookCover book={book} />
                   <div className="lib-cap">
-                    <span className="lib-cap__title">{book.title}</span>
+                    <span className="lib-cap__title">{getDisplayTitle(book.title)}</span>
                     {book.author && <span className="lib-cap__author">{book.author}</span>}
                     <span className="lib-cap__meta">
                       {book.readingStatus && <span className={`lib-dot lib-dot--${DOT_CLASS[book.readingStatus]}`} />}
@@ -254,11 +255,11 @@ export function LibraryPage({ onImport, onOpenBook, initialTag }: Props) {
               {filtered.map((book) => {
                 const info = insights.get(book.id);
                 return (
-                  <button key={book.id} className="lib-row" onClick={() => onOpenBook(book.id)}>
+                  <button key={book.id} className="lib-row" onClick={() => onOpenBook(book.id)} title={fullTitle(book.title)}>
                     <div className="lib-row__cover"><BookCover book={book} variant="row" /></div>
                     <div className="lib-row__main">
                       <div className="lib-row__head">
-                        <span className="lib-row__title">{book.title}</span>
+                        <span className="lib-row__title">{getDisplayTitle(book.title)}</span>
                         {book.author && <span className="lib-row__author">{book.author}</span>}
                       </div>
                       {info?.quote && (

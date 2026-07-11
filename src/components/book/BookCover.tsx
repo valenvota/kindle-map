@@ -1,4 +1,5 @@
 import type { Book } from '../../types/book';
+import { getDisplayTitle, fullTitle } from '../../utils/displayTitle';
 
 /**
  * Reusable book cover — always feels like a physical book:
@@ -31,13 +32,23 @@ function hashString(s: string): number {
   return Math.abs(h);
 }
 
+/** Fallback cover title shrinks as it gets longer so it never spills out. */
+function coverTitleSize(len: number): number {
+  if (len > 90) return 12;
+  if (len > 60) return 14;
+  if (len > 38) return 16;
+  return 18;
+}
+
 export function BookCover({ book, variant = 'grid' }: Props) {
   const compact = variant === 'row';
+  const title = getDisplayTitle(book.title);
+  const original = fullTitle(book.title);
 
   if (book.coverImage) {
     return (
-      <div className={`km-cover${compact ? ' km-cover--compact' : ''}`}>
-        <img src={book.coverImage} alt="" />
+      <div className={`km-cover${compact ? ' km-cover--compact' : ''}`} title={original}>
+        <img src={book.coverImage} alt={title} />
       </div>
     );
   }
@@ -47,8 +58,8 @@ export function BookCover({ book, variant = 'grid' }: Props) {
 
   if (compact) {
     return (
-      <div className="km-cover km-cover--type km-cover--compact" style={{ background: pair.tint }}>
-        <span className="km-cover__ctitle">{book.title}</span>
+      <div className="km-cover km-cover--type km-cover--compact" style={{ background: pair.tint }} title={original}>
+        <span className="km-cover__ctitle">{title}</span>
       </div>
     );
   }
@@ -56,10 +67,10 @@ export function BookCover({ book, variant = 'grid' }: Props) {
   const foot = (book.tags ?? []).filter(Boolean)[0];
 
   return (
-    <div className="km-cover km-cover--type" style={{ background: pair.tint }}>
+    <div className="km-cover km-cover--type" style={{ background: pair.tint }} title={original}>
       <span className="km-cover__rule" style={{ background: rule }} />
       {book.author && <span className="km-cover__author">{book.author}</span>}
-      <h3 className="km-cover__title">{book.title}</h3>
+      <h3 className="km-cover__title" style={{ fontSize: coverTitleSize(title.length) }}>{title}</h3>
       {foot && <span className="km-cover__foot">#{foot}</span>}
     </div>
   );
