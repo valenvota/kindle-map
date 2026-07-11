@@ -73,7 +73,24 @@ export default function App() {
   };
 
   let content;
-  if (current === 'import') {
+  if (openBookId) {
+    // Full-screen book workspace, inside the shell (sidebar stays). Navigating
+    // away via the sidebar closes the book first.
+    content = (
+      <AppShell
+        active="library"
+        {...shellProps}
+        onNavigate={(s) => { closeBook(); setScreen(s); }}
+        onImport={() => { closeBook(); setScreen('import'); }}
+      >
+        <BookDetailView
+          bookId={openBookId}
+          focusHighlightId={focusHighlightId}
+          onClose={closeBook}
+        />
+      </AppShell>
+    );
+  } else if (current === 'import') {
     // Full-bleed, outside the shell (first-run / import flow)
     content = <ImportPage onDone={() => setScreen('library')} />;
   } else if (current === 'canvas' && activeMapId) {
@@ -113,14 +130,6 @@ export default function App() {
   return (
     <>
       {content}
-
-      {openBookId && (
-        <BookDetailView
-          bookId={openBookId}
-          focusHighlightId={focusHighlightId}
-          onClose={closeBook}
-        />
-      )}
 
       <CommandPalette
         open={paletteOpen}

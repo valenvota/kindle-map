@@ -1,35 +1,33 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Search, Download, BookOpen, Pencil, AlertCircle, GraduationCap } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ChevronLeft, ChevronDown, Search, Download, Pencil, GraduationCap,
+  AlertCircle, Play,
+} from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { getHighlightsByBook } from '../../db/highlightsRepository';
 import { exportBookToMarkdown, downloadMarkdown } from '../../utils/exportMarkdown';
-import { detectAttentionIssues, issueLabel } from '../../utils/cleanBookMetadata';
+import { detectAttentionIssues } from '../../utils/cleanBookMetadata';
+import { getDisplayTitle } from '../../utils/displayTitle';
 import { updateReadingStatus } from '../../db/booksRepository';
 import { getGeneralBookNote, upsertGeneralBookNote } from '../../db/bookNotesRepository';
 import { HighlightCard } from './HighlightCard';
 import { BookEditForm } from './BookEditForm';
 import { StudyMode } from './StudyMode';
+import { BookCover } from './BookCover';
+import { Modal } from '../ui';
 import type { Highlight } from '../../types/highlight';
 import type { ReadingStatus } from '../../types/book';
 
-const STATUS_CONFIG: Record<ReadingStatus, { label: string; emoji: string; style: React.CSSProperties; borderStyle: React.CSSProperties }> = {
-  'want-to-read': {
-    label: 'Want to read', emoji: '📚',
-    style: { background: 'rgba(122,106,84,0.10)', color: '#7A6A54' },
-    borderStyle: { borderColor: 'rgba(122,106,84,0.25)' },
-  },
-  'reading': {
-    label: 'Reading', emoji: '📖',
-    style: { background: 'rgba(61,107,142,0.10)', color: '#3D6B8E' },
-    borderStyle: { borderColor: 'rgba(61,107,142,0.25)' },
-  },
-  'finished': {
-    label: 'Finished', emoji: '✅',
-    style: { background: 'rgba(58,122,92,0.10)', color: '#3A7A5C' },
-    borderStyle: { borderColor: 'rgba(58,122,92,0.25)' },
-  },
+const STATUS_LABEL: Record<ReadingStatus, string> = {
+  'want-to-read': 'Want to read',
+  'reading': 'Reading',
+  'finished': 'Finished',
+};
+const STATUS_DOT: Record<ReadingStatus, string> = {
+  'want-to-read': 'want',
+  'reading': 'reading',
+  'finished': 'finished',
 };
 const STATUS_CYCLE: (ReadingStatus | null)[] = ['want-to-read', 'reading', 'finished', null];
 
@@ -39,15 +37,17 @@ type Props = {
   onClose: () => void;
 };
 
-type Filter = 'all' | 'important' | 'notes';
+type Tab = 'highlights' | 'notes' | 'study';
+type HlFilter = 'all' | 'important';
 
 export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
   const liveBook = useLiveQuery(() => db.books.get(bookId), [bookId]);
 
   const [highlights, setHighlights]   = useState<Highlight[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [tab, setTab]                 = useState<Tab>('highlights');
+  const [hlFilter, setHlFilter]       = useState<HlFilter>('all');
   const [query, setQuery]             = useState('');
-  const [filter, setFilter]           = useState<Filter>('all');
   const [isEditing, setIsEditing]     = useState(false);
   const [isStudying, setIsStudying]   = useState(false);
   const [generalNote, setGeneralNote] = useState('');
@@ -61,10 +61,12 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
   };
 
   useEffect(() => {
+    setLoading(true);
     loadHighlights();
     getGeneralBookNote(bookId).then((n) => setGeneralNote(n?.text ?? ''));
   }, [bookId]);
 
+  // Autosave the general book note
   useEffect(() => {
     const timer = setTimeout(() => {
       upsertGeneralBookNote(bookId, generalNote).then(() => {
@@ -75,341 +77,279 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
     return () => clearTimeout(timer);
   }, [generalNote, bookId]);
 
+  // Jump to a focused highlight when arriving from search
   useEffect(() => {
-    if (focusHighlightId) { setFilter('all'); setQuery(''); }
+    if (focusHighlightId) { setTab('highlights'); setHlFilter('all'); setQuery(''); }
   }, [focusHighlightId]);
 
   useEffect(() => {
-    if (!focusHighlightId || loading) return;
+    if (!focusHighlightId || loading || tab !== 'highlights') return;
     const el = highlightRefs.current.get(focusHighlightId);
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [focusHighlightId, loading, highlights]);
+  }, [focusHighlightId, loading, highlights, tab]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (isEditing) setIsEditing(false);
-        else onClose();
-      }
+      if (e.key !== 'Escape') return;
+      if (isStudying) return;         // StudyMode handles its own Escape
+      if (isEditing) setIsEditing(false);
+      else onClose();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose, isEditing]);
+  }, [onClose, isEditing, isStudying]);
 
   const filtered = useMemo(() => {
     return highlights.filter((h) => {
-      if (filter === 'important' && !h.important) return false;
+      if (hlFilter === 'important' && !h.important) return false;
       if (query && !h.text.toLowerCase().includes(query.toLowerCase())) return false;
       return true;
     });
-  }, [highlights, query, filter]);
+  }, [highlights, query, hlFilter]);
+
+  const importantCount = highlights.filter((h) => h.important).length;
+  const previewQuote = useMemo(() => {
+    const imp = highlights.find((h) => h.important);
+    return (imp ?? highlights[0])?.text ?? '';
+  }, [highlights]);
 
   const exportMD = async () => {
     if (!liveBook) return;
     const md = await exportBookToMarkdown(liveBook, highlights);
-    downloadMarkdown(md, `${liveBook.title} - Highlights`);
+    downloadMarkdown(md, `${getDisplayTitle(liveBook.title)} - Highlights`);
   };
 
-  const importantCount = highlights.filter((h) => h.important).length;
-  const attentionIssues = liveBook ? detectAttentionIssues(liveBook.title, liveBook.author) : [];
+  const cycleStatus = async () => {
+    if (!liveBook) return;
+    const current = liveBook.readingStatus ?? null;
+    const idx = STATUS_CYCLE.indexOf(current);
+    await updateReadingStatus(liveBook.id, STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length]);
+  };
 
   if (!liveBook) return null;
 
+  const title = getDisplayTitle(liveBook.title);
+  const tags = (liveBook.tags ?? []).filter(Boolean);
+  const attentionIssues = detectAttentionIssues(liveBook.title, liveBook.author);
+  const status = liveBook.readingStatus ?? null;
+  const addedLabel = new Date(liveBook.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  const canStudy = highlights.length > 0;
+
   return (
-    <>
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div className="bd">
+      {/* ── Identity rail ─────────────────────────────────────────────────── */}
+      <aside className="bd-rail">
+        <button className="bd-back" onClick={onClose}>
+          <ChevronLeft />
+          Library
+        </button>
 
-      <motion.div
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-2xl flex-col shadow-2xl"
-        style={{ background: 'var(--bg)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div
-          className="flex items-start justify-between border-b px-6 py-5"
-          style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
-        >
-          {!isEditing && liveBook.coverImage && (
-            <img
-              src={liveBook.coverImage}
-              alt=""
-              className="mr-4 h-20 w-14 shrink-0 rounded-lg object-cover shadow-sm"
-            />
-          )}
-          <div className="min-w-0 flex-1 pr-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 shrink-0" style={{ color: 'var(--accent)' }} />
-              <p className="text-xs font-bold uppercase tracking-[0.15em]" style={{ color: 'var(--accent)' }}>
-                {liveBook.source === 'kindle' ? 'Kindle' : 'Manual'}
-              </p>
-              {attentionIssues.length > 0 && !isEditing && (
-                <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-600">
-                  <AlertCircle className="h-3 w-3" />
-                  Needs attention
-                </span>
-              )}
-            </div>
-            <h2 className="mt-1 truncate text-lg font-semibold leading-snug" style={{ color: 'var(--text)' }}>
-              {liveBook.title}
-            </h2>
-            {liveBook.author && (
-              <p className="mt-0.5 text-sm" style={{ color: 'var(--text-2)' }}>{liveBook.author}</p>
-            )}
+        <div className="bd-cover">
+          <BookCover book={liveBook} />
+        </div>
 
-            {/* Reading status pill */}
-            {!isEditing && (
-              <div className="mt-2">
-                <button
-                  onClick={async () => {
-                    const current = liveBook.readingStatus ?? null;
-                    const idx = STATUS_CYCLE.indexOf(current);
-                    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-                    await updateReadingStatus(liveBook.id, next);
-                  }}
-                  title="Click to change reading status"
-                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-opacity hover:opacity-75"
-                  style={liveBook.readingStatus
-                    ? { ...STATUS_CONFIG[liveBook.readingStatus].style, ...STATUS_CONFIG[liveBook.readingStatus].borderStyle }
-                    : { borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
-                >
-                  {liveBook.readingStatus ? (
-                    <>{STATUS_CONFIG[liveBook.readingStatus].emoji} {STATUS_CONFIG[liveBook.readingStatus].label}</>
-                  ) : (
-                    '+ Set status'
-                  )}
-                </button>
-              </div>
-            )}
+        <h1 className="bd-title" title={liveBook.title}>{title}</h1>
+        {liveBook.author && <p className="bd-byline">{liveBook.author}</p>}
 
-            {/* Tags */}
-            {!isEditing && (liveBook.tags ?? []).filter(Boolean).length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {(liveBook.tags ?? []).filter(Boolean).map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                    style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            {!isEditing && (
-              <>
-                <button
-                  onClick={exportMD}
-                  title="Export to Markdown"
-                  className="rounded-lg border p-2 transition-colors hover:bg-stone-50"
-                  style={{ borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
-                >
-                  <Download className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  title="Edit metadata"
-                  className="rounded-lg border p-2 transition-colors hover:bg-stone-50"
-                  style={{ borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => highlights.length > 0 && setIsStudying(true)}
-                  title={highlights.length === 0 ? 'No highlights to study' : 'Study this book'}
-                  disabled={highlights.length === 0}
-                  className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ borderColor: 'var(--accent-border)', background: 'var(--accent-soft)', color: 'var(--accent)' }}
-                  onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'rgba(61,107,142,0.16)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent-soft)'; }}
-                >
-                  <GraduationCap className="h-3.5 w-3.5" />
-                  Study
-                </button>
-              </>
-            )}
-            <button
-              onClick={isEditing ? () => setIsEditing(false) : onClose}
-              className="rounded-lg border p-2 transition-colors hover:bg-stone-50"
-              style={{ borderColor: 'var(--border-md)', color: 'var(--text-3)' }}
-            >
-              <X className="h-4 w-4" />
+        {attentionIssues.length > 0 && (
+          <div>
+            <button className="bd-attention" onClick={() => setIsEditing(true)}>
+              <AlertCircle />
+              Needs attention · Fix
             </button>
+          </div>
+        )}
+
+        <div>
+          <button className="bd-status" onClick={cycleStatus} title="Click to change reading status">
+            {status ? (
+              <>
+                <span className={`lib-dot lib-dot--${STATUS_DOT[status]}`} />
+                {STATUS_LABEL[status]}
+              </>
+            ) : (
+              'Set status'
+            )}
+            <ChevronDown />
+          </button>
+        </div>
+
+        <div className="bd-meta">
+          <div className="bd-meta__row">
+            <span className="bd-meta__k">Source</span>
+            <span className="bd-meta__v">{liveBook.source === 'kindle' ? 'Kindle' : 'Manual'}</span>
+          </div>
+          <div className="bd-meta__row">
+            <span className="bd-meta__k">Added</span>
+            <span className="bd-meta__v">{addedLabel}</span>
+          </div>
+          <div className="bd-meta__row">
+            <span className="bd-meta__k">Highlights</span>
+            <span className="bd-meta__v">{highlights.length}</span>
+          </div>
+          <div className="bd-meta__row">
+            <span className="bd-meta__k">Marked important</span>
+            <span className="bd-meta__v bd-meta__v--em">{importantCount}</span>
           </div>
         </div>
 
-        {/* Edit mode */}
-        {isEditing ? (
-          <div className="flex-1 overflow-y-auto">
-            <BookEditForm
-              book={liveBook}
-              onClose={() => setIsEditing(false)}
-              onDeleted={onClose}
-            />
+        {tags.length > 0 && (
+          <div className="bd-tags">
+            {tags.map((t) => <span key={t} className="bd-tag">#{t}</span>)}
           </div>
-        ) : (
-          <>
-            {attentionIssues.length > 0 && (
-              <div className="border-b border-orange-100 bg-orange-50 px-6 py-2">
-                <p className="text-xs text-orange-600">
-                  {attentionIssues.map(issueLabel).join(' · ')}
-                  {' · '}
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="font-semibold underline hover:text-orange-800"
-                  >
-                    Fix now
-                  </button>
-                </p>
-              </div>
-            )}
+        )}
 
-            {/* Tab bar */}
+        <button
+          className="bd-study"
+          onClick={() => canStudy && setIsStudying(true)}
+          disabled={!canStudy}
+          title={canStudy ? 'Study this book' : 'No highlights to study'}
+        >
+          <GraduationCap />
+          {canStudy ? `Study ${highlights.length} highlight${highlights.length !== 1 ? 's' : ''}` : 'Nothing to study'}
+        </button>
+        <div className="bd-actions">
+          <button className="bd-ghost" onClick={exportMD} title="Export to Markdown">
+            <Download />
+            Export
+          </button>
+          <button className="bd-ghost" onClick={() => setIsEditing(true)} title="Edit metadata">
+            <Pencil />
+            Edit
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Content column ────────────────────────────────────────────────── */}
+      <main className="bd-content">
+        <div className="bd-head">
+          <div className="km-seg" role="tablist" aria-label="Book view">
             <div
-              className="border-b px-6"
-              style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
-            >
-              <div className="flex items-center gap-0">
-                {([
-                  { key: 'all', label: `All · ${highlights.length}` },
-                  ...(importantCount > 0 ? [{ key: 'important', label: `★ Important · ${importantCount}` }] : []),
-                  { key: 'notes', label: '📝 Notes' },
-                ] as { key: Filter; label: string }[]).map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setFilter(tab.key)}
-                    className="relative px-4 py-3 text-xs font-semibold transition-colors"
-                    style={filter === tab.key
-                      ? { color: 'var(--brand)', borderBottom: '2px solid var(--brand)' }
-                      : { color: 'var(--text-3)', borderBottom: '2px solid transparent' }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              className="km-seg__thumb"
+              style={{ width: 'calc((100% - 6px) / 3)', transform: `translateX(${['highlights', 'notes', 'study'].indexOf(tab) * 100}%)` }}
+            />
+            {(['highlights', 'notes', 'study'] as Tab[]).map((t) => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                className={`km-seg__btn${tab === t ? ' on' : ''}`}
+                style={{ width: '33.3333%', minWidth: 92, textTransform: 'capitalize' }}
+                onClick={() => setTab(t)}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'highlights' && (
+            <div className="bd-head__search">
+              <Search />
+              <input
+                placeholder="Search highlights…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
             </div>
+          )}
+        </div>
 
-            {/* Notes panel */}
-            {filter === 'notes' ? (
-              <div className="flex-1 overflow-y-auto px-6 py-5">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: 'var(--text-3)' }}>
-                  Your notes on this book
-                </p>
-                <textarea
-                  value={generalNote}
-                  onChange={(e) => setGeneralNote(e.target.value)}
-                  placeholder="Write your thoughts, summary, or takeaways about this book…"
-                  className="w-full resize-none rounded-xl border bg-white px-4 py-3 text-sm outline-none placeholder:text-stone-300 transition-colors"
-                  style={{ borderColor: 'var(--border-md)', color: 'var(--text)' }}
-                  onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(61,107,142,0.10)'; }}
-                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-md)'; e.target.style.boxShadow = 'none'; }}
-                  rows={12}
-                />
-                <p className="mt-1.5 text-right text-xs" style={{ color: 'var(--text-3)' }}>
-                  {noteSaved ? '✓ Saved' : 'Auto-saves as you type'}
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Search */}
-                <div
-                  className="border-b px-6 py-3"
-                  style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
-                >
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--text-3)' }} />
-                    <input
-                      type="text"
-                      placeholder="Search highlights…"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      className="w-full rounded-lg border py-2 pl-9 pr-4 text-sm outline-none transition-colors"
-                      style={{ borderColor: 'var(--border-md)', color: 'var(--text)' }}
-                      onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(61,107,142,0.10)'; }}
-                      onBlur={(e) => { e.target.style.borderColor = 'var(--border-md)'; e.target.style.boxShadow = 'none'; }}
-                    />
-                  </div>
+        <div className="bd-inner">
+          {/* Highlights */}
+          {tab === 'highlights' && (
+            <>
+              <div className="bd-hlbar">
+                <span className="bd-hlcount"><b>{filtered.length}</b> highlight{filtered.length !== 1 ? 's' : ''}</span>
+                <div className="bd-chips">
+                  <button className={`bd-chip${hlFilter === 'all' ? ' on' : ''}`} onClick={() => setHlFilter('all')}>All</button>
+                  <button className={`bd-chip${hlFilter === 'important' ? ' on' : ''}`} onClick={() => setHlFilter('important')}>Important</button>
                 </div>
+              </div>
 
-                {/* Highlight list */}
-                <div className="flex-1 overflow-y-auto px-6 py-4">
-                  {loading ? (
-                    <div className="flex items-center justify-center py-16 text-sm" style={{ color: 'var(--text-3)' }}>
-                      Loading highlights…
-                    </div>
-                  ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      {query ? (
-                        <>
-                          <p className="text-sm" style={{ color: 'var(--text-3)' }}>No highlights match "{query}"</p>
-                          <button
-                            onClick={() => setQuery('')}
-                            className="mt-2 text-xs font-medium underline"
-                            style={{ color: 'var(--accent)' }}
-                          >
-                            Clear search
-                          </button>
-                        </>
-                      ) : filter === 'important' ? (
-                        <>
-                          <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>No important highlights yet</p>
-                          <p className="mt-1 text-xs" style={{ color: 'var(--text-3)' }}>Star a highlight to mark it as important.</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'var(--surface-2)' }}>
-                            <span className="text-xl">✨</span>
-                          </div>
-                          <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>No highlights yet</p>
-                          <p className="mt-1 max-w-[220px] text-xs" style={{ color: 'var(--text-3)' }}>
-                            {liveBook.source === 'kindle'
-                              ? 'Re-import your Clippings.txt to pull in highlights for this book.'
-                              : "Manually added books don't have auto-imported highlights."}
-                          </p>
-                        </>
-                      )}
-                    </div>
+              {loading ? (
+                <div className="bd-empty">Loading highlights…</div>
+              ) : filtered.length === 0 ? (
+                <div className="bd-empty">
+                  {query ? (
+                    <>No highlights match “{query}”.</>
+                  ) : hlFilter === 'important' ? (
+                    <>No important highlights yet — star one to mark it.</>
+                  ) : liveBook.source === 'kindle' ? (
+                    <>No highlights yet. Re-import your Clippings.txt to pull them in.</>
                   ) : (
-                    <div className="flex flex-col gap-3">
-                      {filtered.map((h) => (
-                        <HighlightCard
-                          key={h.id}
-                          highlight={h}
-                          onUpdate={loadHighlights}
-                          focused={h.id === focusHighlightId}
-                          cardRef={(el) => highlightRefs.current.set(h.id, el)}
-                        />
-                      ))}
-                    </div>
+                    <>Manually added books don’t have imported highlights.</>
                   )}
                 </div>
-              </>
-            )}
-          </>
-        )}
-      </motion.div>
-    </AnimatePresence>
+              ) : (
+                <div>
+                  {filtered.map((h) => (
+                    <HighlightCard
+                      key={h.id}
+                      highlight={h}
+                      onUpdate={loadHighlights}
+                      focused={h.id === focusHighlightId}
+                      cardRef={(el) => highlightRefs.current.set(h.id, el)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
-    {isStudying && (
-      <StudyMode
-        book={liveBook}
-        highlights={highlights}
-        onClose={() => setIsStudying(false)}
-      />
-    )}
-    </>
+          {/* Notes */}
+          {tab === 'notes' && (
+            <>
+              <h2 className="bd-notes-head">Notes on {title}</h2>
+              <p className="bd-notes-sub">Your running thoughts on the whole book · auto-saved</p>
+              <textarea
+                className="bd-notes-page"
+                value={generalNote}
+                onChange={(e) => setGeneralNote(e.target.value)}
+                placeholder="Write your thoughts, summary, or takeaways about this book…"
+              />
+              <p className="bd-notes-saved">{noteSaved ? 'Saved' : 'Auto-saves as you type'}</p>
+            </>
+          )}
+
+          {/* Study */}
+          {tab === 'study' && (
+            <div className="bd-study-card">
+              <div className="bd-study-card__eyebrow">Focused study</div>
+              {previewQuote
+                ? <p className="bd-study-card__preview">“{previewQuote}”</p>
+                : <p className="bd-study-card__preview">No highlights to study yet.</p>}
+              <div className="bd-study-card__stats">
+                <div className="bd-study-card__stat"><span className="n">{highlights.length}</span><span className="l">Cards</span></div>
+                <div className="bd-study-card__stat"><span className="n">{importantCount}</span><span className="l">Important</span></div>
+              </div>
+              <button className="bd-study-card__go" onClick={() => canStudy && setIsStudying(true)} disabled={!canStudy}>
+                <Play />
+                Start a session
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Edit metadata */}
+      {isEditing && (
+        <Modal title="Edit book" onClose={() => setIsEditing(false)} maxWidth={540}>
+          <BookEditForm
+            book={liveBook}
+            onClose={() => setIsEditing(false)}
+            onDeleted={onClose}
+          />
+        </Modal>
+      )}
+
+      {/* Study session */}
+      {isStudying && (
+        <StudyMode
+          book={liveBook}
+          highlights={highlights}
+          onClose={() => setIsStudying(false)}
+        />
+      )}
+    </div>
   );
 }
