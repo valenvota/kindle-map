@@ -3,23 +3,81 @@
 
 @layer base {
   :root {
-    --bg:            #F8F6F2;
-    --surface:       #FFFFFF;
-    --surface-2:     #F2F0EC;
-    --canvas-bg:     #EDEAE4;
+    /* ─── KindleMap design system · v2 (Phase 0 foundation) ───────────────
+       Canonical tokens. Reduced palette: warm paper, ink, one restrained
+       blue accent, ember reserved for the "important" marker, and a
+       midnight ink-blue sidebar. */
+
+    /* Type */
+    --font-sans:  'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-serif: 'Newsreader Variable', 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
+
+    /* Grounds */
+    --paper:       #F3F0E9;   /* warm off-white — app background */
+    --surface:     #FBF9F4;   /* cards, sheets, elevated surfaces */
+    --surface-2:   #EFEBE2;   /* nested / subtle surfaces */
+    --canvas:      #EEEAE1;   /* reading-desk canvas */
+
+    /* Ink */
+    --ink:         #1C1A17;   /* primary text — warm near-black */
+    --ink-soft:    #5E5B57;   /* secondary text */
+    --ink-faint:   #9B968D;   /* labels, placeholders, metadata */
+
+    /* Accent — the single restrained blue */
+    --accent:        #3E6B8E;
+    --accent-deep:   #2F5470;
+    --accent-soft:   rgba(62,107,142,0.10);
+    --accent-border: rgba(62,107,142,0.20);
+
+    /* Ember — reserved ONLY for the important marker */
+    --ember:      #B06A4F;
+    --ember-soft: rgba(176,106,79,0.10);
+
+    /* Hairlines */
+    --hair:      rgba(28,26,23,0.09);
+    --hair-soft: rgba(28,26,23,0.055);
+    --hair-md:   rgba(28,26,23,0.13);
+
+    /* Elevation */
+    --shadow-sm:   0 1px 2px rgba(28,26,23,0.08);
+    --shadow-md:   0 1px 2px rgba(28,26,23,0.10), 0 10px 24px -12px rgba(28,26,23,0.34);
+    --shadow-lg:   0 2px 6px rgba(28,26,23,0.12), 0 24px 44px -16px rgba(28,26,23,0.42);
+    --shadow-glass:0 1px 2px rgba(28,26,23,0.10), 0 12px 28px -10px rgba(28,26,23,0.34);
+    --shadow-cover:0 1px 2px rgba(28,26,23,0.12), 0 14px 28px -10px rgba(28,26,23,0.40);
+
+    /* Radii */
+    --radius-sm: 8px;
+    --radius:    12px;
+    --radius-lg: 16px;
+
+    /* Sidebar — midnight ink-blue */
+    --nav-bg-top:   #182534;
+    --nav-bg-bot:   #131E2B;
+    --nav-edge:     #0E1620;
+    --nav-active:   rgba(255,255,255,0.09);
+    --nav-hover:    rgba(255,255,255,0.055);
+    --nav-text:     #A9B2BD;
+    --nav-strong:   #EEF0F3;
+    --nav-faint:    #6E7885;
+    --nav-accent:   #79A9CE;
+    --nav-hair:     rgba(255,255,255,0.08);
+
+    /* ─── Backward-compat aliases ────────────────────────────────────────
+       Screens not yet redesigned (Library/BookDetail/Maps/Stats/Import)
+       still reference these older names. Mapped onto the v2 palette so they
+       stay coherent until each screen is redesigned in later phases. */
+    --bg:            var(--paper);
     --brand:         #1C2B3A;
     --brand-mid:     #2C4159;
     --brand-soft:    rgba(28,43,58,0.07);
-    --accent:        #3D6B8E;
-    --accent-soft:   rgba(61,107,142,0.10);
-    --accent-border: rgba(61,107,142,0.20);
-    --warm:          #C4894A;
-    --warm-soft:     rgba(196,137,74,0.12);
-    --text:          #181614;
-    --text-2:        #5C5650;
-    --text-3:        #9C9590;
-    --border:        rgba(24,22,20,0.07);
-    --border-md:     rgba(24,22,20,0.13);
+    --warm:          var(--ember);
+    --warm-soft:     var(--ember-soft);
+    --text:          var(--ink);
+    --text-2:        var(--ink-soft);
+    --text-3:        var(--ink-faint);
+    --border:        var(--hair);
+    --border-md:     var(--hair-md);
+    --canvas-bg:     var(--canvas);
   }
 
   * {
@@ -28,11 +86,12 @@
 
   body {
     margin: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: var(--font-sans);
+    background: var(--paper);
+    color: var(--ink);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   #root {
@@ -41,17 +100,112 @@
   }
 
   ::selection {
-    background: rgba(61,107,142,0.15);
-    color: #1C2B3A;
+    background: rgba(62,107,142,0.15);
+    color: var(--accent-deep);
   }
 
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(28,43,58,0.15);
+    background: rgba(28,26,23,0.16);
     border-radius: 2px;
   }
 }
+
+/* Utility: editorial serif for display / reading moments */
+.font-display { font-family: var(--font-serif); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Shared primitives (Phase 0 foundation)
+   Consumed by src/components/ui/* and src/components/shell/*
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ── App shell + sidebar ─────────────────────────────────────────────── */
+.km-shell { display: flex; height: 100vh; width: 100%; overflow: hidden; background: var(--paper); }
+.km-shell__main { flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden; }
+.km-side { flex: 0 0 246px; height: 100%; display: flex; flex-direction: column; padding: 20px 14px 16px; background: linear-gradient(180deg, var(--nav-bg-top), var(--nav-bg-bot)); border-right: 1px solid var(--nav-edge); }
+.km-side__brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; border-bottom: 1px solid var(--nav-hair); }
+.km-side__mark { width: 28px; height: 28px; border-radius: 8px; background: var(--paper); color: var(--ink); display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 17px; font-weight: 500; line-height: 1; padding-bottom: 1px; }
+.km-side__name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--nav-strong); }
+.km-side__search { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; margin: 14px 0 20px; border-radius: 9px; background: rgba(255,255,255,0.06); cursor: text; border: none; width: 100%; transition: background .16s; }
+.km-side__search:hover { background: rgba(255,255,255,0.09); }
+.km-side__search svg { color: var(--nav-faint); flex: 0 0 auto; }
+.km-side__search span { font-size: 13px; color: var(--nav-faint); flex: 1; text-align: left; }
+.km-side__search kbd { font-family: var(--font-sans); font-size: 11px; color: var(--nav-faint); background: rgba(255,255,255,0.08); border-radius: 4px; padding: 2px 5px; }
+.km-side__label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nav-faint); padding: 0 10px 9px; }
+.km-side__nav { display: flex; flex-direction: column; gap: 2px; margin-bottom: 22px; }
+.km-side__spacer { flex: 1; }
+.km-nav { position: relative; display: flex; align-items: center; gap: 11px; height: 36px; padding: 0 10px; border-radius: 9px; color: var(--nav-text); font-size: 13.5px; font-weight: 500; cursor: pointer; border: none; background: transparent; text-align: left; width: 100%; font-family: var(--font-sans); transition: background .16s, color .16s; }
+.km-nav svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--nav-faint); transition: color .16s; }
+.km-nav__count { margin-left: auto; font-size: 12px; color: var(--nav-faint); font-variant-numeric: tabular-nums; }
+.km-nav:hover { background: var(--nav-hover); color: var(--nav-strong); }
+.km-nav:hover svg { color: var(--nav-text); }
+.km-nav.on { background: var(--nav-active); color: var(--nav-strong); font-weight: 600; }
+.km-nav.on::before { content: ""; position: absolute; left: 3px; top: 50%; transform: translateY(-50%); width: 3px; height: 17px; border-radius: 2px; background: var(--nav-accent); }
+.km-nav.on svg { color: var(--nav-accent); }
+.km-side__import { display: flex; align-items: center; gap: 11px; height: 40px; padding: 14px 10px 0; width: 100%; color: var(--nav-text); font-size: 13.5px; font-weight: 500; cursor: pointer; border: none; background: transparent; text-align: left; border-top: 1px solid var(--nav-hair); margin-top: 6px; font-family: var(--font-sans); transition: color .16s; }
+.km-side__import svg { width: 18px; height: 18px; color: var(--nav-faint); transition: color .16s; }
+.km-side__import:hover { color: var(--nav-strong); }
+.km-side__import:hover svg { color: var(--nav-accent); }
+
+/* ── Button ──────────────────────────────────────────────────────────── */
+.km-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-sans); font-weight: 550; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid transparent; white-space: nowrap; transition: background .16s, border-color .16s, color .16s, opacity .16s; }
+.km-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.km-btn:disabled { opacity: .5; cursor: not-allowed; }
+.km-btn svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.km-btn--sm { height: 32px; padding: 0 12px; font-size: 12.5px; }
+.km-btn--md { height: 38px; padding: 0 16px; font-size: 13.5px; }
+.km-btn--lg { height: 44px; padding: 0 20px; font-size: 14px; border-radius: var(--radius); }
+.km-btn--primary { background: var(--accent); color: #fff; }
+.km-btn--primary:hover:not(:disabled) { background: var(--accent-deep); }
+.km-btn--secondary { background: var(--surface); color: var(--ink); border-color: var(--hair-md); }
+.km-btn--secondary:hover:not(:disabled) { background: var(--surface-2); }
+.km-btn--ghost { background: transparent; color: var(--ink-soft); }
+.km-btn--ghost:hover:not(:disabled) { background: rgba(28,26,23,0.06); color: var(--ink); }
+.km-btn--danger { background: rgba(176,60,40,0.10); color: #B03C28; }
+.km-btn--danger:hover:not(:disabled) { background: rgba(176,60,40,0.16); }
+
+.km-iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--ink-soft); cursor: pointer; transition: background .15s, color .15s; }
+.km-iconbtn svg { width: 16px; height: 16px; }
+.km-iconbtn:hover { background: rgba(28,26,23,0.06); color: var(--ink); }
+.km-iconbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Segmented control ───────────────────────────────────────────────── */
+.km-seg { position: relative; display: inline-flex; padding: 3px; background: rgba(28,26,23,0.06); border-radius: 10px; }
+.km-seg__thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; background: var(--surface); border-radius: 7px; box-shadow: 0 1px 2px rgba(28,26,23,0.14); transition: transform .26s cubic-bezier(.16,1,.3,1); }
+.km-seg__btn { position: relative; z-index: 1; height: 30px; padding: 0 15px; border: none; background: transparent; border-radius: 7px; font-family: var(--font-sans); font-size: 12.5px; font-weight: 550; color: var(--ink-soft); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: color .2s; }
+.km-seg__btn svg { width: 14px; height: 14px; }
+.km-seg__btn.on { color: var(--ink); }
+.km-seg__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Surface / card ──────────────────────────────────────────────────── */
+.km-surface { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--hair); }
+.km-surface--elevated { box-shadow: var(--shadow-md); border-color: transparent; }
+
+/* ── Pill / status ───────────────────────────────────────────────────── */
+.km-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+.km-status { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-soft); }
+.km-status__dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+.km-status__dot--reading { background: var(--accent); }
+.km-status__dot--finished { background: var(--ink-faint); }
+.km-status__dot--want { border: 1px solid var(--ink-faint); }
+
+/* ── Modal / sheet ───────────────────────────────────────────────────── */
+.km-modal__backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(24,22,20,0.40); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.km-modal__panel { width: 100%; max-width: 480px; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; }
+.km-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 0; }
+.km-modal__title { font-family: var(--font-serif); font-size: 20px; font-weight: 500; color: var(--ink); margin: 0; letter-spacing: -0.01em; }
+.km-modal__body { padding: 14px 22px 22px; color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
+.km-modal__foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--hair); }
+
+/* ── Context menu ────────────────────────────────────────────────────── */
+.km-menu { position: fixed; z-index: 80; min-width: 184px; padding: 6px; background: rgba(251,249,244,0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--hair-md); border-radius: var(--radius); box-shadow: var(--shadow-lg); }
+.km-menu__item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: none; background: transparent; border-radius: 8px; font-family: var(--font-sans); font-size: 13px; color: var(--ink); cursor: pointer; text-align: left; }
+.km-menu__item svg { width: 15px; height: 15px; color: currentColor; opacity: .8; }
+.km-menu__item:hover { background: var(--accent-soft); color: var(--accent-deep); }
+.km-menu__item--danger { color: #B03C28; }
+.km-menu__item--danger:hover { background: rgba(176,60,40,0.10); color: #B03C28; }
+.km-menu__sep { height: 1px; background: var(--hair); margin: 5px 2px; }
 
 .react-flow__pane {
   cursor: default;

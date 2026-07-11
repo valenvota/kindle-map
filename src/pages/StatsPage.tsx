@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, BookOpen, Quote, Star, StickyNote, Tag } from 'lucide-react';
+import { BookOpen, Quote, Star, StickyNote, Tag } from 'lucide-react';
 import { db } from '../db/db';
 
 const STATUS_CONFIG = {
@@ -9,9 +9,7 @@ const STATUS_CONFIG = {
   'finished':     { label: 'Finished',      emoji: '✅', barColor: '#3A7A5C' },
 } as const;
 
-type Props = { onBack: () => void };
-
-export function StatsPage({ onBack }: Props) {
+export function StatsPage() {
   const books      = useLiveQuery(() => db.books.toArray(), []);
   const highlights = useLiveQuery(() => db.highlights.toArray(), []);
   const bookNotes  = useLiveQuery(() => db.bookNotes.toArray(), []);
@@ -62,14 +60,6 @@ export function StatsPage({ onBack }: Props) {
         style={{ borderColor: 'var(--border-md)' }}
       >
         <div className="mx-auto flex max-w-3xl items-center gap-4 px-6 py-4">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-50"
-            style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Library
-          </button>
           <h1 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>Reading Stats</h1>
         </div>
       </header>

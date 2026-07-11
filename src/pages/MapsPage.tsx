@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Plus, Map, Trash2, ChevronRight } from 'lucide-react';
+import { Plus, Map, Trash2, ChevronRight } from 'lucide-react';
 import { db } from '../db/db';
 import { createMap, deleteMap } from '../db/mapsRepository';
 import type { KindleMap } from '../types/map';
 
 type Props = {
-  onBack: () => void;
   onOpenMap: (mapId: string) => void;
 };
 
-export function MapsPage({ onBack, onOpenMap }: Props) {
+export function MapsPage({ onOpenMap }: Props) {
   const maps = useLiveQuery(() => db.maps.orderBy('createdAt').toArray(), []);
   const allNodes = useLiveQuery(() => db.canvasNodes.toArray(), []);
 
@@ -31,20 +30,7 @@ export function MapsPage({ onBack, onOpenMap }: Props) {
         style={{ borderColor: 'var(--border-md)' }}
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-              style={{ color: 'var(--text-3)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Library
-            </button>
-            <span style={{ color: 'var(--border-md)' }}>/</span>
-            <h1 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Maps</h1>
-          </div>
+          <h1 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Maps</h1>
 
           <button
             onClick={() => setShowCreate(true)}

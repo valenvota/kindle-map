@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
-  Upload, BookOpen, Search, Map, AlertCircle,
-  Plus, ChevronDown, X, User, BarChart2,
+  Upload, BookOpen, Search, AlertCircle,
+  Plus, ChevronDown, X, User,
 } from 'lucide-react';
 import { db } from '../db/db';
 import { AddBookModal } from '../components/book/AddBookModal';
@@ -22,14 +22,12 @@ type StatusFilter = 'all' | ReadingStatus;
 
 type Props = {
   onImport: () => void;
-  onMapsView?: () => void;
-  onStatsView?: () => void;
   onOpenBook: (bookId: string) => void;
   onOpenSearch?: () => void;
   initialTag?: string | null;
 };
 
-export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onOpenSearch, initialTag }: Props) {
+export function LibraryPage({ onImport, onOpenBook, onOpenSearch, initialTag }: Props) {
   const [showAddBook, setShowAddBook] = useState(false);
   const [query, setQuery] = useState('');
   const [source, setSource]               = useState<SourceFilter>('all');
@@ -121,14 +119,7 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-sm" style={{ borderColor: 'var(--border-md)' }}>
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'var(--brand)' }}>
-              <span className="text-sm font-bold text-white">K</span>
-            </div>
-            <span className="font-semibold" style={{ color: 'var(--text)' }}>KindleMap</span>
-          </div>
-
+        <div className="mx-auto flex max-w-5xl items-center justify-end px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="relative hidden sm:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--text-3)' }} />
@@ -164,28 +155,6 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
               </button>
             )}
 
-            {onStatsView && hasBooks && (
-              <button
-                onClick={onStatsView}
-                className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-50"
-                style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
-              >
-                <BarChart2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Stats</span>
-              </button>
-            )}
-
-            {onMapsView && (
-              <button
-                onClick={onMapsView}
-                className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-50"
-                style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
-              >
-                <Map className="h-4 w-4" />
-                <span className="hidden sm:inline">Maps</span>
-              </button>
-            )}
-
             <button
               onClick={() => setShowAddBook(true)}
               className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-stone-50"
@@ -193,17 +162,6 @@ export function LibraryPage({ onImport, onMapsView, onStatsView, onOpenBook, onO
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Add book</span>
-            </button>
-
-            <button
-              onClick={onImport}
-              className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
-              style={{ background: 'var(--brand)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-mid)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--brand)')}
-            >
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">Import</span>
             </button>
           </div>
         </div>
