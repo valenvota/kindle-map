@@ -1,7 +1,7 @@
 # KindleMap — Redesign Plan & Roadmap
 
 > Continuity doc for the Apple-inspired redesign. Read alongside `DESIGN_SYSTEM.md`.
-> Last updated after Phase 0 (foundation) — commit `a39e4d6`.
+> Last updated after Phase 3 (Maps/canvas) — commit `8f2e795`.
 
 ---
 
@@ -37,17 +37,30 @@ Local mockup source files live in the session scratchpad (not the repo).
   global `AppShell` + dark `Sidebar` (`src/components/shell/`); Library/Maps/Stats wrapped in shell;
   redundant nav removed from those page headers. Canvas + Import stay full-bleed.
 
-- **Phase 1 — Library redesign (NEXT)**
-  Editorial masthead + serif; stat rail; Covers/Cards `SegmentedControl`; single Filter button/popover
-  replacing the chip wall; bookshelf cover grid (2:3 + soft shadow); typographic fallback covers;
-  redesigned Cards reading index (representative highlight per row). Build a shared **Cover** component.
-  Retire the transitional Library header.
+- **Phase 1 — Library redesign ✅ DONE (`86a6c73`; fix pass `fce820c`)**
+  Editorial masthead + serif; stat rail; Covers/Cards `SegmentedControl`; single Filter button/popover;
+  bookshelf cover grid (2:3 + soft shadow); typographic fallback covers; Cards reading index; shared
+  `BookCover` component. Phase 1.1 added `getDisplayTitle` (strips OceanofPDF/dokumen.pub/ISBN/underscores/
+  slugs, display-only) + clamped cover/caption typography so messy imports don't break the shelf.
 
-- **Phase 2 — BookDetail** full-screen workspace (identity rail + Highlights/Notes/Study column, serif highlights, ember marker).
+- **Phase 2 — BookDetail ✅ DONE (`bf7a7a3`)**
+  Full-screen two-column workspace inside AppShell (replaced the drawer). Identity rail (BookCover, serif
+  title, status pill, metadata ledger, tags, Study + Export/Edit). Highlights/Notes/Study segmented control;
+  highlights as editorial pulled quotes with ember marker; Notes = serif writing page; Study preview card.
+  Edit metadata now in a Modal. All prior functionality preserved.
 
-- **Phase 3 — Maps / canvas** desk background, paper nodes (BookNode cover + card modes), glass tool rail, contextual toolbar, native context menu. Canvas gets the shell (auto-collapsed).
+- **Phase 3 — Maps / canvas ✅ DONE (`8f2e795`)**
+  Reading-desk background; BookNode rebuilt as a paper cover (reuses BookCover); glass top toolbar + left
+  tool rail; `km-menu` context menu. Canvas now renders **inside AppShell** (dark sidebar, active=maps) per
+  the approved mockup — full sidebar, NOT collapsed. Fixed the canvas→book→back viewport reset via a
+  module-level per-map viewport cache (restores `defaultViewport` instead of re-running `fitView`).
+  Deferred: per-node Card/Cover toggle (needs a new data field → belongs to roadmap Sprint 2); canvas
+  empty-state still uses old emoji styling (do in Phase 4).
 
-- **Phase 4 — Stats / Import / Settings** align to the system.
+- **Phase 4 — Stats / Import / Settings (NEXT)** align to the system. Includes: restyle StatsPage (still
+  uses emoji + old stone tokens), ImportPage/FileUploader, AddBookModal, canvas empty-state, and a final
+  grep for leftover stone-* / old-token usage. BookEditForm/StudyMode internals also still use the old
+  stone palette — clean here.
 
 ---
 
