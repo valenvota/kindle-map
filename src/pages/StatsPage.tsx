@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { BookOpen, Quote, Star, StickyNote, Tag } from 'lucide-react';
 import { db } from '../db/db';
+import { getDisplayTitle } from '../utils/displayTitle';
 
 const STATUS_CONFIG = {
   'want-to-read': { label: 'Want to read', dot: 'want',     barColor: '#7A6A54' },
@@ -136,7 +137,7 @@ export function StatsPage() {
                         <img src={book.coverImage} alt="" className="h-8 w-6 shrink-0 rounded object-cover" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium" style={{ color: 'var(--text)' }}>{book.title}</p>
+                        <p className="truncate text-sm font-medium" style={{ color: 'var(--text)' }}>{getDisplayTitle(book.title)}</p>
                         {book.author && <p className="truncate text-xs" style={{ color: 'var(--text-3)' }}>{book.author}</p>}
                       </div>
                       <span
