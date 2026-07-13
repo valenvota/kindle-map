@@ -14,6 +14,7 @@ import {
   type Connection,
   type NodeMouseHandler,
   type OnSelectionChangeFunc,
+  type Viewport,
   BackgroundVariant,
 } from '@xyflow/react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -45,6 +46,11 @@ import type { Book } from '../../types/book';
 import type { CanvasNodeData, StrokeTool } from '../../types/canvas';
 
 const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape']);
+
+// Remembers each map's pan/zoom across remounts (e.g. opening a book from the
+// canvas and returning) so the user doesn't lose their place. Module-level so it
+// survives the ReadingCanvas unmount; cleared on full reload.
+const viewportCache = new Map<string, Viewport>();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -149,11 +155,10 @@ function buildReactFlowNode(
 type Props = {
   mapId: string;
   onBack: () => void;    // → Maps list
-  onLibrary: () => void; // → Library
   onOpenBook: (bookId: string) => void;
 };
 
-export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
+export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
   const [drawColor, setDrawColor] = useState('#181614');
   const [drawWidth, setDrawWidth] = useState(3);
@@ -479,6 +484,12 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
     await deleteCanvasNode(nodeId);
   }, [contextMenu, closeContextMenu, setNodes]);
 
+  // ── Remember viewport so returning from a book keeps the user's place ─────
+  const savedViewport = viewportCache.get(mapId);
+  const onMoveEnd = useCallback((_: unknown, vp: Viewport) => {
+    viewportCache.set(mapId, vp);
+  }, [mapId]);
+
   // ── Export map as PNG ─────────────────────────────────────────────────────
   const [exportingImage, setExportingImage] = useState(false);
   const handleExportImage = useCallback(async () => {
@@ -493,11 +504,10 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
 
   return (
     <CanvasToolContext.Provider value={{ activeTool, setActiveTool }}>
-    <div className="relative h-screen w-full bg-stone-50">
+    <div className="km-canvas-desk relative h-full w-full overflow-hidden">
       <CanvasToolbar
         mapName={map?.name ?? '…'}
         onBack={onBack}
-        onLibrary={onLibrary}
         onAutoArrange={handleAutoArrange}
         onExportImage={handleExportImage}
         exportingImage={exportingImage}
@@ -521,9 +531,11 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         onNodeContextMenu={onNodeContextMenu}
         onPaneClick={closeContextMenu}
         onSelectionChange={onSelectionChange}
+        onMoveEnd={onMoveEnd}
         connectionMode={ConnectionMode.Loose}
-        fitView
-        fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+        {...(savedViewport
+          ? { defaultViewport: savedViewport }
+          : { fitView: true, fitViewOptions: { padding: 0.2, maxZoom: 1 } })}
         minZoom={0.1}
         maxZoom={2}
         deleteKeyCode="Backspace"
@@ -538,8 +550,8 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
         <Background
           variant={BackgroundVariant.Dots}
           gap={24}
-          size={1.5}
-          color="#d6d3d1"
+          size={1.4}
+          color="rgba(28,26,23,0.14)"
         />
         <Controls
           position="bottom-right"
@@ -593,21 +605,12 @@ export function ReadingCanvas({ mapId, onBack, onLibrary, onOpenBook }: Props) {
       {contextMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={closeContextMenu} />
-          <div
-            className="fixed z-50 min-w-[160px] overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl"
-            style={{ top: contextMenu.y, left: contextMenu.x }}
-          >
-            <button
-              onClick={handleContextDuplicate}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50"
-            >
+          <div className="km-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
+            <button onClick={handleContextDuplicate} className="km-menu__item">
               <span className="text-base">⧉</span> Duplicar
             </button>
-            <div className="mx-3 border-t border-stone-100" />
-            <button
-              onClick={handleContextDelete}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-            >
+            <div className="km-menu__sep" />
+            <button onClick={handleContextDelete} className="km-menu__item km-menu__item--danger">
               <span className="text-base">🗑</span> Eliminar
             </button>
           </div>

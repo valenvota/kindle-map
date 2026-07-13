@@ -38,13 +38,10 @@ export function CanvasLeftToolbar() {
   const { activeTool, setActiveTool } = useCanvasTool();
 
   return (
-    <div
-      className="absolute left-4 top-1/2 z-20 -translate-y-1/2 flex flex-col items-center gap-1 rounded-2xl border bg-white px-1.5 py-2 shadow-lg"
-      style={{ borderColor: 'var(--border-md)' }}
-    >
+    <div className="km-cvrail km-glass">
       {TOOLS.map((item, i) => {
         if (item.kind === 'separator') {
-          return <div key={i} className="my-1 h-px w-6" style={{ background: 'var(--border-md)' }} />;
+          return <div key={i} className="km-cvrail__sep" />;
         }
         const active = activeTool === item.tool;
         const isDrawTool = item.tool === 'pencil' || item.tool === 'marker' || item.tool === 'eraser';
@@ -53,24 +50,7 @@ export function CanvasLeftToolbar() {
             key={item.tool}
             title={item.label}
             onClick={() => setActiveTool(item.tool)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-            style={active
-              ? isDrawTool
-                ? { background: 'rgba(196,137,74,0.15)', color: '#C4894A' }
-                : { background: 'var(--brand)', color: 'white' }
-              : { color: 'var(--text-3)' }}
-            onMouseEnter={(e) => {
-              if (!active) {
-                e.currentTarget.style.background = 'var(--brand-soft)';
-                e.currentTarget.style.color = 'var(--brand)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!active) {
-                e.currentTarget.style.background = '';
-                e.currentTarget.style.color = 'var(--text-3)';
-              }
-            }}
+            className={`km-cvrail__btn${active ? ` on${isDrawTool ? ' draw' : ''}` : ''}`}
           >
             {item.icon}
           </button>

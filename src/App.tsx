@@ -94,14 +94,15 @@ export default function App() {
     // Full-bleed, outside the shell (first-run / import flow)
     content = <ImportPage onDone={() => setScreen('library')} />;
   } else if (current === 'canvas' && activeMapId) {
-    // Full-bleed canvas, outside the shell (gets its own chrome in Phase 3)
+    // Canvas inside the shell (dark sidebar stays, matching the Maps mockup).
     content = (
-      <ReadingCanvas
-        mapId={activeMapId}
-        onBack={() => setScreen('maps')}
-        onLibrary={() => setScreen('library')}
-        onOpenBook={openBook}
-      />
+      <AppShell active="maps" {...shellProps}>
+        <ReadingCanvas
+          mapId={activeMapId}
+          onBack={() => setScreen('maps')}
+          onOpenBook={openBook}
+        />
+      </AppShell>
     );
   } else if (current === 'stats') {
     content = (
