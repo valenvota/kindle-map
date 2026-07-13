@@ -44,14 +44,14 @@ function QuoteNodeComponent({ data, selected }: NodeProps) {
 
         {/* Quote text */}
         <p
-          className={['line-clamp-5 text-sm leading-relaxed italic', style?.text ? '' : 'text-stone-700'].join(' ')}
+          className={['line-clamp-5 text-sm leading-relaxed italic', style?.text ? '' : 'text-[var(--ink-soft)]'].join(' ')}
           style={{ color: style?.text }}
         >
           {d.content || '(empty quote)'}
         </p>
 
         {/* Source */}
-        <div className="mt-3 border-t border-stone-100 pt-2">
+        <div className="mt-3 border-t border-[var(--hair)] pt-2">
           <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-violet-500">
             {d.bookTitle}
           </p>

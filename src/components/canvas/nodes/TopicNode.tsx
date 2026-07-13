@@ -64,14 +64,14 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
           placeholder="Topic label…"
-          className="nodrag nopan w-full bg-transparent text-center text-sm font-semibold outline-none placeholder:text-stone-300"
+          className="nodrag nopan w-full bg-transparent text-center text-sm font-semibold outline-none placeholder:text-[var(--ink-faint)]"
           style={{ minWidth: 80, color: style?.text }}
         />
       ) : (
         <span
           className={[
             'text-center text-sm font-semibold',
-            text ? (style?.text ? '' : 'text-stone-900') : 'italic text-stone-400',
+            text ? (style?.text ? '' : 'text-[var(--ink)]') : 'italic text-[var(--ink-faint)]',
           ].join(' ')}
           style={{ color: text ? style?.text : undefined }}
         >

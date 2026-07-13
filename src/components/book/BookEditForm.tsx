@@ -17,11 +17,7 @@ const ACCENT_COLORS = [
   '#84cc16', // lime
 ];
 
-const INPUT = [
-  'w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900',
-  'outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10',
-  'placeholder:text-stone-300 bg-white',
-].join(' ');
+const INPUT = 'km-field';
 
 type Props = {
   book: Book;
@@ -119,18 +115,18 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
 
       <Field label="Cover image">
         <div className="flex items-center gap-3">
-          <div className="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
+          <div className="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border" style={{ borderColor: 'var(--hair-md)', background: 'var(--surface-2)' }}>
             {coverImage ? (
               <img src={coverImage} alt="" className="h-full w-full object-cover" />
             ) : (
-              <ImagePlus className="h-5 w-5 text-stone-300" />
+              <ImagePlus className="h-5 w-5" style={{ color: 'var(--ink-faint)' }} />
             )}
           </div>
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50"
+              className="km-btn km-btn--secondary km-btn--sm"
             >
               {coverImage ? 'Replace image' : 'Upload image'}
             </button>
@@ -138,7 +134,8 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
               <button
                 type="button"
                 onClick={handleRemoveCover}
-                className="flex items-center gap-1 text-xs font-medium text-stone-400 hover:text-stone-600"
+                className="flex items-center gap-1 text-xs font-medium transition-colors hover:opacity-70"
+                style={{ color: 'var(--ink-faint)' }}
               >
                 <X className="h-3 w-3" />
                 Remove cover
@@ -191,7 +188,7 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
           className={INPUT}
           placeholder="philosophy, productivity, 2024"
         />
-        <p className="mt-1 text-xs text-stone-400">Comma-separated</p>
+        <p className="mt-1 text-xs" style={{ color: 'var(--ink-faint)' }}>Comma-separated</p>
       </Field>
 
       <Field label="Color">
@@ -204,7 +201,7 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
               onClick={() => setColor(c)}
               className={[
                 'h-7 w-7 rounded-full transition-transform hover:scale-110',
-                color === c ? 'scale-110 ring-2 ring-stone-400 ring-offset-2' : '',
+                color === c ? 'scale-110 ring-2 ring-offset-2 ring-[var(--accent)]' : '',
               ].join(' ')}
               style={{ backgroundColor: c }}
             />
@@ -214,12 +211,13 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
 
       {/* Delete zone */}
       {onDeleted && (
-        <div className="border-t border-stone-100 pt-4">
+        <div className="border-t pt-4" style={{ borderColor: 'var(--hair)' }}>
           {!confirmDelete ? (
             <button
               type="button"
               onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-red-500 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-red-500"
+              style={{ color: 'var(--ink-faint)' }}
             >
               <Trash2 className="h-3.5 w-3.5" />
               Delete this book
@@ -234,7 +232,7 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50"
+                  className="km-btn km-btn--secondary km-btn--sm"
                 >
                   Cancel
                 </button>
@@ -258,20 +256,11 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
       )}
 
       {/* Actions */}
-      <div className="flex gap-2 border-t border-stone-100 pt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 rounded-xl border border-stone-200 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
-        >
+      <div className="flex gap-2 border-t pt-4" style={{ borderColor: 'var(--hair)' }}>
+        <button type="button" onClick={onClose} className="km-btn km-btn--secondary km-btn--md flex-1">
           Cancel
         </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="flex-1 rounded-xl bg-[#1C2B3A] py-2 text-sm font-medium text-white hover:bg-[#2C4159] disabled:opacity-50"
-        >
+        <button type="button" onClick={handleSave} disabled={saving} className="km-btn km-btn--primary km-btn--md flex-1">
           {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
@@ -282,9 +271,7 @@ export function BookEditForm({ book, onClose, onDeleted }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold uppercase tracking-wide text-stone-400">
-        {label}
-      </label>
+      <label className="km-label">{label}</label>
       {children}
     </div>
   );

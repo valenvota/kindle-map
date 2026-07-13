@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
+import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square } from 'lucide-react';
 import { exportMapAsPng } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -573,20 +574,27 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
       {nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-stone-200 bg-white shadow-sm">
-              <span className="text-2xl">🗺️</span>
+            <div
+              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-sm"
+              style={{ borderColor: 'var(--hair-md)', background: 'var(--surface)' }}
+            >
+              <MapIcon className="h-6 w-6" style={{ color: 'var(--ink-faint)' }} />
             </div>
-            <p className="text-base font-semibold text-stone-500">This map is empty</p>
-            <p className="mt-1.5 text-sm text-stone-400">
+            <p className="font-display text-base font-medium" style={{ color: 'var(--ink-soft)' }}>This map is empty</p>
+            <p className="mt-1.5 text-sm" style={{ color: 'var(--ink-faint)' }}>
               Use the toolbar on the left to add books,
             </p>
-            <p className="text-sm text-stone-400">topics, notes, quotes, or shapes.</p>
-            <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-stone-300">
-              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">📖</span>
-              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">🏷️</span>
-              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">📝</span>
-              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">💬</span>
-              <span className="rounded-md border border-stone-200 bg-white px-2 py-0.5 font-medium text-stone-400">⬜</span>
+            <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>topics, notes, quotes, or shapes.</p>
+            <div className="mt-4 flex items-center justify-center gap-1.5" style={{ color: 'var(--ink-faint)' }}>
+              {[BookOpen, Tag, StickyNote, Quote, Square].map((Icon, i) => (
+                <span
+                  key={i}
+                  className="flex h-7 w-7 items-center justify-center rounded-md border"
+                  style={{ borderColor: 'var(--hair-md)', background: 'var(--surface)' }}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -622,8 +630,8 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         <>
           <div className="fixed inset-0 z-40" onClick={saveLabelEdit} />
           <div className="absolute left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2">
-            <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-2xl">
-              <p className="mb-2 text-xs font-medium text-stone-400">Etiqueta de flecha</p>
+            <div className="rounded-2xl border px-4 py-3 shadow-2xl" style={{ borderColor: 'var(--hair-md)', background: 'var(--surface)' }}>
+              <p className="mb-2 text-xs font-medium" style={{ color: 'var(--ink-faint)' }}>Etiqueta de flecha</p>
               <input
                 autoFocus
                 value={editingLabelText}
@@ -633,11 +641,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
                   if (e.key === 'Escape') setEditingLabelEdgeId(null);
                 }}
                 placeholder="ej. influye en, contradice…"
-                className="w-64 rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
+                className="km-field w-64"
               />
               <div className="mt-2 flex justify-end gap-2">
-                <button onClick={() => setEditingLabelEdgeId(null)} className="rounded-lg px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-100">Cancelar</button>
-                <button onClick={saveLabelEdit} className="rounded-lg bg-[#1C2B3A] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2C4159]">Guardar</button>
+                <button onClick={() => setEditingLabelEdgeId(null)} className="km-btn km-btn--ghost km-btn--sm">Cancelar</button>
+                <button onClick={saveLabelEdit} className="km-btn km-btn--primary km-btn--sm">Guardar</button>
               </div>
             </div>
           </div>
@@ -693,8 +701,8 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
       {/* Direction toolbar for selected edge */}
       {selectedEdgeId && (
         <div className="pointer-events-auto absolute bottom-20 left-1/2 z-30 -translate-x-1/2">
-          <div className="flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-2 py-1.5 shadow-lg">
-            <span className="mr-1.5 text-xs font-medium text-stone-400">Flecha</span>
+          <div className="km-glass flex items-center gap-1 rounded-xl px-2 py-1.5 shadow-lg">
+            <span className="mr-1.5 text-xs font-medium" style={{ color: 'var(--ink-faint)' }}>Flecha</span>
             {([
               { dir: 'forward',  label: '→',  title: 'Adelante' },
               { dir: 'backward', label: '←',  title: 'Atrás' },
@@ -715,8 +723,8 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
                   className={[
                     'rounded-lg px-3 py-1 text-sm font-bold transition-colors',
                     isActive
-                      ? 'bg-[#3D6B8E]/15 text-[#3D6B8E]'
-                      : 'text-stone-600 hover:bg-stone-100',
+                      ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                      : 'text-[var(--ink-soft)] hover:bg-[var(--surface-2)]',
                   ].join(' ')}
                 >
                   {label}

@@ -170,7 +170,7 @@ function MapCard({
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="flex-1 rounded-lg border py-1.5 text-xs font-medium transition-colors hover:bg-stone-50"
+              className="flex-1 rounded-lg border py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface-2)]"
               style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
             >
               Cancel
@@ -222,7 +222,7 @@ function CreateMapModal({
         className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 shadow-2xl" style={{ background: 'var(--surface)' }}>
         <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>New map</h2>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-2)' }}>
           Give your map a name. You can always rename it later.
@@ -243,7 +243,7 @@ function CreateMapModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors hover:bg-stone-50"
+              className="flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"
               style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
             >
               Cancel

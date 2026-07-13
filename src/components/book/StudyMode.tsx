@@ -89,18 +89,18 @@ export function StudyMode({ book, highlights, onClose }: Props) {
   const isLast = index === deck.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-stone-950/97 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[rgba(20,18,16,0.97)] backdrop-blur-sm">
       {/* Top bar */}
-      <div className="flex shrink-0 items-center justify-between border-b border-stone-800 px-6 py-4">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-4">
         <div className="flex items-center gap-2 min-w-0">
-          <BookOpen className="h-4 w-4 shrink-0 text-[#C4894A]" />
-          <span className="truncate text-sm font-medium text-stone-300">{book.title}</span>
+          <BookOpen className="h-4 w-4 shrink-0 text-[var(--ember)]" />
+          <span className="truncate text-sm font-medium text-white/70">{book.title}</span>
         </div>
         <div className="flex items-center gap-4 shrink-0 ml-4">
-          <span className="text-sm font-semibold tabular-nums text-stone-400">{progress}</span>
+          <span className="text-sm font-semibold tabular-nums text-white/55">{progress}</span>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-stone-500 transition-colors hover:bg-stone-800 hover:text-stone-200"
+            className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white/85"
           >
             <X className="h-5 w-5" />
           </button>
@@ -115,17 +115,17 @@ export function StudyMode({ book, highlights, onClose }: Props) {
             className={[
               'rounded-2xl border p-8 shadow-2xl transition-colors',
               important
-                ? 'border-[#C4894A]/40 bg-[#C4894A]/10'
-                : 'border-stone-800 bg-stone-900',
+                ? 'border-[rgba(176,106,79,0.40)] bg-[rgba(176,106,79,0.10)]'
+                : 'border-white/10 bg-white/[0.04]',
             ].join(' ')}
           >
-            <p className="text-xl font-serif leading-relaxed text-stone-100">
+            <p className="text-xl font-serif leading-relaxed text-[#F3F0E9]">
               "{currentHighlight.text}"
             </p>
 
             {/* Metadata */}
             <div className="mt-5 flex items-center justify-between">
-              <div className="flex gap-3 text-xs text-stone-600">
+              <div className="flex gap-3 text-xs text-white/40">
                 {currentHighlight.location && <span>Location {currentHighlight.location}</span>}
                 {currentHighlight.page && <span>Page {currentHighlight.page}</span>}
               </div>
@@ -136,8 +136,8 @@ export function StudyMode({ book, highlights, onClose }: Props) {
                 className={[
                   'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
                   important
-                    ? 'bg-[#C4894A]/20 text-[#C4894A] hover:bg-[#C4894A]/30'
-                    : 'text-stone-600 hover:bg-stone-800 hover:text-[#C4894A]',
+                    ? 'bg-[rgba(176,106,79,0.20)] text-[var(--ember)] hover:bg-[rgba(176,106,79,0.30)]'
+                    : 'text-white/45 hover:bg-white/10 hover:text-[var(--ember)]',
                 ].join(' ')}
               >
                 <Star
@@ -151,7 +151,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
 
           {/* Reflection textarea */}
           <div className="mt-6">
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-stone-600">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/45">
               Your reflection
             </label>
             <textarea
@@ -160,16 +160,16 @@ export function StudyMode({ book, highlights, onClose }: Props) {
               placeholder="Write a question, thought, or connection…"
               rows={4}
               className={[
-                'w-full resize-none rounded-xl border bg-stone-900 px-4 py-3',
-                'text-sm leading-relaxed text-stone-200 outline-none',
-                'placeholder:text-stone-700',
+                'w-full resize-none rounded-xl border bg-white/[0.04] px-4 py-3',
+                'text-sm leading-relaxed text-white/85 outline-none',
+                'placeholder:text-white/30',
                 'focus:border-[#3D6B8E]/60 focus:ring-1 focus:ring-[#3D6B8E]/40',
-                'border-stone-800 transition-colors',
+                'border-white/10 transition-colors',
               ].join(' ')}
             />
             <p className={[
               'mt-1 text-right text-xs transition-opacity',
-              saved && noteText.trim() ? 'text-stone-600 opacity-100' : 'opacity-0',
+              saved && noteText.trim() ? 'text-white/45 opacity-100' : 'opacity-0',
             ].join(' ')}>
               Saved
             </p>
@@ -180,7 +180,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
             <button
               onClick={goPrev}
               disabled={isFirst}
-              className="flex items-center gap-1.5 rounded-xl border border-stone-800 px-5 py-2.5 text-sm font-medium text-stone-400 transition-colors hover:border-stone-700 hover:text-stone-200 disabled:pointer-events-none disabled:opacity-30"
+              className="flex items-center gap-1.5 rounded-xl border border-white/10 px-5 py-2.5 text-sm font-medium text-white/55 transition-colors hover:border-white/20 hover:text-white/85 disabled:pointer-events-none disabled:opacity-30"
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
@@ -197,8 +197,8 @@ export function StudyMode({ book, highlights, onClose }: Props) {
                     className={[
                       'rounded-full transition-all',
                       absIdx === index
-                        ? 'h-2.5 w-2.5 bg-[#C4894A]'
-                        : 'h-1.5 w-1.5 bg-stone-700 hover:bg-stone-500',
+                        ? 'h-2.5 w-2.5 bg-[var(--ember)]'
+                        : 'h-1.5 w-1.5 bg-white/25 hover:bg-white/45',
                     ].join(' ')}
                   />
                 );
@@ -210,8 +210,8 @@ export function StudyMode({ book, highlights, onClose }: Props) {
               className={[
                 'flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-medium transition-colors',
                 isLast
-                  ? 'bg-[#C4894A] text-stone-950 hover:bg-[#d19a5e]'
-                  : 'border border-stone-800 text-stone-400 hover:border-stone-700 hover:text-stone-200',
+                  ? 'bg-[var(--ember)] text-white hover:bg-[#C27E63]'
+                  : 'border border-white/10 text-white/55 hover:border-white/20 hover:text-white/85',
               ].join(' ')}
             >
               {isLast ? 'Finish' : 'Next'}
@@ -220,7 +220,7 @@ export function StudyMode({ book, highlights, onClose }: Props) {
           </div>
 
           {/* Keyboard hint */}
-          <p className="mt-8 text-center text-xs text-stone-700">
+          <p className="mt-8 text-center text-xs text-white/30">
             ← → to navigate · Esc to close
           </p>
         </div>

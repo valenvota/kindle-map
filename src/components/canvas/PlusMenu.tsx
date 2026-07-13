@@ -102,7 +102,7 @@ function AddTopicModal({ mapId, position, onClose }: { mapId: string; position: 
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Topic label…"
-          className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
+          className="km-field"
         />
         <ModalActions onClose={onClose} submitLabel="Add to map" disabled={!label.trim() || saving} />
       </form>
@@ -139,7 +139,7 @@ function AddNoteModal({ mapId, position, onClose }: { mapId: string; position: {
           onChange={(e) => setText(e.target.value)}
           placeholder="Write your note…"
           rows={4}
-          className="w-full resize-none rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
+          className="km-field resize-none"
         />
         <ModalActions onClose={onClose} submitLabel="Add to map" disabled={!text.trim() || saving} />
       </form>
@@ -153,8 +153,8 @@ function SimpleModal({ title, children, onClose }: { title: string; children: Re
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl">
-        <h2 className="mb-4 text-base font-semibold text-stone-900">{title}</h2>
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 shadow-2xl" style={{ background: 'var(--surface)' }}>
+        <h2 className="mb-4 text-base font-semibold" style={{ color: 'var(--ink)' }}>{title}</h2>
         {children}
       </div>
     </>
@@ -164,18 +164,10 @@ function SimpleModal({ title, children, onClose }: { title: string; children: Re
 function ModalActions({ onClose, submitLabel, disabled }: { onClose: () => void; submitLabel: string; disabled?: boolean }) {
   return (
     <div className="flex gap-2">
-      <button
-        type="button"
-        onClick={onClose}
-        className="flex-1 rounded-xl border border-stone-200 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
-      >
+      <button type="button" onClick={onClose} className="km-btn km-btn--secondary km-btn--md flex-1">
         Cancel
       </button>
-      <button
-        type="submit"
-        disabled={disabled}
-        className="flex-1 rounded-xl bg-stone-900 py-2.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-40"
-      >
+      <button type="submit" disabled={disabled} className="km-btn km-btn--primary km-btn--md flex-1">
         {submitLabel}
       </button>
     </div>

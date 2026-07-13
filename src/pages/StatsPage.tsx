@@ -4,9 +4,9 @@ import { BookOpen, Quote, Star, StickyNote, Tag } from 'lucide-react';
 import { db } from '../db/db';
 
 const STATUS_CONFIG = {
-  'want-to-read': { label: 'Want to read', emoji: '📚', barColor: '#7A6A54' },
-  'reading':      { label: 'Reading',       emoji: '📖', barColor: '#3D6B8E' },
-  'finished':     { label: 'Finished',      emoji: '✅', barColor: '#3A7A5C' },
+  'want-to-read': { label: 'Want to read', dot: 'want',     barColor: '#7A6A54' },
+  'reading':      { label: 'Reading',      dot: 'reading',  barColor: '#3D6B8E' },
+  'finished':     { label: 'Finished',     dot: 'finished', barColor: '#3A7A5C' },
 } as const;
 
 export function StatsPage() {
@@ -54,17 +54,12 @@ export function StatsPage() {
   }, [books, highlights, bookNotes]);
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <header
-        className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-sm"
-        style={{ borderColor: 'var(--border-md)' }}
-      >
-        <div className="mx-auto flex max-w-3xl items-center gap-4 px-6 py-4">
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>Reading Stats</h1>
-        </div>
+    <div className="lib-inner">
+      <header className="lib-masthead">
+        <h1 className="lib-h1">Reading Stats</h1>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-8">
+      <main className="mx-auto max-w-3xl pb-8">
         {!stats ? (
           <div className="py-20 text-center text-sm" style={{ color: 'var(--text-3)' }}>Loading…</div>
         ) : (
@@ -99,7 +94,7 @@ export function StatsPage() {
                   return (
                     <div key={key}>
                       <div className="mb-1.5 flex items-center justify-between text-sm">
-                        <span className="font-medium" style={{ color: 'var(--text)' }}>{cfg.emoji} {cfg.label}</span>
+                        <span className="flex items-center gap-2 font-medium" style={{ color: 'var(--text)' }}><span className={`lib-dot lib-dot--${cfg.dot}`} />{cfg.label}</span>
                         <span style={{ color: 'var(--text-3)' }}>{count} book{count !== 1 ? 's' : ''} · {pct}%</span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--surface-2)' }}>
@@ -190,8 +185,8 @@ export function StatsPage() {
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
   return (
     <div
-      className="flex flex-col gap-1.5 rounded-xl border bg-white px-5 py-4 shadow-sm"
-      style={{ borderColor: 'var(--border-md)' }}
+      className="flex flex-col gap-1.5 rounded-xl border px-5 py-4 shadow-sm"
+      style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
     >
       <div className="flex items-center gap-1.5">
         {icon}
@@ -214,8 +209,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         {title}
       </h2>
       <div
-        className="rounded-xl border bg-white px-5 py-4 shadow-sm"
-        style={{ borderColor: 'var(--border-md)' }}
+        className="rounded-xl border px-5 py-4 shadow-sm"
+        style={{ borderColor: 'var(--border-md)', background: 'var(--surface)' }}
       >
         {children}
       </div>

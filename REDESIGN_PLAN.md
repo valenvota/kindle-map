@@ -1,7 +1,7 @@
 # KindleMap — Redesign Plan & Roadmap
 
 > Continuity doc for the Apple-inspired redesign. Read alongside `DESIGN_SYSTEM.md`.
-> Last updated after Phase 3 (Maps/canvas) — commit `8f2e795`.
+> Last updated after Phase 4 (final token cleanup) — redesign phases 0–4 COMPLETE.
 
 ---
 
@@ -57,10 +57,17 @@ Local mockup source files live in the session scratchpad (not the repo).
   Deferred: per-node Card/Cover toggle (needs a new data field → belongs to roadmap Sprint 2); canvas
   empty-state still uses old emoji styling (do in Phase 4).
 
-- **Phase 4 — Stats / Import / Settings (NEXT)** align to the system. Includes: restyle StatsPage (still
-  uses emoji + old stone tokens), ImportPage/FileUploader, AddBookModal, canvas empty-state, and a final
-  grep for leftover stone-* / old-token usage. BookEditForm/StudyMode internals also still use the old
-  stone palette — clean here.
+- **Phase 4 — Final token cleanup ✅ DONE** Added shared `.km-field` / `.km-label` form primitives to
+  `index.css` (Tailwind v4 here has no semantic color utilities, so `stone-*` classes were converted to
+  `var()` tokens inline / via `.km-btn`/`.km-field`). Migrated 17 files: StatsPage (editorial masthead,
+  status emoji → `lib-dot`), BookEditForm, both AddBookModals, AddQuoteModal, PlusMenu, NodeStyleToolbar,
+  LabeledEdge, the Topic/Note/Quote/Shape nodes, ReadingCanvas (empty-state emoji → lucide icons; label +
+  arrow toolbars), CommandPalette, ImportSummary, CoverSuggestionFlow, MapsPage. StudyMode's dark room was
+  migrated to a white-alpha scale with `var(--ember)` as the accent (was amber `#C4894A`). Result: **0**
+  `stone-*` usages left in the UI (from 158); `tsc -b` + `vite build` green.
+  Left intentionally: the 3 emoji in `utils/exportMarkdown.ts` write into exported `.md` files (not UI) and
+  belong to the Export sprint. Deep visual verification of data-bearing surfaces (Stats/modals/StudyMode/
+  canvas) is still pending — the dev DB was empty; seed books next run to confirm before declaring 100%.
 
 ---
 

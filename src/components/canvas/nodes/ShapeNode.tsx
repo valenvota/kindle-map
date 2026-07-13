@@ -24,7 +24,7 @@ function ShapeNodeComponent({ id, data, selected }: NodeProps) {
         d.shapeKind === 'circle' ? 'rounded-full' : 'rounded-lg',
         selected
           ? 'border-[#3D6B8E] ring-2 ring-[#3D6B8E]/30'
-          : 'border-stone-400',
+          : 'border-[var(--hair-md)]',
       ].join(' ')}
       style={{
         backgroundColor: style?.background ?? 'rgba(120, 113, 108, 0.08)',

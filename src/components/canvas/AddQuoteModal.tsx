@@ -66,31 +66,25 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
 
       {/* Panel */}
       <div
-        className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl bg-white shadow-2xl"
-        style={{ maxHeight: '80vh' }}
+        className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl shadow-2xl"
+        style={{ maxHeight: '80vh', background: 'var(--surface)' }}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 border-b border-stone-100 px-5 py-4">
+        <div className="flex items-center gap-2 border-b px-5 py-4" style={{ borderColor: 'var(--hair)' }}>
           {step === 'highlight' && (
-            <button
-              onClick={() => setStep('book')}
-              className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
-            >
+            <button onClick={() => setStep('book')} className="km-iconbtn h-8 w-8">
               <ArrowLeft className="h-4 w-4" />
             </button>
           )}
           <div className="flex-1">
-            <h2 className="text-base font-semibold text-stone-900">
+            <h2 className="text-base font-semibold" style={{ color: 'var(--ink)' }}>
               {step === 'book' ? 'Add Quote — pick a book' : 'Pick a highlight'}
             </h2>
             {step === 'highlight' && selectedBook && (
-              <p className="truncate text-xs text-stone-500">{selectedBook.title}</p>
+              <p className="truncate text-xs" style={{ color: 'var(--ink-faint)' }}>{selectedBook.title}</p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
-          >
+          <button onClick={onClose} className="km-iconbtn h-8 w-8">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -98,22 +92,22 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
         {/* Step 1 — Book picker */}
         {step === 'book' && (
           <>
-            <div className="border-b border-stone-100 px-5 py-3">
+            <div className="border-b px-5 py-3" style={{ borderColor: 'var(--hair)' }}>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--ink-faint)' }} />
                 <input
                   autoFocus
                   type="text"
                   placeholder="Search books…"
                   value={bookQuery}
                   onChange={(e) => setBookQuery(e.target.value)}
-                  className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
+                  className="km-field pl-9"
                 />
               </div>
             </div>
             <div className="flex-1 overflow-y-auto py-2">
               {!filteredBooks || filteredBooks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-stone-400">
+                <div className="flex flex-col items-center justify-center py-10" style={{ color: 'var(--ink-faint)' }}>
                   <BookOpen className="mb-2 h-8 w-8 opacity-40" />
                   <p className="text-sm">No books found</p>
                 </div>
@@ -122,19 +116,19 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
                   <button
                     key={book.id}
                     onClick={() => handleSelectBook(book)}
-                    className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-stone-50"
+                    className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-[var(--surface-2)]"
                   >
                     <div
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: book.color ?? '#3D6B8E' }}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-stone-900">{book.title}</p>
+                      <p className="truncate text-sm font-medium" style={{ color: 'var(--ink)' }}>{book.title}</p>
                       {book.author && (
-                        <p className="truncate text-xs text-stone-500">{book.author}</p>
+                        <p className="truncate text-xs" style={{ color: 'var(--ink-faint)' }}>{book.author}</p>
                       )}
                     </div>
-                    <span className="shrink-0 text-xs text-stone-400">
+                    <span className="shrink-0 text-xs" style={{ color: 'var(--ink-faint)' }}>
                       {book.totalHighlights} highlights
                     </span>
                   </button>
@@ -147,22 +141,22 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
         {/* Step 2 — Highlight picker */}
         {step === 'highlight' && (
           <>
-            <div className="border-b border-stone-100 px-5 py-3">
+            <div className="border-b px-5 py-3" style={{ borderColor: 'var(--hair)' }}>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--ink-faint)' }} />
                 <input
                   autoFocus
                   type="text"
                   placeholder="Search highlights…"
                   value={hlQuery}
                   onChange={(e) => setHlQuery(e.target.value)}
-                  className="w-full rounded-lg border border-stone-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-[#3D6B8E] focus:ring-2 focus:ring-[#3D6B8E]/10"
+                  className="km-field pl-9"
                 />
               </div>
             </div>
             <div className="flex-1 overflow-y-auto py-2">
               {filteredHighlights.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-stone-400">
+                <div className="flex flex-col items-center justify-center py-10" style={{ color: 'var(--ink-faint)' }}>
                   <Quote className="mb-2 h-8 w-8 opacity-40" />
                   <p className="text-sm">
                     {hlQuery ? `No highlights match "${hlQuery}"` : 'No highlights in this book'}
@@ -174,10 +168,10 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
                     key={h.id}
                     onClick={() => handleAddQuote(h)}
                     disabled={adding}
-                    className="flex w-full items-start gap-3 border-b border-stone-50 px-5 py-3 text-left last:border-0 hover:bg-stone-50 disabled:opacity-50"
+                    className="flex w-full items-start gap-3 border-b border-[var(--hair-soft)] px-5 py-3 text-left last:border-0 hover:bg-[var(--surface-2)] disabled:opacity-50"
                   >
-                    <Quote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" />
-                    <p className="line-clamp-3 text-sm leading-relaxed text-stone-700 italic">
+                    <Quote className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: 'var(--ember)' }} />
+                    <p className="line-clamp-3 text-sm leading-relaxed italic" style={{ color: 'var(--ink-soft)' }}>
                       {h.text}
                     </p>
                   </button>

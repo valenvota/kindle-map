@@ -46,14 +46,14 @@ function LabeledEdgeComponent({
             <span
               className={[
                 'inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                'bg-white text-stone-700 shadow-sm',
-                selected ? 'border-[#3D6B8E]' : 'border-stone-200',
+                'bg-[var(--surface)] text-[var(--ink-soft)] shadow-sm',
+                selected ? 'border-[var(--accent)]' : 'border-[var(--hair-md)]',
               ].join(' ')}
             >
               {label}
             </span>
           ) : selected ? (
-            <span className="inline-block rounded-full border border-dashed border-stone-300 px-2.5 py-0.5 text-[10px] text-stone-400 bg-white/80">
+            <span className="inline-block rounded-full border border-dashed border-[var(--hair-md)] px-2.5 py-0.5 text-[10px] text-[var(--ink-faint)] bg-[var(--surface)]/80">
               doble click para etiquetar
             </span>
           ) : null}

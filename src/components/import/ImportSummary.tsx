@@ -13,7 +13,7 @@ export function ImportSummary({ state, onDone, onReset }: Props) {
 
   if (state.status === 'parsing' || state.status === 'saving') {
     return (
-      <div className="flex flex-col items-center gap-3 py-8 text-stone-600">
+      <div className="flex flex-col items-center gap-3 py-8" style={{ color: 'var(--ink-soft)' }}>
         <Loader2 className="h-8 w-8 animate-spin text-[#3D6B8E]" />
         <p className="text-sm font-medium">
           {state.status === 'parsing' ? 'Parsing your highlights…' : 'Saving to library…'}
@@ -55,7 +55,7 @@ export function ImportSummary({ state, onDone, onReset }: Props) {
       </div>
 
       {stats.skippedBlocks > 0 && (
-        <p className="mt-3 text-xs text-stone-500">
+        <p className="mt-3 text-xs" style={{ color: 'var(--ink-faint)' }}>
           {stats.skippedBlocks} blocks skipped (empty or malformed)
         </p>
       )}
@@ -65,16 +65,10 @@ export function ImportSummary({ state, onDone, onReset }: Props) {
       )}
 
       <div className="mt-5 flex gap-3">
-        <button
-          onClick={onDone}
-          className="flex-1 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
-        >
+        <button onClick={onDone} className="km-btn km-btn--primary km-btn--md flex-1">
           View my library
         </button>
-        <button
-          onClick={onReset}
-          className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
-        >
+        <button onClick={onReset} className="km-btn km-btn--secondary km-btn--md">
           Import another
         </button>
       </div>
@@ -84,9 +78,9 @@ export function ImportSummary({ state, onDone, onReset }: Props) {
 
 function StatCard({ label, total, new_ }: { label: string; total: number; new_: number }) {
   return (
-    <div className="rounded-lg bg-white px-4 py-3 shadow-sm">
-      <p className="text-2xl font-semibold text-stone-900">{total}</p>
-      <p className="text-sm text-stone-500">{label}</p>
+    <div className="rounded-lg px-4 py-3 shadow-sm" style={{ background: 'var(--surface)' }}>
+      <p className="text-2xl font-semibold" style={{ color: 'var(--ink)' }}>{total}</p>
+      <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>{label}</p>
       {new_ > 0 && (
         <p className="text-xs text-green-600 font-medium">+{new_} new</p>
       )}

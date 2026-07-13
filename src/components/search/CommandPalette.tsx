@@ -240,33 +240,35 @@ export function CommandPalette({ open, onClose, onOpenBook, onOpenMap, onOpenTag
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -12, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-        className="fixed left-1/2 top-[12vh] z-[60] w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="fixed left-1/2 top-[12vh] z-[60] w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl shadow-2xl"
+        style={{ background: 'var(--surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 border-b border-stone-100 px-4 py-3">
-          <Search className="h-4 w-4 shrink-0 text-stone-400" />
+        <div className="flex items-center gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--hair)' }}>
+          <Search className="h-4 w-4 shrink-0" style={{ color: 'var(--ink-faint)' }} />
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search books, highlights, maps, tags…"
-            className="w-full bg-transparent text-sm outline-none placeholder:text-stone-400"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--ink-faint)]"
+            style={{ color: 'var(--ink)' }}
           />
-          <kbd className="hidden shrink-0 rounded border border-stone-200 px-1.5 py-0.5 text-[10px] font-medium text-stone-400 sm:inline-block">
+          <kbd className="hidden shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink-faint)] sm:inline-block" style={{ borderColor: 'var(--hair-md)' }}>
             Esc
           </kbd>
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto p-2">
           {!hasQuery && (
-            <div className="px-4 py-10 text-center text-sm text-stone-400">
+            <div className="px-4 py-10 text-center text-sm" style={{ color: 'var(--ink-faint)' }}>
               Start typing to search your library, highlights, maps, and tags.
             </div>
           )}
 
           {hasQuery && !hasResults && (
-            <div className="px-4 py-10 text-center text-sm text-stone-400">
+            <div className="px-4 py-10 text-center text-sm" style={{ color: 'var(--ink-faint)' }}>
               No results for "{query}"
             </div>
           )}
@@ -276,7 +278,7 @@ export function CommandPalette({ open, onClose, onOpenBook, onOpenMap, onOpenTag
             if (items.length === 0) return null;
             return (
               <div key={type} className="mb-1">
-                <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">
+                <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
                   {GROUP_LABELS[type]}
                 </p>
                 {items.map((r) => {
@@ -289,14 +291,14 @@ export function CommandPalette({ open, onClose, onOpenBook, onOpenMap, onOpenTag
                       onMouseEnter={() => setActiveIndex(idx)}
                       className={[
                         'flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left transition-colors',
-                        idx === activeIndex ? 'bg-[#3D6B8E]/10' : 'hover:bg-stone-50',
+                        idx === activeIndex ? 'bg-[var(--accent-soft)]' : 'hover:bg-[var(--surface-2)]',
                       ].join(' ')}
                     >
-                      <span className="mt-0.5 shrink-0 text-stone-400">{GROUP_ICONS[r.type]}</span>
+                      <span className="mt-0.5 shrink-0 text-[var(--ink-faint)]">{GROUP_ICONS[r.type]}</span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-stone-800">{r.title}</span>
+                        <span className="block truncate text-sm text-[var(--ink)]">{r.title}</span>
                         {r.subtitle && (
-                          <span className="block truncate text-xs text-stone-400">{r.subtitle}</span>
+                          <span className="block truncate text-xs text-[var(--ink-faint)]">{r.subtitle}</span>
                         )}
                       </span>
                     </button>

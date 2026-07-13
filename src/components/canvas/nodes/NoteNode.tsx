@@ -73,14 +73,14 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
             onKeyDown={handleKeyDown}
             placeholder="Write your note…"
             rows={4}
-            className="nodrag nopan w-full resize-none bg-transparent text-sm outline-none placeholder:text-stone-400"
+            className="nodrag nopan w-full resize-none bg-transparent text-sm outline-none placeholder:text-[var(--ink-faint)]"
             style={{ color: style?.text }}
           />
         ) : (
           <p
             className={[
               'min-h-[60px] whitespace-pre-wrap text-sm leading-relaxed',
-              text ? (style?.text ? '' : 'text-stone-800') : 'italic text-stone-400',
+              text ? (style?.text ? '' : 'text-[var(--ink-soft)]') : 'italic text-[var(--ink-faint)]',
             ].join(' ')}
             style={{ color: text ? style?.text : undefined }}
           >
