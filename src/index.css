@@ -450,6 +450,11 @@
 .km-booknode__hint { margin-top: 4px; text-align: center; font-size: 9.5px; color: var(--ink-faint); opacity: 0; transition: opacity .15s; }
 .km-booknode:hover .km-booknode__hint { opacity: 1; }
 
+/* Cover mode — a visual book object, not a metadata card. Same node width so
+   positions never shift; only a quieter, centered title-only caption. */
+.km-booknode--cover .km-booknode__cap { margin-top: 8px; align-items: center; text-align: center; }
+.km-booknode--cover .km-booknode__cap-t { font-size: 11px; font-weight: 500; color: var(--ink-soft); -webkit-line-clamp: 2; }
+
 /* Glass floating chrome shared by top toolbar + left rail */
 .km-glass { background: rgba(251,249,244,0.86); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid var(--hair); box-shadow: var(--shadow-lg); }
 

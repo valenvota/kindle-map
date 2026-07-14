@@ -6,17 +6,20 @@ import type { Book } from '../../types/book';
 
 export type BookNodeData = {
   book: Book;
+  /** 'card' = metadata-rich; 'cover' = visual book object with a title-only caption. */
+  displayMode: 'card' | 'cover';
 };
 
 /** Paper cover node — a book on the map desk, same visual language as the Library shelf. */
 function BookNodeComponent({ data, selected }: NodeProps) {
-  const { book } = data as BookNodeData;
+  const { book, displayMode } = data as BookNodeData;
   const title = getDisplayTitle(book.title);
   const dot = book.readingStatus === 'reading' ? 'reading' : book.readingStatus === 'finished' ? 'finished' : null;
+  const isCover = displayMode === 'cover';
 
   return (
     <div
-      className={`km-booknode group${selected ? ' selected' : ''}`}
+      className={`km-booknode group${isCover ? ' km-booknode--cover' : ''}${selected ? ' selected' : ''}`}
       style={{ userSelect: 'none' }}
       title={book.title}
     >
@@ -29,10 +32,13 @@ function BookNodeComponent({ data, selected }: NodeProps) {
 
       <div className="km-booknode__cap">
         <span className="km-booknode__cap-t">{title}</span>
-        <span className="km-booknode__cap-m">
-          {dot && <span className={`lib-dot lib-dot--${dot}`} />}
-          {book.totalHighlights} highlights
-        </span>
+        {/* Cover mode stays a visual book object — title only, no metadata. */}
+        {!isCover && (
+          <span className="km-booknode__cap-m">
+            {dot && <span className={`lib-dot lib-dot--${dot}`} />}
+            {book.totalHighlights} highlights
+          </span>
+        )}
       </div>
       <p className="km-booknode__hint">double-click to open</p>
     </div>

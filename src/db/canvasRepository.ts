@@ -31,6 +31,13 @@ export async function updateCanvasNodePosition(
   await db.canvasNodes.update(id, { position });
 }
 
+export async function updateCanvasNodeDisplayMode(
+  id: string,
+  displayMode: 'card' | 'cover',
+): Promise<void> {
+  await db.canvasNodes.update(id, { displayMode });
+}
+
 export async function updateCanvasNodeSize(
   id: string,
   width: number,

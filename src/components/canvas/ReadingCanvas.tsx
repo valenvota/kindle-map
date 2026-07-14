@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Copy, Trash2 } from 'lucide-react';
+import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Copy, Trash2, Image, LayoutList } from 'lucide-react';
 import { exportMapAsPng } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -29,6 +29,7 @@ import {
   deleteCanvasEdge,
   updateCanvasEdgeDirection,
   updateCanvasEdgeLabel,
+  updateCanvasNodeDisplayMode,
 } from '../../db/canvasRepository';
 import type { EdgeDirection } from '../../types/canvas';
 import { BookNode, type BookNodeData } from './BookNode';
@@ -104,7 +105,7 @@ function buildReactFlowNode(
     case 'book': {
       const book = bookMap.get(mn.bookId ?? '');
       if (!book) return null;
-      return { ...base, type: 'book', data: { book } satisfies BookNodeData };
+      return { ...base, type: 'book', data: { book, displayMode: mn.displayMode ?? 'card' } satisfies BookNodeData };
     }
     case 'topic':
       return {
@@ -323,6 +324,24 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     });
   }, [mapNodes]);
 
+  // ── Sync book displayMode from Dexie into existing book nodes ─────────────
+  useEffect(() => {
+    if (!initialized.current || !mapNodes) return;
+
+    const modeById = new Map(mapNodes.map((mn) => [mn.id, mn.displayMode ?? 'card']));
+    setNodes((prev) => {
+      let changed = false;
+      const next = prev.map((n) => {
+        if (n.type !== 'book') return n;
+        const newMode = modeById.get(n.id) ?? 'card';
+        if (newMode === (n.data as BookNodeData).displayMode) return n;
+        changed = true;
+        return { ...n, data: { ...n.data, displayMode: newMode } };
+      });
+      return changed ? next : prev;
+    });
+  }, [mapNodes]);
+
   // ── Track selected node + edge for toolbars ──────────────────────────────
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -491,6 +510,18 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     await deleteCanvasNode(nodeId);
   }, [contextMenu, closeContextMenu, setNodes]);
 
+  const handleContextDisplayMode = useCallback(async (mode: 'card' | 'cover') => {
+    if (!contextMenu) return;
+    const nodeId = contextMenu.nodeId;
+    closeContextMenu();
+    await updateCanvasNodeDisplayMode(nodeId, mode);
+  }, [contextMenu, closeContextMenu]);
+
+  // Book node targeted by the context menu (drives the Card/Cover items).
+  const contextBookNode = contextMenu
+    ? mapNodes?.find((mn) => mn.id === contextMenu.nodeId && mn.type === 'book')
+    : undefined;
+
   // ── Remember viewport so returning from a book keeps the user's place ─────
   const savedViewport = viewportCache.get(mapId);
   const onMoveEnd = useCallback((_: unknown, vp: Viewport) => {
@@ -620,6 +651,20 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         <>
           <div className="fixed inset-0 z-40" onClick={closeContextMenu} />
           <div className="km-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
+            {contextBookNode && (
+              <>
+                {(contextBookNode.displayMode ?? 'card') === 'cover' ? (
+                  <button onClick={() => handleContextDisplayMode('card')} className="km-menu__item">
+                    <LayoutList className="h-4 w-4" /> Show as Card
+                  </button>
+                ) : (
+                  <button onClick={() => handleContextDisplayMode('cover')} className="km-menu__item">
+                    <Image className="h-4 w-4" /> Show as Cover
+                  </button>
+                )}
+                <div className="km-menu__sep" />
+              </>
+            )}
             <button onClick={handleContextDuplicate} className="km-menu__item">
               <Copy className="h-4 w-4" /> Duplicar
             </button>

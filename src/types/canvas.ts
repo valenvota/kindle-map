@@ -13,6 +13,8 @@ export type CanvasNodeData = {
   content?: string;
   /** Present for shape nodes */
   shapeKind?: ShapeKind;
+  /** BookNode-only: how the book renders on the canvas. Undefined ⇒ 'card' (legacy default). */
+  displayMode?: 'card' | 'cover';
   position: { x: number; y: number };
   width?: number;
   height?: number;

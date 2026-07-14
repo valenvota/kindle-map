@@ -112,6 +112,20 @@ export class KindleMapDB extends Dexie {
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',
     });
+
+    // v7 — displayMode field on canvasNodes (book nodes: 'card' | 'cover').
+    // Optional field, no index change; absence already means 'card' so no
+    // data migration is needed — the version bump just registers schema intent.
+    this.version(7).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      canvasStrokes: 'id, mapId',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
   }
 }
 
