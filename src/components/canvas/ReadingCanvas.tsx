@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Copy, Trash2, Image, LayoutList } from 'lucide-react';
+import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown } from 'lucide-react';
 import { exportMapAsPng } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -30,6 +30,7 @@ import {
   updateCanvasEdgeDirection,
   updateCanvasEdgeLabel,
   updateCanvasNodeDisplayMode,
+  bulkSetNodeZIndices,
 } from '../../db/canvasRepository';
 import type { EdgeDirection } from '../../types/canvas';
 import { BookNode, type BookNodeData } from './BookNode';
@@ -44,6 +45,7 @@ import { PlusMenu } from './PlusMenu';
 import { NodeStyleToolbar } from './NodeStyleToolbar';
 import { CanvasToolContext, type CanvasTool } from './CanvasToolContext';
 import { DrawingLayer } from './DrawingLayer';
+import { resolveZ, applyLayerOp, type LayerOp } from './layerOrder';
 import type { Book } from '../../types/book';
 import type { CanvasNodeData, StrokeTool } from '../../types/canvas';
 
@@ -101,7 +103,7 @@ function buildReactFlowNode(
   bookMap: Map<string, Book>,
   importantByBook: Map<string, number>,
 ): Node | null {
-  const base = { id: mn.id, position: mn.position };
+  const base = { id: mn.id, position: mn.position, zIndex: resolveZ(mn) };
 
   switch (mn.type) {
     case 'book': {
@@ -344,6 +346,23 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     });
   }, [mapNodes]);
 
+  // ── Sync stacking order from Dexie into mounted nodes (all node types) ────
+  useEffect(() => {
+    if (!initialized.current || !mapNodes) return;
+
+    const zById = new Map(mapNodes.map((mn) => [mn.id, resolveZ(mn)]));
+    setNodes((prev) => {
+      let changed = false;
+      const next = prev.map((n) => {
+        const z = zById.get(n.id);
+        if (z === undefined || z === n.zIndex) return n;
+        changed = true;
+        return { ...n, zIndex: z };
+      });
+      return changed ? next : prev;
+    });
+  }, [mapNodes]);
+
   // ── Sync book node data (displayMode, important count) from Dexie ─────────
   // The important count matters here because opening a book from the canvas and
   // marking highlights lands the user right back on these nodes.
@@ -534,6 +553,17 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     await deleteCanvasNode(nodeId);
   }, [contextMenu, closeContextMenu, setNodes]);
 
+  const handleLayerOp = useCallback(async (op: LayerOp) => {
+    if (!contextMenu || !mapNodes) return;
+    const nodeId = contextMenu.nodeId;
+    closeContextMenu();
+    // Right-clicking inside the selection re-stacks the whole selection;
+    // right-clicking a node outside it acts on that node alone.
+    const selected = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+    const targets = selected.has(nodeId) ? selected : new Set([nodeId]);
+    await bulkSetNodeZIndices(applyLayerOp(mapNodes, targets, op));
+  }, [contextMenu, mapNodes, nodes, closeContextMenu]);
+
   const handleContextDisplayMode = useCallback(async (mode: 'card' | 'cover') => {
     if (!contextMenu) return;
     const nodeId = contextMenu.nodeId;
@@ -595,6 +625,10 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         onSelectionChange={onSelectionChange}
         onMoveEnd={onMoveEnd}
         connectionMode={ConnectionMode.Loose}
+        // Manual: node.zIndex is used verbatim, with no automatic elevation.
+        // The default ('basic') lifts the selected node by +1000, which made a
+        // selected shape cover every node inside it and swallow their clicks.
+        zIndexMode="manual"
         {...(savedViewport
           ? { defaultViewport: savedViewport }
           : { fitView: true, fitViewOptions: { padding: 0.2, maxZoom: 1 } })}
@@ -689,6 +723,19 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
                 <div className="km-menu__sep" />
               </>
             )}
+            <button onClick={() => handleLayerOp('front')} className="km-menu__item">
+              <BringToFront className="h-4 w-4" /> Traer al frente
+            </button>
+            <button onClick={() => handleLayerOp('forward')} className="km-menu__item">
+              <ArrowUp className="h-4 w-4" /> Traer adelante
+            </button>
+            <button onClick={() => handleLayerOp('backward')} className="km-menu__item">
+              <ArrowDown className="h-4 w-4" /> Enviar atrás
+            </button>
+            <button onClick={() => handleLayerOp('back')} className="km-menu__item">
+              <SendToBack className="h-4 w-4" /> Enviar al fondo
+            </button>
+            <div className="km-menu__sep" />
             <button onClick={handleContextDuplicate} className="km-menu__item">
               <Copy className="h-4 w-4" /> Duplicar
             </button>

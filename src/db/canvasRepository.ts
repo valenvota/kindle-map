@@ -38,6 +38,18 @@ export async function updateCanvasNodeDisplayMode(
   await db.canvasNodes.update(id, { displayMode });
 }
 
+/** Persist a re-stack. One transaction so a layer op is all-or-nothing. */
+export async function bulkSetNodeZIndices(
+  changes: { id: string; zIndex: number }[],
+): Promise<void> {
+  if (changes.length === 0) return;
+  await db.transaction('rw', db.canvasNodes, async () => {
+    await Promise.all(
+      changes.map((c) => db.canvasNodes.update(c.id, { zIndex: c.zIndex })),
+    );
+  });
+}
+
 export async function updateCanvasNodeSize(
   id: string,
   width: number,

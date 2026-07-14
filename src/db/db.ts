@@ -126,6 +126,20 @@ export class KindleMapDB extends Dexie {
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',
     });
+
+    // v8 — zIndex field on canvasNodes (canvas stacking order). Optional, no
+    // index change; absence resolves by node type (see canvas/layerOrder.ts),
+    // so no data migration is needed — this registers schema intent only.
+    this.version(8).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      canvasStrokes: 'id, mapId',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
   }
 }
 

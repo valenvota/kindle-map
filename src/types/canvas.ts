@@ -15,6 +15,8 @@ export type CanvasNodeData = {
   shapeKind?: ShapeKind;
   /** BookNode-only: how the book renders on the canvas. Undefined ⇒ 'card' (legacy default). */
   displayMode?: 'card' | 'cover';
+  /** Canvas stacking order. Undefined ⇒ resolved by type — see `resolveZ` in canvas/layerOrder.ts. */
+  zIndex?: number;
   position: { x: number; y: number };
   width?: number;
   height?: number;
