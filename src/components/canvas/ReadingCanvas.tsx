@@ -56,7 +56,8 @@ const viewportCache = new Map<string, Viewport>();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const NODE_WIDTH = 208;
+// Sized to the widest node (the 288px book card) so auto-arrange never overlaps.
+const NODE_WIDTH = 288;
 const NODE_HEIGHT = 180;
 const GRID_COL_GAP = 40;
 const GRID_ROW_GAP = 40;
@@ -98,6 +99,7 @@ function buildInitialPosition(index: number): { x: number; y: number } {
 function buildReactFlowNode(
   mn: CanvasNodeData,
   bookMap: Map<string, Book>,
+  importantByBook: Map<string, number>,
 ): Node | null {
   const base = { id: mn.id, position: mn.position };
 
@@ -105,7 +107,15 @@ function buildReactFlowNode(
     case 'book': {
       const book = bookMap.get(mn.bookId ?? '');
       if (!book) return null;
-      return { ...base, type: 'book', data: { book, displayMode: mn.displayMode ?? 'card' } satisfies BookNodeData };
+      return {
+        ...base,
+        type: 'book',
+        data: {
+          book,
+          displayMode: mn.displayMode ?? 'card',
+          importantCount: importantByBook.get(book.id) ?? 0,
+        } satisfies BookNodeData,
+      };
     }
     case 'topic':
       return {
@@ -184,7 +194,17 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     [mapId],
   );
   const allBooks = useLiveQuery(() => db.books.toArray(), []);
+  const allHighlights = useLiveQuery(() => db.highlights.toArray(), []);
   const map = useLiveQuery(() => db.maps.get(mapId), [mapId]);
+
+  // Important-highlight count per book — quiet metadata on card-mode nodes.
+  const importantByBook = useMemo(() => {
+    const m = new Map<string, number>();
+    allHighlights?.forEach((h) => {
+      if (h.important) m.set(h.bookId, (m.get(h.bookId) ?? 0) + 1);
+    });
+    return m;
+  }, [allHighlights]);
 
   // Reset state when switching between maps
   useEffect(() => {
@@ -263,7 +283,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
 
     const bookMap = new Map(allBooks.map((b) => [b.id, b]));
     const initial = mapNodes
-      .map((mn) => buildReactFlowNode(mn, bookMap))
+      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook))
       .filter((n): n is Node => n !== null);
 
     setNodes(initial);
@@ -298,7 +318,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
             ...mn,
             position: mn.position ?? buildInitialPosition(remaining.length + i),
           };
-          return buildReactFlowNode(withPosition, bookMap);
+          return buildReactFlowNode(withPosition, bookMap, importantByBook);
         })
         .filter((n): n is Node => n !== null);
 
@@ -324,23 +344,27 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     });
   }, [mapNodes]);
 
-  // ── Sync book displayMode from Dexie into existing book nodes ─────────────
+  // ── Sync book node data (displayMode, important count) from Dexie ─────────
+  // The important count matters here because opening a book from the canvas and
+  // marking highlights lands the user right back on these nodes.
   useEffect(() => {
     if (!initialized.current || !mapNodes) return;
 
-    const modeById = new Map(mapNodes.map((mn) => [mn.id, mn.displayMode ?? 'card']));
+    const byId = new Map(mapNodes.map((mn) => [mn.id, mn]));
     setNodes((prev) => {
       let changed = false;
       const next = prev.map((n) => {
         if (n.type !== 'book') return n;
-        const newMode = modeById.get(n.id) ?? 'card';
-        if (newMode === (n.data as BookNodeData).displayMode) return n;
+        const data = n.data as BookNodeData;
+        const newMode = byId.get(n.id)?.displayMode ?? 'card';
+        const newImportant = importantByBook.get(data.book.id) ?? 0;
+        if (newMode === data.displayMode && newImportant === data.importantCount) return n;
         changed = true;
-        return { ...n, data: { ...n.data, displayMode: newMode } };
+        return { ...n, data: { ...n.data, displayMode: newMode, importantCount: newImportant } };
       });
       return changed ? next : prev;
     });
-  }, [mapNodes]);
+  }, [mapNodes, importantByBook]);
 
   // ── Track selected node + edge for toolbars ──────────────────────────────
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
