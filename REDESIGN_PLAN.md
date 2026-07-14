@@ -1,7 +1,10 @@
 # KindleMap — Redesign Plan & Roadmap
 
-> Continuity doc for the Apple-inspired redesign. Read alongside `DESIGN_SYSTEM.md`.
-> Last updated after Phase 4 (final token cleanup) — redesign phases 0–4 COMPLETE.
+> Continuity doc for the Apple-inspired redesign and the product sprints that follow it.
+> Read alongside `DESIGN_SYSTEM.md`.
+>
+> **State:** redesign phases 0–4 COMPLETE. Sprint 2 (Library & Book Visual Modes) COMPLETE.
+> **Next up:** Sprint 3A — Canvas Interaction Polish.
 
 ---
 
@@ -54,8 +57,8 @@ Local mockup source files live in the session scratchpad (not the repo).
   tool rail; `km-menu` context menu. Canvas now renders **inside AppShell** (dark sidebar, active=maps) per
   the approved mockup — full sidebar, NOT collapsed. Fixed the canvas→book→back viewport reset via a
   module-level per-map viewport cache (restores `defaultViewport` instead of re-running `fitView`).
-  Deferred: per-node Card/Cover toggle (needs a new data field → belongs to roadmap Sprint 2); canvas
-  empty-state still uses old emoji styling (do in Phase 4).
+  Deferred at the time: per-node Card/Cover toggle (needed a new data field) → **shipped in Sprint 2**;
+  canvas empty-state emoji → done in Phase 4.
 
 - **Phase 4 — Final token cleanup ✅ DONE** Added shared `.km-field` / `.km-label` form primitives to
   `index.css` (Tailwind v4 here has no semantic color utilities, so `stone-*` classes were converted to
@@ -76,11 +79,39 @@ Local mockup source files live in the session scratchpad (not the repo).
 
 ---
 
+## Product sprints (implementation)
+
+- **Sprint 2 — Library & Book Visual Modes ✅ COMPLETE**
+  - *Library Covers/Cards* — shipped during the redesign (Phase 1): `SegmentedControl` toggling the
+    bookshelf cover grid vs the Cards reading index. No further work needed.
+  - *Map BookNode Card/Cover display modes* (`e60e81f`, corrected in `08c8f6b`) — each book node on a map
+    renders in one of two shapes, switched from the right-click context menu:
+    - **cover** — vertical 148×262 2:3 book object (reuses `BookCover`), title-only caption.
+    - **card** — horizontal 288×123 paper card: 48px 2:3 thumbnail left, then serif title, author, and
+      quiet metadata (`N highlights · N important`, important in ember). Same language as `.lib-row`.
+  - Data model: optional `displayMode?: 'card' | 'cover'` on `CanvasNodeData`. **Absence means `card`**, so
+    legacy nodes need no migration. Dexie **v7** bump registers schema intent only (no upgrade callback).
+  - `ReadingCanvas` queries highlights to derive the important count and syncs it (with `displayMode`) into
+    mounted book nodes — opening a book from the canvas and marking highlights returns the user to these
+    nodes, so a count frozen at mount would show stale.
+  - Auto-arrange grid `NODE_WIDTH` widened 208 → 288 (the card is the default mode; the old spacing overlapped).
+  - Verified with seeded data: both modes' geometry, toggle round-trip, selection rings, handles, right-click,
+    duplicate (clone keeps mode), Ctrl+Z, delete, console clean.
+  - Deferred (optional, → Sprint 3A): Card/Cover toggle on the selected-node toolbar, only if low-risk.
+
+---
+
 ## Product roadmap (post-redesign sprints)
 
-1. Visual Redesign / Design System ← *in progress via Phases 0–4 above*
-2. Library & Book Visual Modes (Card/Cover toggle; per-node mode in Maps)
-3. Canvas Desktop Polish Phase 2 (layer controls; big-shape click-through; resizable elements; text boxes; selection)
+1. ✅ Visual Redesign / Design System — *done via Phases 0–4 above*
+2. ✅ Library & Book Visual Modes — *done; see Sprint 2 above*
+3. **Canvas Desktop Polish Phase 2 — split into two sprints:**
+   - **3A — Canvas Interaction Polish ← NEXT.** Layer controls (bring forward / send backward / bring to
+     front / send to back, persisted, from the context menu); big-shape click-through & stacking; selection
+     hardening (select, multi-select, right-click, delete, duplicate, Ctrl+Z/Y, pan/select separation,
+     drawing overlay must not block selection). Optional: display-mode toggle in the selected-node toolbar.
+     *Out of scope: resizable nodes, text boxes.*
+   - **3B — Canvas Authoring.** Resizable elements; text boxes.
 4. Canvas Creative Layer (folders, pins, wallpapers, images, pencil feel)
 5. Export Lite (high-res PNG, selected-area export, fix blurry export; defer full PDF)
 6. Onboarding System
