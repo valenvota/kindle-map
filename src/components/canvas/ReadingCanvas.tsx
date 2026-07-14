@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square } from 'lucide-react';
+import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Copy, Trash2 } from 'lucide-react';
 import { exportMapAsPng } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -267,6 +267,12 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
 
     setNodes(initial);
     initialized.current = true;
+
+    // Seed the undo history with the loaded state as the baseline (index 0), so
+    // the first Ctrl+Z has somewhere to return to. Without this baseline the
+    // first user action lands at index 0 and undoing it hits index -1 (no-op).
+    historyStack.current = [mapNodes.map((n) => ({ ...n }))];
+    historyIndex.current = 0;
   }, [mapNodes, allBooks]);
 
   // ── Sync additions and deletions from Dexie without resetting layout ─────
@@ -544,7 +550,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
         selectionOnDrag={!panMode}
         panOnScroll
-        panOnDrag={panMode ? [0, 1, 2] : [1, 2]}
+        panOnDrag={panMode ? [0, 1] : [1]}
         zoomOnScroll={false}
         zoomOnPinch
       >
@@ -615,11 +621,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
           <div className="fixed inset-0 z-40" onClick={closeContextMenu} />
           <div className="km-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
             <button onClick={handleContextDuplicate} className="km-menu__item">
-              <span className="text-base">⧉</span> Duplicar
+              <Copy className="h-4 w-4" /> Duplicar
             </button>
             <div className="km-menu__sep" />
             <button onClick={handleContextDelete} className="km-menu__item km-menu__item--danger">
-              <span className="text-base">🗑</span> Eliminar
+              <Trash2 className="h-4 w-4" /> Eliminar
             </button>
           </div>
         </>

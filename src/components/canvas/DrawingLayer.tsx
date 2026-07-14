@@ -158,8 +158,6 @@ export function DrawingLayer({ mapId, tool, isSelectMode, color, width }: Props)
     await addStroke(stroke);
   }, [active, current, tool, mapId, color, width]);
 
-  const hasInteraction = active || isSelectMode;
-
   return (
     <svg
       ref={svgRef}
@@ -168,7 +166,12 @@ export function DrawingLayer({ mapId, tool, isSelectMode, color, width }: Props)
         inset: 0,
         width: '100%',
         height: '100%',
-        pointerEvents: hasInteraction ? 'all' : 'none',
+        // Only the drawing tools need the full overlay to capture pointer events.
+        // In select mode the container must stay transparent to pointers so that
+        // ReactFlow keeps handling node clicks / box-select / right-click; the
+        // individual stroke hit-paths below re-enable `pointer-events: stroke`
+        // so strokes remain selectable even through the transparent container.
+        pointerEvents: active ? 'all' : 'none',
         touchAction: active ? 'none' : 'auto',
         zIndex: 10,
         overflow: 'visible',

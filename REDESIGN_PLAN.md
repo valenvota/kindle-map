@@ -66,8 +66,13 @@ Local mockup source files live in the session scratchpad (not the repo).
   migrated to a white-alpha scale with `var(--ember)` as the accent (was amber `#C4894A`). Result: **0**
   `stone-*` usages left in the UI (from 158); `tsc -b` + `vite build` green.
   Left intentionally: the 3 emoji in `utils/exportMarkdown.ts` write into exported `.md` files (not UI) and
-  belong to the Export sprint. Deep visual verification of data-bearing surfaces (Stats/modals/StudyMode/
-  canvas) is still pending — the dev DB was empty; seed books next run to confirm before declaring 100%.
+  belong to the Export sprint.
+  **Verified with seeded data** (5 books incl. dirty OceanofPDF/dokumen imports, 9 highlights, a map with
+  book/topic/note/quote nodes): Library, Stats, BookDetail (highlights/notes/study), StudyMode (warm-dark
+  scale, ember tints compute correctly), canvas (desk + nodes + glass rails), empty-state (lucide chips),
+  create-map modal — all render clean, **0 emoji in UI**, no console errors. One bug found & fixed
+  (`9747c3f`): the Stats "most highlighted" list rendered raw `book.title`; now uses `getDisplayTitle`.
+  Redesign phases 0–4 are fully closed.
 
 ---
 
