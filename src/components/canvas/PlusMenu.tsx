@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { CanvasTool } from './CanvasToolContext';
 import { upsertCanvasNode } from '../../db/canvasRepository';
+import { requestTextEdit } from './nodes/textAutoEdit';
 import { AddBookModal } from './AddBookModal';
 import { AddQuoteModal } from './AddQuoteModal';
 
@@ -24,6 +25,15 @@ function addShape(mapId: string, shapeKind: 'rectangle' | 'circle', position: { 
   });
 }
 
+// A text box is created empty and opens straight into edit mode (the user's
+// intent is to write) — see textAutoEdit. Size falls back to the type default
+// until the user resizes it.
+function addTextBox(mapId: string, position: { x: number; y: number }) {
+  const id = `${mapId}:text-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  requestTextEdit(id);
+  return upsertCanvasNode({ id, mapId, type: 'text', content: '', position });
+}
+
 type Props = {
   mapId: string;
   existingBookIds: Set<string>;
@@ -43,6 +53,7 @@ export function PlusMenu({ mapId, existingBookIds, existingNodeCount, activeTool
     else if (activeTool === 'topic') { setActiveModal('topic'); setActiveTool('select'); }
     else if (activeTool === 'note')  { setActiveModal('note');  setActiveTool('select'); }
     else if (activeTool === 'quote') { setActiveModal('quote'); setActiveTool('select'); }
+    else if (activeTool === 'text')      { addTextBox(mapId, pos);            setActiveTool('select'); }
     else if (activeTool === 'rectangle') { addShape(mapId, 'rectangle', pos); setActiveTool('select'); }
     else if (activeTool === 'circle')    { addShape(mapId, 'circle', pos);    setActiveTool('select'); }
   // eslint-disable-next-line react-hooks/exhaustive-deps

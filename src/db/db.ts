@@ -140,6 +140,22 @@ export class KindleMapDB extends Dexie {
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',
     });
+
+    // v9 — canvas authoring (Sprint 3B). Adds the 'text' node type (free text
+    // boxes) and extends the existing optional width/height fields to note and
+    // quote nodes so they resize like shapes. The `type` index is value-agnostic
+    // (a new type value needs no index change) and width/height already exist,
+    // so no data migration is needed — this registers schema intent only.
+    this.version(9).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      canvasStrokes: 'id, mapId',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
   }
 }
 

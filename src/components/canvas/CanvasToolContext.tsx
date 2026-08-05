@@ -7,6 +7,7 @@ export type CanvasTool =
   | 'topic'
   | 'note'
   | 'quote'
+  | 'text'
   | 'rectangle'
   | 'circle'
   | 'pencil'

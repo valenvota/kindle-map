@@ -39,6 +39,7 @@ import { TopicNode, type TopicNodeData } from './nodes/TopicNode';
 import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
 import { QuoteNode, type QuoteNodeData } from './nodes/QuoteNode';
 import { ShapeNode, type ShapeNodeData } from './nodes/ShapeNode';
+import { TextBoxNode, type TextBoxNodeData } from './nodes/TextBoxNode';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasLeftToolbar } from './CanvasLeftToolbar';
 import { PlusMenu } from './PlusMenu';
@@ -49,7 +50,7 @@ import { resolveZ, applyLayerOp, type LayerOp } from './layerOrder';
 import type { Book } from '../../types/book';
 import type { CanvasNodeData, StrokeTool } from '../../types/canvas';
 
-const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape']);
+const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape', 'text']);
 
 // Remembers each map's pan/zoom across remounts (e.g. opening a book from the
 // canvas and returning) so the user doesn't lose their place. Module-level so it
@@ -72,7 +73,16 @@ const nodeTypes = {
   note: NoteNode,
   quote: QuoteNode,
   shape: ShapeNode,
+  text: TextBoxNode,
 };
+
+// Note/quote/text default sizes when a node has never been resized. Kept here so
+// buildReactFlowNode (below) and the components agree on the un-resized footprint.
+const DEFAULT_SIZE = {
+  note:  { width: 208, height: 150 },
+  quote: { width: 224, height: 176 },
+  text:  { width: 200, height: 52 },
+} as const;
 
 const edgeTypes = {
   labeled: LabeledEdge,
@@ -125,17 +135,28 @@ function buildReactFlowNode(
         type: 'topic',
         data: { nodeId: mn.id, content: mn.content ?? '', style: mn.style } satisfies TopicNodeData,
       };
-    case 'note':
+    case 'note': {
+      const width = mn.width ?? DEFAULT_SIZE.note.width;
+      const height = mn.height ?? DEFAULT_SIZE.note.height;
       return {
         ...base,
         type: 'note',
+        width,
+        height,
+        style: { width, height },
         data: { nodeId: mn.id, content: mn.content ?? '', style: mn.style } satisfies NoteNodeData,
       };
+    }
     case 'quote': {
       const book = bookMap.get(mn.bookId ?? '');
+      const width = mn.width ?? DEFAULT_SIZE.quote.width;
+      const height = mn.height ?? DEFAULT_SIZE.quote.height;
       return {
         ...base,
         type: 'quote',
+        width,
+        height,
+        style: { width, height },
         data: {
           nodeId: mn.id,
           content: mn.content ?? '',
@@ -144,6 +165,18 @@ function buildReactFlowNode(
           highlightId: mn.highlightId ?? '',
           style: mn.style,
         } satisfies QuoteNodeData,
+      };
+    }
+    case 'text': {
+      const width = mn.width ?? DEFAULT_SIZE.text.width;
+      const height = mn.height ?? DEFAULT_SIZE.text.height;
+      return {
+        ...base,
+        type: 'text',
+        width,
+        height,
+        style: { width, height },
+        data: { nodeId: mn.id, content: mn.content ?? '', style: mn.style } satisfies TextBoxNodeData,
       };
     }
     case 'shape':
@@ -358,6 +391,26 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         if (z === undefined || z === n.zIndex) return n;
         changed = true;
         return { ...n, zIndex: z };
+      });
+      return changed ? next : prev;
+    });
+  }, [mapNodes]);
+
+  // ── Sync width/height from Dexie into mounted nodes (resizable types) ─────
+  // A resize persists to Dexie but doesn't re-mount the node, so without this an
+  // undo of a resize wouldn't move the handles back. Mirrors the zIndex sync.
+  useEffect(() => {
+    if (!initialized.current || !mapNodes) return;
+
+    const sizeById = new Map(mapNodes.map((mn) => [mn.id, { w: mn.width, h: mn.height }]));
+    setNodes((prev) => {
+      let changed = false;
+      const next = prev.map((n) => {
+        const s = sizeById.get(n.id);
+        if (!s || s.w === undefined || s.h === undefined) return n;
+        if (n.width === s.w && n.height === s.h) return n;
+        changed = true;
+        return { ...n, width: s.w, height: s.h, style: { ...(n.style ?? {}), width: s.w, height: s.h } };
       });
       return changed ? next : prev;
     });

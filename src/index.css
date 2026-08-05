@@ -466,6 +466,13 @@
 .km-booknode__meta { margin-top: 2px; display: flex; align-items: center; gap: 6px; font-family: var(--font-sans); font-size: 10.5px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 .km-booknode__meta b { color: var(--ember); font-weight: 600; }
 
+/* TextBox — free text written straight onto the desk. Transparent by default
+   (no paper chrome), which is what sets it apart from NoteNode. Sized and
+   resized like a shape; see TextBoxNode.tsx. */
+.km-textbox { box-sizing: border-box; padding: 6px 8px; border-radius: var(--radius-sm); font-family: var(--font-serif); font-size: 16px; line-height: 1.35; color: var(--ink); user-select: none; overflow: hidden; }
+.km-textbox p, .km-textbox textarea { font-family: inherit; font-size: inherit; line-height: inherit; margin: 0; }
+.km-textbox--selected { box-shadow: 0 0 0 2px var(--accent); }
+
 /* Glass floating chrome shared by top toolbar + left rail */
 .km-glass { background: rgba(251,249,244,0.86); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid var(--hair); box-shadow: var(--shadow-lg); }
 

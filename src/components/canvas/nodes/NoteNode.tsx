@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { updateCanvasNodeContent } from '../../../db/canvasRepository';
+import { Handle, Position, NodeResizer, type NodeProps, type ResizeParams } from '@xyflow/react';
+import { updateCanvasNodeContent, updateCanvasNodeSize } from '../../../db/canvasRepository';
 
 export type NoteNodeData = {
   nodeId: string;
@@ -26,13 +26,17 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
     if (e.key === 'Escape') { setEditing(false); setText(d.content); }
   };
 
+  const handleResizeEnd = (_: unknown, params: ResizeParams) => {
+    updateCanvasNodeSize(id, params.width, params.height);
+  };
+
   const style = d.style;
 
   return (
     <div
       onDoubleClick={startEditing}
       className={[
-        'w-52 rounded-2xl border shadow-md transition-shadow select-none',
+        'flex h-full w-full flex-col rounded-2xl border shadow-md transition-shadow select-none',
         selected
           ? 'border-[#3D6B8E] shadow-lg ring-2 ring-[#3D6B8E]/30'
           : style?.border
@@ -45,12 +49,20 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         borderColor: !selected ? style?.border : undefined,
       }}
     >
+      <NodeResizer
+        isVisible={selected}
+        minWidth={140}
+        minHeight={90}
+        onResizeEnd={handleResizeEnd}
+        lineClassName="!border-[#3D6B8E]"
+        handleClassName="!h-2.5 !w-2.5 !rounded-full !border-2 !border-[#3D6B8E] !bg-white"
+      />
       <Handle type="source" id="top"    position={Position.Top} />
       <Handle type="source" id="right"  position={Position.Right} />
       <Handle type="source" id="bottom" position={Position.Bottom} />
       <Handle type="source" id="left"   position={Position.Left} />
       {/* Header bar */}
-      <div className="flex items-center justify-between rounded-t-2xl border-b border-[#C4894A]/20 px-3 py-2">
+      <div className="flex flex-none items-center justify-between rounded-t-2xl border-b border-[#C4894A]/20 px-3 py-2">
         <span className="text-[10px] font-bold uppercase tracking-wider text-[#C4894A]">Note</span>
         {editing && (
           <button
@@ -63,7 +75,7 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
       </div>
 
       {/* Content */}
-      <div className="p-3">
+      <div className="min-h-0 flex-1 overflow-auto p-3">
         {editing ? (
           <textarea
             autoFocus
@@ -72,14 +84,13 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             placeholder="Write your note…"
-            rows={4}
-            className="nodrag nopan w-full resize-none bg-transparent text-sm outline-none placeholder:text-[var(--ink-faint)]"
+            className="nodrag nopan h-full w-full resize-none bg-transparent text-sm outline-none placeholder:text-[var(--ink-faint)]"
             style={{ color: style?.text }}
           />
         ) : (
           <p
             className={[
-              'min-h-[60px] whitespace-pre-wrap text-sm leading-relaxed',
+              'whitespace-pre-wrap text-sm leading-relaxed',
               text ? (style?.text ? '' : 'text-[var(--ink-soft)]') : 'italic text-[var(--ink-faint)]',
             ].join(' ')}
             style={{ color: text ? style?.text : undefined }}

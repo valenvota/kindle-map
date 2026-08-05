@@ -4,7 +4,8 @@
 > Read alongside `DESIGN_SYSTEM.md`.
 >
 > **State:** redesign phases 0–4 COMPLETE. Sprint 2 (Library & Book Visual Modes) COMPLETE.
-> **Next up:** Sprint 3A — Canvas Interaction Polish.
+> Sprint 3A (Canvas Interaction Polish) COMPLETE. Sprint 3B (Canvas Authoring) COMPLETE.
+> **Next up:** Sprint 4 — Canvas Creative Layer (folders, pins, wallpapers, images, pencil feel).
 
 ---
 
@@ -99,20 +100,47 @@ Local mockup source files live in the session scratchpad (not the repo).
     duplicate (clone keeps mode), Ctrl+Z, delete, console clean.
   - Deferred (optional, → Sprint 3A): Card/Cover toggle on the selected-node toolbar, only if low-risk.
 
+- **Sprint 3A — Canvas Interaction Polish ✅ COMPLETE** (`6ef6482`)
+  - Layer controls from the context menu (bring to front / forward / send backward / to back), persisted via a
+    `zIndex` field on `CanvasNodeData` (Dexie **v8**, no-op intent bump; absence resolves by type in
+    `canvas/layerOrder.ts` — shapes sit behind, everything else in front, so legacy maps need no migration).
+  - `zIndexMode="manual"` on `<ReactFlow>` so a selected shape no longer gets a +1000 elevation that made big
+    shapes cover and swallow clicks on the nodes inside them.
+  - Selection hardening: select / multi-select / right-click / delete / duplicate / Ctrl+Z-Y / pan-vs-select
+    separation all verified; the drawing overlay stays `pointer-events:none` in select mode so it never blocks
+    node selection.
+
+- **Sprint 3B — Canvas Authoring ✅ COMPLETE**
+  - *Resizable elements* — resizing (already on `ShapeNode` via `NodeResizer`) extended to **NoteNode**,
+    **QuoteNode**, and the new **TextBoxNode**. BookNode and TopicNode stay fixed on purpose (books must keep
+    Card/Cover proportions; topic stays a compact pill). Reuses the existing optional `width`/`height` on
+    `CanvasNodeData`; absence ⇒ a per-type default (see `DEFAULT_SIZE` in `ReadingCanvas`), so legacy note/quote
+    nodes adopt a sane size and become resizable with no data migration. A size-sync effect mirrors the zIndex
+    one so a resize survives undo/redo and duplicate.
+  - *Text boxes* — new `type: 'text'` node: free, transparent text (label / title / annotation), distinct from
+    the paper NoteNode. Added via a "Text" tool in the left rail; created straight into edit mode (the intent is
+    to write) and dropped again if left empty. Styleable via `NodeStyleToolbar`.
+  - Data model: `'text'` added to the `CanvasNodeData.type` union and `CanvasTool`. Dexie **v9** — no-op intent
+    bump only: the `type` index is value-agnostic and `width`/`height` already existed, so no data rewrite.
+  - Files: new `nodes/TextBoxNode.tsx` + `nodes/textAutoEdit.ts`; edits to `ReadingCanvas`, `NoteNode`,
+    `QuoteNode`, `CanvasLeftToolbar`, `CanvasToolContext`, `PlusMenu`, `types/canvas.ts`, `db/db.ts`, `index.css`.
+  - Verified in-browser with seeded data: create/type/resize/duplicate/undo for text boxes; resize + persistence
+    for note/quote/shape; legacy note/quote adopt defaults with no clipping (quote scrolls); BookNode not
+    resizable; context menu, layer ops, multi-select, and the drawing overlay all intact; `tsc -b` + `vite build`
+    green; console clean.
+
 ---
 
 ## Product roadmap (post-redesign sprints)
 
 1. ✅ Visual Redesign / Design System — *done via Phases 0–4 above*
 2. ✅ Library & Book Visual Modes — *done; see Sprint 2 above*
-3. **Canvas Desktop Polish Phase 2 — split into two sprints:**
-   - **3A — Canvas Interaction Polish ← NEXT.** Layer controls (bring forward / send backward / bring to
-     front / send to back, persisted, from the context menu); big-shape click-through & stacking; selection
-     hardening (select, multi-select, right-click, delete, duplicate, Ctrl+Z/Y, pan/select separation,
-     drawing overlay must not block selection). Optional: display-mode toggle in the selected-node toolbar.
-     *Out of scope: resizable nodes, text boxes.*
-   - **3B — Canvas Authoring.** Resizable elements; text boxes.
-4. Canvas Creative Layer (folders, pins, wallpapers, images, pencil feel)
+3. ✅ **Canvas Desktop Polish Phase 2 (split into two sprints) — done; see Sprint 3A & 3B above:**
+   - ✅ **3A — Canvas Interaction Polish.** Layer controls (persisted, from the context menu); big-shape
+     click-through & stacking; selection hardening (select, multi-select, right-click, delete, duplicate,
+     Ctrl+Z/Y, pan/select separation, drawing overlay must not block selection).
+   - ✅ **3B — Canvas Authoring.** Resizable elements (Note/Quote/TextBox + existing Shape); free text boxes.
+4. **Canvas Creative Layer ← NEXT** (folders, pins, wallpapers, images, pencil feel)
 5. Export Lite (high-res PNG, selected-area export, fix blurry export; defer full PDF)
 6. Onboarding System
 7. Backend Architecture Spike (Supabase vs Firebase; local-first IndexedDB migration path; sync)

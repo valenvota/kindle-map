@@ -8,8 +8,8 @@ export type CanvasNodeData = {
   bookId?: string;
   /** Present for quote nodes — source of truth for the original highlight */
   highlightId?: string;
-  type: 'book' | 'topic' | 'note' | 'quote' | 'shape';
-  /** Topic label, note text, denormalized quote text, or shape label */
+  type: 'book' | 'topic' | 'note' | 'quote' | 'shape' | 'text';
+  /** Topic label, note text, denormalized quote text, shape label, or text-box text */
   content?: string;
   /** Present for shape nodes */
   shapeKind?: ShapeKind;
@@ -18,9 +18,10 @@ export type CanvasNodeData = {
   /** Canvas stacking order. Undefined ⇒ resolved by type — see `resolveZ` in canvas/layerOrder.ts. */
   zIndex?: number;
   position: { x: number; y: number };
+  /** Resizable nodes (shape/note/quote/text). Undefined ⇒ the node's default size. */
   width?: number;
   height?: number;
-  /** Optional style overrides — topic/note/quote/shape nodes only */
+  /** Optional style overrides — topic/note/quote/shape/text nodes only */
   style?: {
     background?: string;
     border?: string;
