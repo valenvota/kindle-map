@@ -156,6 +156,23 @@ export class KindleMapDB extends Dexie {
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',
     });
+
+    // v10 — canvas creative layer (Sprint 4). Adds the 'image' and 'region' node
+    // types, an optional `locked` flag on canvasNodes (pin-to-desk), and an
+    // optional `background` field on maps (wallpaper preset). The `type` index is
+    // value-agnostic, and `locked`/`background` are non-indexed optional fields
+    // that default by absence, so no data migration is needed — this registers
+    // schema intent only.
+    this.version(10).stores({
+      books: 'id, title, author, source, createdAt',
+      highlights: 'id, bookId, type, addedAt, createdAt',
+      canvasNodes: 'id, bookId, mapId, type',
+      canvasEdges: 'id, mapId, source, target',
+      canvasStrokes: 'id, mapId',
+      maps: 'id, name, createdAt',
+      groups: 'id, title, createdAt',
+      bookNotes: 'id, bookId, createdAt',
+    });
   }
 }
 

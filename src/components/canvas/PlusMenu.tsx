@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CanvasTool } from './CanvasToolContext';
 import { upsertCanvasNode } from '../../db/canvasRepository';
 import { requestTextEdit } from './nodes/textAutoEdit';
+import { downscaleImage, fitNodeSize } from '../../utils/downscaleImage';
 import { AddBookModal } from './AddBookModal';
 import { AddQuoteModal } from './AddQuoteModal';
 
@@ -25,6 +26,20 @@ function addShape(mapId: string, shapeKind: 'rectangle' | 'circle', position: { 
   });
 }
 
+// A region is a soft backdrop that groups nodes; it lands behind them (see
+// layerOrder) at a comfortable default size, titled by double-clicking it.
+function addRegion(mapId: string, position: { x: number; y: number }) {
+  return upsertCanvasNode({
+    id: `${mapId}:region-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    mapId,
+    type: 'region',
+    content: '',
+    position,
+    width: 320,
+    height: 220,
+  });
+}
+
 // A text box is created empty and opens straight into edit mode (the user's
 // intent is to write) — see textAutoEdit. Size falls back to the type default
 // until the user resizes it.
@@ -44,6 +59,7 @@ type Props = {
 
 export function PlusMenu({ mapId, existingBookIds, existingNodeCount, activeTool, setActiveTool }: Props) {
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const pos = newNodePosition(existingNodeCount);
 
   // Drive modal open/close from the left toolbar tool selection
@@ -56,13 +72,45 @@ export function PlusMenu({ mapId, existingBookIds, existingNodeCount, activeTool
     else if (activeTool === 'text')      { addTextBox(mapId, pos);            setActiveTool('select'); }
     else if (activeTool === 'rectangle') { addShape(mapId, 'rectangle', pos); setActiveTool('select'); }
     else if (activeTool === 'circle')    { addShape(mapId, 'circle', pos);    setActiveTool('select'); }
+    else if (activeTool === 'region')    { addRegion(mapId, pos);             setActiveTool('select'); }
+    // Image opens a native file picker; the node is created in onFilePicked once
+    // the user chooses a file (see the hidden input below).
+    else if (activeTool === 'image')     { fileInputRef.current?.click();     setActiveTool('select'); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTool]);
+
+  const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-picking the same file later
+    if (!file) return;
+    try {
+      const { dataUrl, width, height } = await downscaleImage(file);
+      const size = fitNodeSize(width, height);
+      await upsertCanvasNode({
+        id: `${mapId}:image-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        mapId,
+        type: 'image',
+        content: dataUrl,
+        position: pos,
+        width: size.width,
+        height: size.height,
+      });
+    } catch (err) {
+      console.error('Image upload failed:', err);
+    }
+  };
 
   const closeModal = () => setActiveModal(null);
 
   return (
     <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onFilePicked}
+      />
       {activeModal === 'book' && (
         <AddBookModal
           mapId={mapId}

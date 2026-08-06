@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown } from 'lucide-react';
+import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown, Pin, PinOff } from 'lucide-react';
 import { exportMapAsPng } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -30,9 +30,12 @@ import {
   updateCanvasEdgeDirection,
   updateCanvasEdgeLabel,
   updateCanvasNodeDisplayMode,
+  updateCanvasNodeLocked,
   bulkSetNodeZIndices,
 } from '../../db/canvasRepository';
+import { updateMapBackground } from '../../db/mapsRepository';
 import type { EdgeDirection } from '../../types/canvas';
+import type { MapBackground } from '../../types/map';
 import { BookNode, type BookNodeData } from './BookNode';
 import { LabeledEdge } from './LabeledEdge';
 import { TopicNode, type TopicNodeData } from './nodes/TopicNode';
@@ -40,6 +43,8 @@ import { NoteNode, type NoteNodeData } from './nodes/NoteNode';
 import { QuoteNode, type QuoteNodeData } from './nodes/QuoteNode';
 import { ShapeNode, type ShapeNodeData } from './nodes/ShapeNode';
 import { TextBoxNode, type TextBoxNodeData } from './nodes/TextBoxNode';
+import { RegionNode, type RegionNodeData } from './nodes/RegionNode';
+import { ImageNode, type ImageNodeData } from './nodes/ImageNode';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasLeftToolbar } from './CanvasLeftToolbar';
 import { PlusMenu } from './PlusMenu';
@@ -50,7 +55,7 @@ import { resolveZ, applyLayerOp, type LayerOp } from './layerOrder';
 import type { Book } from '../../types/book';
 import type { CanvasNodeData, StrokeTool } from '../../types/canvas';
 
-const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape', 'text']);
+const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape', 'text', 'region']);
 
 // Remembers each map's pan/zoom across remounts (e.g. opening a book from the
 // canvas and returning) so the user doesn't lose their place. Module-level so it
@@ -74,14 +79,18 @@ const nodeTypes = {
   quote: QuoteNode,
   shape: ShapeNode,
   text: TextBoxNode,
+  region: RegionNode,
+  image: ImageNode,
 };
 
 // Note/quote/text default sizes when a node has never been resized. Kept here so
 // buildReactFlowNode (below) and the components agree on the un-resized footprint.
 const DEFAULT_SIZE = {
-  note:  { width: 208, height: 150 },
-  quote: { width: 224, height: 176 },
-  text:  { width: 200, height: 52 },
+  note:   { width: 208, height: 150 },
+  quote:  { width: 224, height: 176 },
+  text:   { width: 200, height: 52 },
+  region: { width: 320, height: 220 },
+  image:  { width: 240, height: 180 },
 } as const;
 
 const edgeTypes = {
@@ -91,6 +100,25 @@ const edgeTypes = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const ARROW = { type: MarkerType.ArrowClosed, color: '#94a3b8' };
+
+// Wallpaper presets (Sprint 4). All pan/zoom with the canvas because they're
+// React Flow <Background> layers. 'lines' uses a huge horizontal gap so only the
+// ruled horizontal lines show (notebook paper); 'plain' renders no pattern.
+function renderBackground(background: MapBackground = 'dots') {
+  const ink = 'rgba(28,26,23,0.14)';
+  const faint = 'rgba(28,26,23,0.07)';
+  switch (background) {
+    case 'plain':
+      return null;
+    case 'grid':
+      return <Background variant={BackgroundVariant.Lines} gap={28} size={1} color={faint} />;
+    case 'lines':
+      return <Background variant={BackgroundVariant.Lines} gap={[100000, 30]} size={1} color={faint} />;
+    case 'dots':
+    default:
+      return <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color={ink} />;
+  }
+}
 
 function edgeMarkersForDirection(dir: EdgeDirection = 'forward') {
   return {
@@ -113,7 +141,17 @@ function buildReactFlowNode(
   bookMap: Map<string, Book>,
   importantByBook: Map<string, number>,
 ): Node | null {
-  const base = { id: mn.id, position: mn.position, zIndex: resolveZ(mn) };
+  // A pinned node can't be dragged or connected but stays selectable (so it can
+  // be unpinned). The `km-pinned` class draws the pin badge — see index.css.
+  const locked = mn.locked ?? false;
+  const base = {
+    id: mn.id,
+    position: mn.position,
+    zIndex: resolveZ(mn),
+    draggable: !locked,
+    connectable: !locked,
+    className: locked ? 'km-pinned' : undefined,
+  };
 
   switch (mn.type) {
     case 'book': {
@@ -192,6 +230,39 @@ function buildReactFlowNode(
           style: mn.style,
         } satisfies ShapeNodeData,
       };
+    case 'region': {
+      const width = mn.width ?? DEFAULT_SIZE.region.width;
+      const height = mn.height ?? DEFAULT_SIZE.region.height;
+      return {
+        ...base,
+        type: 'region',
+        width,
+        height,
+        style: { width, height },
+        data: {
+          nodeId: mn.id,
+          content: mn.content ?? '',
+          locked: mn.locked,
+          style: mn.style,
+        } satisfies RegionNodeData,
+      };
+    }
+    case 'image': {
+      const width = mn.width ?? DEFAULT_SIZE.image.width;
+      const height = mn.height ?? DEFAULT_SIZE.image.height;
+      return {
+        ...base,
+        type: 'image',
+        width,
+        height,
+        style: { width, height },
+        data: {
+          nodeId: mn.id,
+          src: mn.content ?? '',
+          locked: mn.locked,
+        } satisfies ImageNodeData,
+      };
+    }
     default:
       return null;
   }
@@ -416,6 +487,27 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     });
   }, [mapNodes]);
 
+  // ── Sync pinned state from Dexie into mounted nodes (all node types) ──────
+  // Pinning toggles draggable/connectable + the badge class without a remount.
+  useEffect(() => {
+    if (!initialized.current || !mapNodes) return;
+
+    const lockedById = new Map(mapNodes.map((mn) => [mn.id, mn.locked ?? false]));
+    setNodes((prev) => {
+      let changed = false;
+      const next = prev.map((n) => {
+        const locked = lockedById.get(n.id);
+        if (locked === undefined) return n;
+        const draggable = !locked;
+        const className = locked ? 'km-pinned' : undefined;
+        if (n.draggable === draggable && n.className === className) return n;
+        changed = true;
+        return { ...n, draggable, connectable: draggable, className };
+      });
+      return changed ? next : prev;
+    });
+  }, [mapNodes]);
+
   // ── Sync book node data (displayMode, important count) from Dexie ─────────
   // The important count matters here because opening a book from the canvas and
   // marking highlights lands the user right back on these nodes.
@@ -624,15 +716,32 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     await updateCanvasNodeDisplayMode(nodeId, mode);
   }, [contextMenu, closeContextMenu]);
 
+  const handleContextPin = useCallback(async (locked: boolean) => {
+    if (!contextMenu) return;
+    const nodeId = contextMenu.nodeId;
+    closeContextMenu();
+    await updateCanvasNodeLocked(nodeId, locked);
+  }, [contextMenu, closeContextMenu]);
+
   // Book node targeted by the context menu (drives the Card/Cover items).
   const contextBookNode = contextMenu
     ? mapNodes?.find((mn) => mn.id === contextMenu.nodeId && mn.type === 'book')
+    : undefined;
+
+  // Node targeted by the context menu (drives the Pin/Unpin item).
+  const contextNode = contextMenu
+    ? mapNodes?.find((mn) => mn.id === contextMenu.nodeId)
     : undefined;
 
   // ── Remember viewport so returning from a book keeps the user's place ─────
   const savedViewport = viewportCache.get(mapId);
   const onMoveEnd = useCallback((_: unknown, vp: Viewport) => {
     viewportCache.set(mapId, vp);
+  }, [mapId]);
+
+  // ── Wallpaper (per-map, persisted on the map). Not part of node undo/redo. ──
+  const handleBackgroundChange = useCallback((bg: MapBackground) => {
+    updateMapBackground(mapId, bg);
   }, [mapId]);
 
   // ── Export map as PNG ─────────────────────────────────────────────────────
@@ -652,9 +761,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     <div className="km-canvas-desk relative h-full w-full overflow-hidden">
       <CanvasToolbar
         mapName={map?.name ?? '…'}
+        background={map?.background}
         onBack={onBack}
         onAutoArrange={handleAutoArrange}
         onExportImage={handleExportImage}
+        onBackgroundChange={handleBackgroundChange}
         exportingImage={exportingImage}
       />
 
@@ -696,12 +807,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         zoomOnScroll={false}
         zoomOnPinch
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1.4}
-          color="rgba(28,26,23,0.14)"
-        />
+        {renderBackground(map?.background)}
         <Controls
           position="bottom-right"
           showInteractive={false}
@@ -730,11 +836,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
             </div>
             <p className="font-display text-base font-medium" style={{ color: 'var(--ink-soft)' }}>This map is empty</p>
             <p className="mt-1.5 text-sm" style={{ color: 'var(--ink-faint)' }}>
-              Use the toolbar on the left to add books,
+              Use the toolbar on the left to add books, topics,
             </p>
-            <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>topics, notes, quotes, or shapes.</p>
+            <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>notes, quotes, shapes, regions, or images.</p>
             <div className="mt-4 flex items-center justify-center gap-1.5" style={{ color: 'var(--ink-faint)' }}>
-              {[BookOpen, Tag, StickyNote, Quote, Square].map((Icon, i) => (
+              {[BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus].map((Icon, i) => (
                 <span
                   key={i}
                   className="flex h-7 w-7 items-center justify-center rounded-md border"
@@ -789,6 +895,15 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
               <SendToBack className="h-4 w-4" /> Enviar al fondo
             </button>
             <div className="km-menu__sep" />
+            {contextNode?.locked ? (
+              <button onClick={() => handleContextPin(false)} className="km-menu__item">
+                <PinOff className="h-4 w-4" /> Dessujetar
+              </button>
+            ) : (
+              <button onClick={() => handleContextPin(true)} className="km-menu__item">
+                <Pin className="h-4 w-4" /> Sujetar al lienzo
+              </button>
+            )}
             <button onClick={handleContextDuplicate} className="km-menu__item">
               <Copy className="h-4 w-4" /> Duplicar
             </button>

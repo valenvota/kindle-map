@@ -1,5 +1,5 @@
 import { db } from './db';
-import type { KindleMap } from '../types/map';
+import type { KindleMap, MapBackground } from '../types/map';
 
 export async function createMap(name: string): Promise<KindleMap> {
   const now = new Date().toISOString();
@@ -19,6 +19,11 @@ export async function getAllMaps(): Promise<KindleMap[]> {
 
 export async function getMap(id: string): Promise<KindleMap | undefined> {
   return db.maps.get(id);
+}
+
+/** Set a map's wallpaper preset (Sprint 4). */
+export async function updateMapBackground(id: string, background: MapBackground): Promise<void> {
+  await db.maps.update(id, { background, updatedAt: new Date().toISOString() });
 }
 
 export async function deleteMap(id: string): Promise<void> {

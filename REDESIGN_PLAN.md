@@ -5,7 +5,8 @@
 >
 > **State:** redesign phases 0–4 COMPLETE. Sprint 2 (Library & Book Visual Modes) COMPLETE.
 > Sprint 3A (Canvas Interaction Polish) COMPLETE. Sprint 3B (Canvas Authoring) COMPLETE.
-> **Next up:** Sprint 4 — Canvas Creative Layer (folders, pins, wallpapers, images, pencil feel).
+> Sprint 4 (Canvas Creative Layer) COMPLETE.
+> **Next up:** Sprint 4B — Ink (pencil/drawing improvements, deferred out of Sprint 4).
 
 ---
 
@@ -129,6 +130,43 @@ Local mockup source files live in the session scratchpad (not the repo).
     resizable; context menu, layer ops, multi-select, and the drawing overlay all intact; `tsc -b` + `vite build`
     green; console clean.
 
+- **Sprint 4 — Canvas Creative Layer ✅ COMPLETE**
+  Four features shipped as a coherent "desk decoration" layer; pencil/drawing improvements were deliberately
+  split out to **Sprint 4B — Ink** so this sprint never touches `DrawingLayer` (protecting the select-mode
+  pointer-events guardrail).
+  - *Image / photo nodes* — new `type: 'image'` node. Pixels stored inline as a (downscaled) data URI in
+    `content`, same pattern as `Book.coverImage`. Created via an "Image" tool that opens a native file picker
+    (hidden `<input type=file>` in `PlusMenu`); `utils/downscaleImage.ts` caps the longest edge at 1600px and
+    re-encodes (PNG keeps alpha, else JPEG) before storing, and sizes the node to the image's aspect. Resizes
+    with `NodeResizer keepAspectRatio` so the picture never distorts.
+  - *Visual regions / folders* — new `type: 'region'` node: a soft tinted backdrop with an optional title
+    (double-click to rename), resizable, styleable via `NodeStyleToolbar`. Sits behind everything (treated like
+    `shape` in `layerOrder.ts`, so nodes on top stay clickable — the big-shape click-through guard from 3A).
+    Visual only in Sprint 4 — no containment/group movement yet (deferred). Legacy `Group` table intentionally
+    NOT reused.
+  - *Pin / unpin ("pin to the desk")* — optional `locked` flag on `CanvasNodeData`. A pinned node sets
+    `draggable`/`connectable` false at the React Flow node level (can't drift) but stays selectable (so it can be
+    unpinned). The pin badge is drawn on the `.react-flow__node` wrapper via a `km-pinned` class + a CSS
+    `::after` (embedded pin SVG), so it works for every node type with zero per-component plumbing. Toggled from
+    the context menu ("Sujetar al lienzo" / "Dessujetar"). A live-query sync effect mirrors the zIndex one so
+    pin/unpin updates a mounted node without a remount.
+  - *Canvas wallpaper presets* — per-map `background` field on `KindleMap` (`'dots' | 'grid' | 'lines' | 'plain'`,
+    absence ⇒ 'dots'). Driven by a `<Background>` switch in `ReadingCanvas` (all React-Flow layers, so they
+    pan/zoom; `lines` uses a huge horizontal gap for notebook ruling; `plain` renders nothing). Picked from a new
+    "Wallpaper" popover in the top toolbar. **Not part of node undo/redo** — it lives on the `maps` table, not in
+    the node history snapshot (documented, acceptable).
+  - Data model: `'image'`/`'region'` added to the `type` union; `locked` on `CanvasNodeData`; `background` on
+    `KindleMap`. Dexie **v10** — no-op intent bump only (type index is value-agnostic; `locked`/`background` are
+    non-indexed optional fields with absence-defaults, so no data migration).
+  - Files: new `nodes/RegionNode.tsx`, `nodes/ImageNode.tsx`, `utils/downscaleImage.ts`; edits to `ReadingCanvas`,
+    `CanvasToolbar`, `CanvasLeftToolbar`, `CanvasToolContext`, `PlusMenu`, `layerOrder.ts`, `canvasRepository.ts`,
+    `mapsRepository.ts`, `types/canvas.ts`, `types/map.ts`, `db/db.ts`, `index.css`.
+  - Verified in-browser with seeded data: region create/rename/tint/resize + sits behind (z=0) with nodes on top
+    still clickable; image upload → downscale (2400→1600) → aspect-fit render + Export PNG with an image present
+    (no taint, console clean); pin → badge + non-draggable + still selectable, unpin restores drag; wallpaper
+    switch persists per-map across remount; duplicate + undo (region) intact; drawing overlay still
+    `pointer-events:none` in select mode / `all` in pencil mode. `tsc -b` + `vite build` green.
+
 ---
 
 ## Product roadmap (post-redesign sprints)
@@ -140,7 +178,8 @@ Local mockup source files live in the session scratchpad (not the repo).
      click-through & stacking; selection hardening (select, multi-select, right-click, delete, duplicate,
      Ctrl+Z/Y, pan/select separation, drawing overlay must not block selection).
    - ✅ **3B — Canvas Authoring.** Resizable elements (Note/Quote/TextBox + existing Shape); free text boxes.
-4. **Canvas Creative Layer ← NEXT** (folders, pins, wallpapers, images, pencil feel)
+4. ✅ **Canvas Creative Layer — done; see Sprint 4 above** (image nodes, visual regions, pin/unpin, wallpaper
+   presets). Pencil/drawing feel split out → **Sprint 4B — Ink ← NEXT** (do not touch `DrawingLayer` before then).
 5. Export Lite (high-res PNG, selected-area export, fix blurry export; defer full PDF)
 6. Onboarding System
 7. Backend Architecture Spike (Supabase vs Firebase; local-first IndexedDB migration path; sync)

@@ -58,6 +58,11 @@ export async function updateCanvasNodeSize(
   await db.canvasNodes.update(id, { width, height });
 }
 
+/** Pin/unpin a node to the desk (Sprint 4). Pinned nodes don't drag. */
+export async function updateCanvasNodeLocked(id: string, locked: boolean): Promise<void> {
+  await db.canvasNodes.update(id, { locked });
+}
+
 // ─── Edges ──────────────────────────────────────────────────────────────────
 
 export async function getCanvasEdgesByMap(mapId: string): Promise<CanvasEdge[]> {

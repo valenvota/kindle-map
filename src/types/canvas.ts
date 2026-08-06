@@ -8,20 +8,28 @@ export type CanvasNodeData = {
   bookId?: string;
   /** Present for quote nodes — source of truth for the original highlight */
   highlightId?: string;
-  type: 'book' | 'topic' | 'note' | 'quote' | 'shape' | 'text';
-  /** Topic label, note text, denormalized quote text, shape label, or text-box text */
+  type: 'book' | 'topic' | 'note' | 'quote' | 'shape' | 'text' | 'image' | 'region';
+  /**
+   * Topic label, note text, denormalized quote text, shape label, text-box text,
+   * region title, or — for image nodes — the (downscaled) image data URI.
+   */
   content?: string;
   /** Present for shape nodes */
   shapeKind?: ShapeKind;
   /** BookNode-only: how the book renders on the canvas. Undefined ⇒ 'card' (legacy default). */
   displayMode?: 'card' | 'cover';
+  /**
+   * Pinned to the desk: can't be dragged and won't connect, but stays selectable
+   * so it can be unpinned. Undefined ⇒ not pinned. See Sprint 4.
+   */
+  locked?: boolean;
   /** Canvas stacking order. Undefined ⇒ resolved by type — see `resolveZ` in canvas/layerOrder.ts. */
   zIndex?: number;
   position: { x: number; y: number };
-  /** Resizable nodes (shape/note/quote/text). Undefined ⇒ the node's default size. */
+  /** Resizable nodes (shape/note/quote/text/image/region). Undefined ⇒ the node's default size. */
   width?: number;
   height?: number;
-  /** Optional style overrides — topic/note/quote/shape/text nodes only */
+  /** Optional style overrides — topic/note/quote/shape/text/region nodes only */
   style?: {
     background?: string;
     border?: string;

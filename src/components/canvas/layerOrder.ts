@@ -4,20 +4,21 @@ import type { CanvasNodeData } from '../../types/canvas';
  * Canvas stacking order — pure helpers, no React and no Dexie.
  *
  * Every node's effective z comes from `resolveZ`. Nodes persisted before the
- * zIndex field existed have none, so absence resolves by type: shapes sit
- * behind everything else, because a big rectangle or circle is almost always
- * a backdrop / region / container rather than something meant to cover books.
- * That makes legacy maps stack correctly with no migration and no user action.
+ * zIndex field existed have none, so absence resolves by type: shapes and
+ * regions sit behind everything else, because a big rectangle, circle, or
+ * region is almost always a backdrop / container rather than something meant to
+ * cover books. That makes legacy maps stack correctly with no migration and no
+ * user action.
  */
 
-/** Default z for shape nodes — behind. */
+/** Default z for backdrop nodes (shape, region) — behind. */
 export const SHAPE_Z = 0;
-/** Default z for every other node type — in front of shapes. */
+/** Default z for every other node type — in front of backdrops. */
 export const DEFAULT_Z = 1;
 
 export function resolveZ(node: Pick<CanvasNodeData, 'type' | 'zIndex'>): number {
   if (node.zIndex !== undefined) return node.zIndex;
-  return node.type === 'shape' ? SHAPE_Z : DEFAULT_Z;
+  return node.type === 'shape' || node.type === 'region' ? SHAPE_Z : DEFAULT_Z;
 }
 
 export type LayerOp = 'front' | 'back' | 'forward' | 'backward';

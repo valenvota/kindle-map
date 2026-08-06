@@ -10,6 +10,8 @@ export type CanvasTool =
   | 'text'
   | 'rectangle'
   | 'circle'
+  | 'region'
+  | 'image'
   | 'pencil'
   | 'marker'
   | 'eraser';
