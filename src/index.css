@@ -552,9 +552,12 @@
   fill: none;
 }
 
-/* Canvas background */
+/* Canvas background lives on `.react-flow` (see the `.km-canvas-desk .react-flow`
+   rule above), NOT on `.react-flow__renderer`. The renderer sits at z-index 4 and
+   would paint its opaque fill on top of the `<Background>` pattern (z-index -1),
+   hiding the wallpaper entirely — so it must stay transparent. */
 .react-flow__renderer {
-  background: var(--canvas-bg);
+  background: transparent;
 }
 
 /* Connection handles */

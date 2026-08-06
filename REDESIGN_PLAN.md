@@ -144,6 +144,13 @@ Local mockup source files live in the session scratchpad (not the repo).
     `shape` in `layerOrder.ts`, so nodes on top stay clickable — the big-shape click-through guard from 3A).
     Visual only in Sprint 4 — no containment/group movement yet (deferred). Legacy `Group` table intentionally
     NOT reused.
+    - **Future direction (do NOT build yet — product intent for a later sprint):** regions should eventually
+      become the differentiator vs. a plain shape by acting as **intelligent containers / folders** — nodes
+      dropped inside a region can be *associated* with it (membership tracked in the data model), and once that
+      exists, moving a region could *optionally* move its contents with it. This is what makes a region more than
+      a coloured rectangle. Deliberately out of scope for now; the current region is purely a visual backdrop.
+      Likely needs: a region↔node membership relation (e.g. a `regionId` on member nodes or a region-members
+      table), hit-testing on drop, and an opt-in "move contents" behaviour on region drag.
   - *Pin / unpin ("pin to the desk")* — optional `locked` flag on `CanvasNodeData`. A pinned node sets
     `draggable`/`connectable` false at the React Flow node level (can't drift) but stays selectable (so it can be
     unpinned). The pin badge is drawn on the `.react-flow__node` wrapper via a `km-pinned` class + a CSS
@@ -155,6 +162,12 @@ Local mockup source files live in the session scratchpad (not the repo).
     pan/zoom; `lines` uses a huge horizontal gap for notebook ruling; `plain` renders nothing). Picked from a new
     "Wallpaper" popover in the top toolbar. **Not part of node undo/redo** — it lives on the `maps` table, not in
     the node history snapshot (documented, acceptable).
+    - **Post-Sprint-4 bug fix (wallpaper not visible):** the pattern rendered but was hidden. `index.css` painted
+      an opaque `background: var(--canvas-bg)` on `.react-flow__renderer` (z-index 4), which covered the
+      `<Background>` pattern (z-index -1). Fixed by making the renderer transparent — the desk color already lives
+      on `.react-flow` (behind the pattern), so the pattern now shows with nodes on top. This also un-hid the
+      original dot grid, which had been invisible since Phase 3. Preset colors were also bumped from near-invisible
+      (~0.07–0.14 ink) to legible-but-calm values (dots 0.28/r2.2, grid 0.16, lines 0.20).
   - Data model: `'image'`/`'region'` added to the `type` union; `locked` on `CanvasNodeData`; `background` on
     `KindleMap`. Dexie **v10** — no-op intent bump only (type index is value-agnostic; `locked`/`background` are
     non-indexed optional fields with absence-defaults, so no data migration).
@@ -163,9 +176,10 @@ Local mockup source files live in the session scratchpad (not the repo).
     `mapsRepository.ts`, `types/canvas.ts`, `types/map.ts`, `db/db.ts`, `index.css`.
   - Verified in-browser with seeded data: region create/rename/tint/resize + sits behind (z=0) with nodes on top
     still clickable; image upload → downscale (2400→1600) → aspect-fit render + Export PNG with an image present
-    (no taint, console clean); pin → badge + non-draggable + still selectable, unpin restores drag; wallpaper
-    switch persists per-map across remount; duplicate + undo (region) intact; drawing overlay still
-    `pointer-events:none` in select mode / `all` in pencil mode. `tsc -b` + `vite build` green.
+    (no taint, console clean); pin → badge + non-draggable + still selectable, unpin restores drag; all four
+    wallpaper presets now visibly distinct on-canvas (dots / grid / lines / plain) and persist per-map across
+    remount; duplicate + undo (region) intact; drawing overlay still `pointer-events:none` in select mode /
+    `all` in pencil mode. `tsc -b` + `vite build` green.
 
 ---
 

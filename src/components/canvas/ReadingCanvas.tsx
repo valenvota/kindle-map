@@ -102,21 +102,21 @@ const edgeTypes = {
 const ARROW = { type: MarkerType.ArrowClosed, color: '#94a3b8' };
 
 // Wallpaper presets (Sprint 4). All pan/zoom with the canvas because they're
-// React Flow <Background> layers. 'lines' uses a huge horizontal gap so only the
-// ruled horizontal lines show (notebook paper); 'plain' renders no pattern.
+// React Flow <Background> layers. Colors are kept ink-toned (calm/editorial) but
+// opaque enough to actually read on the warm desk — the earlier values were so
+// faint the presets looked identical. 'lines' uses a huge horizontal gap so only
+// the ruled horizontal lines show (notebook paper); 'plain' renders no pattern.
 function renderBackground(background: MapBackground = 'dots') {
-  const ink = 'rgba(28,26,23,0.14)';
-  const faint = 'rgba(28,26,23,0.07)';
   switch (background) {
     case 'plain':
       return null;
     case 'grid':
-      return <Background variant={BackgroundVariant.Lines} gap={28} size={1} color={faint} />;
+      return <Background variant={BackgroundVariant.Lines} gap={26} lineWidth={1} color="rgba(28,26,23,0.16)" />;
     case 'lines':
-      return <Background variant={BackgroundVariant.Lines} gap={[100000, 30]} size={1} color={faint} />;
+      return <Background variant={BackgroundVariant.Lines} gap={[100000, 30]} lineWidth={1.5} color="rgba(28,26,23,0.2)" />;
     case 'dots':
     default:
-      return <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color={ink} />;
+      return <Background variant={BackgroundVariant.Dots} gap={22} size={2.2} color="rgba(28,26,23,0.28)" />;
   }
 }
 
