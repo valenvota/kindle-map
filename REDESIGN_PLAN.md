@@ -158,16 +158,22 @@ Local mockup source files live in the session scratchpad (not the repo).
     the context menu ("Sujetar al lienzo" / "Dessujetar"). A live-query sync effect mirrors the zIndex one so
     pin/unpin updates a mounted node without a remount.
   - *Canvas wallpaper presets* — per-map `background` field on `KindleMap` (`'dots' | 'grid' | 'lines' | 'plain'`,
-    absence ⇒ 'dots'). Driven by a `<Background>` switch in `ReadingCanvas` (all React-Flow layers, so they
-    pan/zoom; `lines` uses a huge horizontal gap for notebook ruling; `plain` renders nothing). Picked from a new
-    "Wallpaper" popover in the top toolbar. **Not part of node undo/redo** — it lives on the `maps` table, not in
-    the node history snapshot (documented, acceptable).
+    absence ⇒ 'dots'). `dots`/`grid` are React Flow `<Background>` layers; `lines` is a custom crisp layer (see
+    the fix below); `plain` renders nothing. Picked from a new "Wallpaper" popover in the top toolbar. **Not part
+    of node undo/redo** — it lives on the `maps` table, not in the node history snapshot (documented, acceptable).
     - **Post-Sprint-4 bug fix (wallpaper not visible):** the pattern rendered but was hidden. `index.css` painted
       an opaque `background: var(--canvas-bg)` on `.react-flow__renderer` (z-index 4), which covered the
       `<Background>` pattern (z-index -1). Fixed by making the renderer transparent — the desk color already lives
       on `.react-flow` (behind the pattern), so the pattern now shows with nodes on top. This also un-hid the
       original dot grid, which had been invisible since Phase 3. Preset colors were also bumped from near-invisible
       (~0.07–0.14 ink) to legible-but-calm values (dots 0.28/r2.2, grid 0.16, lines 0.20).
+    - **Post-Sprint-4 bug fix (Lines blurry when zooming):** the old `lines` preset used the React Flow Lines
+      variant with a huge `gap=[100000,30]` to suppress vertical lines, but that giant SVG pattern tile rasterizes
+      blurry when the viewport scales it. Replaced ONLY the `lines` preset with a custom `LinesBackground`
+      component (`ReadingCanvas`): a `pointer-events:none`, `z-index:-1` div painted with a
+      `repeating-linear-gradient`, panned via `background-position-y` and zoomed via the gradient period (both from
+      `useViewport()`). Gradients paint at native resolution, so the ruling stays crisp at any zoom. Dots/grid/plain
+      unchanged.
   - Data model: `'image'`/`'region'` added to the `type` union; `locked` on `CanvasNodeData`; `background` on
     `KindleMap`. Dexie **v10** — no-op intent bump only (type index is value-agnostic; `locked`/`background` are
     non-indexed optional fields with absence-defaults, so no data migration).

@@ -7,6 +7,7 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
+  useViewport,
   addEdge,
   ConnectionMode,
   MarkerType,
@@ -101,11 +102,37 @@ const edgeTypes = {
 
 const ARROW = { type: MarkerType.ArrowClosed, color: '#94a3b8' };
 
-// Wallpaper presets (Sprint 4). All pan/zoom with the canvas because they're
-// React Flow <Background> layers. Colors are kept ink-toned (calm/editorial) but
-// opaque enough to actually read on the warm desk — the earlier values were so
-// faint the presets looked identical. 'lines' uses a huge horizontal gap so only
-// the ruled horizontal lines show (notebook paper); 'plain' renders no pattern.
+// Notebook-style horizontal ruling. Rendered as a repeating-linear-gradient
+// (not a React Flow <Background>): the SVG Lines variant needs a huge horizontal
+// gap to suppress vertical lines, and that giant pattern tile rasterizes blurry
+// when the viewport scales it. A gradient is painted at native resolution, so it
+// stays crisp at any zoom — panned via background-position-y, zoomed via the
+// period. Horizontal lines only depend on y, so x-pan is irrelevant.
+const LINES_GAP = 30;
+const LINES_COLOR = 'rgba(28,26,23,0.2)';
+const LINES_WIDTH = 1.5;
+
+function LinesBackground() {
+  const vp = useViewport();
+  const period = LINES_GAP * vp.zoom;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: -1,
+        pointerEvents: 'none',
+        backgroundImage: `repeating-linear-gradient(to bottom, ${LINES_COLOR} 0, ${LINES_COLOR} ${LINES_WIDTH}px, transparent ${LINES_WIDTH}px, transparent ${period}px)`,
+        backgroundPosition: `0 ${vp.y}px`,
+      }}
+    />
+  );
+}
+
+// Wallpaper presets (Sprint 4). Dots/grid pan+zoom as React Flow <Background>
+// layers; 'lines' uses the crisp gradient layer above (see LinesBackground);
+// 'plain' renders no pattern. Colors are ink-toned (calm/editorial) but opaque
+// enough to read on the warm desk.
 function renderBackground(background: MapBackground = 'dots') {
   switch (background) {
     case 'plain':
@@ -113,7 +140,7 @@ function renderBackground(background: MapBackground = 'dots') {
     case 'grid':
       return <Background variant={BackgroundVariant.Lines} gap={26} lineWidth={1} color="rgba(28,26,23,0.16)" />;
     case 'lines':
-      return <Background variant={BackgroundVariant.Lines} gap={[100000, 30]} lineWidth={1.5} color="rgba(28,26,23,0.2)" />;
+      return <LinesBackground />;
     case 'dots':
     default:
       return <Background variant={BackgroundVariant.Dots} gap={22} size={2.2} color="rgba(28,26,23,0.28)" />;
