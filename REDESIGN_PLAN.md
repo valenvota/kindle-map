@@ -5,8 +5,8 @@
 >
 > **State:** redesign phases 0–4 COMPLETE. Sprint 2 (Library & Book Visual Modes) COMPLETE.
 > Sprint 3A (Canvas Interaction Polish) COMPLETE. Sprint 3B (Canvas Authoring) COMPLETE.
-> Sprint 4 (Canvas Creative Layer) COMPLETE.
-> **Next up:** Sprint 4B — Ink (pencil/drawing improvements, deferred out of Sprint 4).
+> Sprint 4 (Canvas Creative Layer) COMPLETE. Sprint 4B (Ink — pencil/drawing) COMPLETE.
+> **Next up:** Export Lite (roadmap item 5).
 
 ---
 
@@ -187,6 +187,35 @@ Local mockup source files live in the session scratchpad (not the repo).
     remount; duplicate + undo (region) intact; drawing overlay still `pointer-events:none` in select mode /
     `all` in pencil mode. `tsc -b` + `vite build` green.
 
+- **Sprint 4B — Ink (pencil/drawing) ✅ COMPLETE**
+  The drawing-feel work deliberately split out of Sprint 4. This is the one sprint that *does* touch
+  `DrawingLayer.tsx`; the select-mode guardrail (`pointer-events:none` in select, `all` only for draw tools) was
+  preserved and re-verified.
+  - *Pressure / variable-width strokes* — added **`perfect-freehand`** (dependency). Strokes now render as a
+    filled variable-width outline (`getStroke` → SVG fill path) instead of a constant-width `stroke`. Uses
+    `simulatePressure: true` so mouse/trackpad (which report a flat 0.5 pressure) still get a velocity-tapered,
+    inky line; `thinning/smoothing/streamline` tuned for a calm pencil feel. Marker stays translucent (opacity
+    0.35); the wide invisible **centerline hit-path** is kept for click-selection.
+  - *Better smoothing / sampling* — removed the `SAMPLE_RATE` input decimation; `streamline` now does the
+    smoothing, so strokes keep all their points and read cleaner.
+  - *Scoped undo/redo for strokes* — snapshot stacks live in `DrawingLayer`. Ctrl+Z/Y is handled there **only
+    while a drawing tool is engaged**; the node-history handler in `ReadingCanvas` early-returns when a draw tool
+    is active (checked via an `activeToolRef`). So: **draw mode → Ctrl+Z/Y affects strokes; select mode → affects
+    nodes** (per spec, no unified timeline). Add/erase/delete-selected are all undoable; one undo step per eraser
+    gesture (snapshot captured on the first stroke erased).
+  - *Kept as-is (per scope):* eraser stays whole-stroke; no partial eraser, no stroke move/resize, no restyling
+    existing strokes.
+  - Data model: **none** — `StrokePoint.pressure` already existed and was already captured; strokes render from
+    stored points. **No Dexie migration / version bump.**
+  - Files: `perfect-freehand` in `package.json`; rewrote `DrawingLayer.tsx`; `ReadingCanvas.tsx` (node-undo guard
+    + `activeToolRef`).
+  - Verified in-browser (strokes injected + drawn via dispatched pointer events, since the harness can't sample
+    real `pointermove`): strokes render as variable-width filled ink; pencil-add undo/redo (3→2→3); eraser
+    whole-stroke delete + undo (draw→erase→undo restores); **select-mode Ctrl+Z leaves strokes untouched**
+    (scoping); node selection + stroke selection both work with strokes present; overlay `pointer-events:none` in
+    select / `all` in pencil (guardrail); Export PNG with strokes present, console clean. `tsc -b` + `vite build`
+    green.
+
 ---
 
 ## Product roadmap (post-redesign sprints)
@@ -199,13 +228,14 @@ Local mockup source files live in the session scratchpad (not the repo).
      Ctrl+Z/Y, pan/select separation, drawing overlay must not block selection).
    - ✅ **3B — Canvas Authoring.** Resizable elements (Note/Quote/TextBox + existing Shape); free text boxes.
 4. ✅ **Canvas Creative Layer — done; see Sprint 4 above** (image nodes, visual regions, pin/unpin, wallpaper
-   presets). Pencil/drawing feel split out → **Sprint 4B — Ink ← NEXT** (do not touch `DrawingLayer` before then).
+   presets). ✅ **Sprint 4B — Ink** also done (pressure/variable-width strokes via `perfect-freehand`, better
+   smoothing, scoped drawing-mode undo/redo). Canvas work is now complete.
    - **Future: Custom wallpaper upload** — let the user upload their own image/photo as the canvas wallpaper (a
      per-map background image), beyond the built-in dots/grid/lines/plain presets. A later sprint of its own —
      **not part of Sprint 4 or Sprint 4B.** Likely reuses `utils/downscaleImage.ts` and stores the data URI on the
      map's `background` field (or a sibling field); needs tiling/fit + opacity handling so it doesn't fight the
      paper feel, and care around Export PNG (large embedded images).
-5. Export Lite (high-res PNG, selected-area export, fix blurry export; defer full PDF)
+5. **Export Lite ← NEXT** (high-res PNG, selected-area export, fix blurry export; defer full PDF)
 6. Onboarding System
 7. Backend Architecture Spike (Supabase vs Firebase; local-first IndexedDB migration path; sync)
 8. Book Workspace UX (Study Mode UX only — reflections, marking, flow; no AI yet)

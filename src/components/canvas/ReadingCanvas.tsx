@@ -307,6 +307,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
   const [drawColor, setDrawColor] = useState('#181614');
   const [drawWidth, setDrawWidth] = useState(3);
+  // Node undo/redo defers to the stroke history while a drawing tool is engaged
+  // (Sprint 4B scoped undo). Kept in a ref so the keydown handler stays stable.
+  const activeToolRef = useRef(activeTool);
+  activeToolRef.current = activeTool;
+  const isDrawTool = (t: CanvasTool) => t === 'pencil' || t === 'marker' || t === 'eraser';
   const [editingLabelEdgeId, setEditingLabelEdgeId] = useState<string | null>(null);
   const [editingLabelText, setEditingLabelText] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -372,6 +377,8 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
       const isUndo = (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z';
       const isRedo = (e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'));
       if (!isUndo && !isRedo) return;
+      // In drawing mode, Ctrl+Z/Y belongs to the stroke history (DrawingLayer).
+      if (isDrawTool(activeToolRef.current)) return;
       e.preventDefault();
 
       const newIndex = isUndo ? historyIndex.current - 1 : historyIndex.current + 1;
