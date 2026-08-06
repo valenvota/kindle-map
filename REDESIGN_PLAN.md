@@ -200,6 +200,11 @@ Local mockup source files live in the session scratchpad (not the repo).
    - ✅ **3B — Canvas Authoring.** Resizable elements (Note/Quote/TextBox + existing Shape); free text boxes.
 4. ✅ **Canvas Creative Layer — done; see Sprint 4 above** (image nodes, visual regions, pin/unpin, wallpaper
    presets). Pencil/drawing feel split out → **Sprint 4B — Ink ← NEXT** (do not touch `DrawingLayer` before then).
+   - **Future: Custom wallpaper upload** — let the user upload their own image/photo as the canvas wallpaper (a
+     per-map background image), beyond the built-in dots/grid/lines/plain presets. A later sprint of its own —
+     **not part of Sprint 4 or Sprint 4B.** Likely reuses `utils/downscaleImage.ts` and stores the data URI on the
+     map's `background` field (or a sibling field); needs tiling/fit + opacity handling so it doesn't fight the
+     paper feel, and care around Export PNG (large embedded images).
 5. Export Lite (high-res PNG, selected-area export, fix blurry export; defer full PDF)
 6. Onboarding System
 7. Backend Architecture Spike (Supabase vs Firebase; local-first IndexedDB migration path; sync)
