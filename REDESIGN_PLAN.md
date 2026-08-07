@@ -7,7 +7,8 @@
 > Sprint 3A (Canvas Interaction Polish) COMPLETE. Sprint 3B (Canvas Authoring) COMPLETE.
 > Sprint 4 (Canvas Creative Layer) COMPLETE. Sprint 4B (Ink — pencil/drawing) COMPLETE.
 > Export Lite COMPLETE (WYSIWYG PNG: wallpaper + ink + nodes, hi-res, export all / selection).
-> **Next up:** Onboarding System (roadmap item 6).
+> Onboarding v1 COMPLETE (welcome, sample data, checklist).
+> **Next up:** Backend Architecture Spike (roadmap item 7).
 
 ---
 
@@ -247,6 +248,37 @@ Local mockup source files live in the session scratchpad (not the repo).
     pre-existing export path), an environment limitation; the produced PNG's contents should be confirmed on a real
     machine.
 
+- **Onboarding v1 ✅ COMPLETE** (roadmap item 6)
+  A calm first-run, kept deliberately lean (no spotlight tour, no video, no AI/Study onboarding, no account/sync).
+  - *Welcome / first-run screen* (`components/onboarding/WelcomeScreen.tsx`) — logo + serif line, three value
+    props (bring in highlights / map how ideas connect / stays on your device), and two CTAs: **Import your
+    highlights** and **Explore with example**. Shown only on true first run (`bookCount 0` and onboarding not yet
+    seen); returning users — even with an empty library — go straight to the existing import screen.
+  - *Explore with example* (`utils/sampleData.ts`) — a curated **mini-demo**, not lorem: 3 real books (Deep Work,
+    Thinking Fast and Slow, Atomic Habits) with 6 highlights (3 marked important) + a book note, and one map
+    "Focus & Attention" that connects them into an idea — two book nodes (cover + card), a topic, a quote pulled
+    from a real highlight, a text label and a paper note, all grouped inside a region with labelled edges. Every
+    record is id-prefixed `sample-` (map nodes are `sample-map:…`), so **clearSampleData()** removes it with zero
+    residue — **no schema field, no Dexie change**. Sample edges name their handles explicitly (nodes expose only
+    named handles, no default) or React Flow drops them.
+  - *Sample-data banner* — a slim "You're exploring example data · Remove sample data" bar on the in-app screens
+    so the demo is never mistaken for the user's own library; one click clears it and (fixed) also closes any open
+    sample book / map so you don't land on a deleted record.
+  - *Invalid-file feedback* (`FileUploader.tsx`) — dropping a non-`.txt` now shows a clear inline message instead
+    of silently doing nothing.
+  - *Getting-Started checklist* (`components/onboarding/GettingStartedChecklist.tsx`) — a calm, dismissible corner
+    card: import highlights / open a book / create a map / draw on a canvas. Steps derive from data
+    (book/map/stroke counts) + an `openedBook` flag; hidden once dismissed or all done.
+  - *State* — all onboarding flags live in **localStorage** (`utils/onboarding.ts`: welcomeSeen, sampleLoaded,
+    openedBook, checklistDismissed), not Dexie — it's UX state, not user knowledge. `App.tsx` owns the routing +
+    handlers.
+  - Verified in-browser (wiped DB + localStorage): first-run shows the welcome; **Explore with example** loads the
+    demo → Library (3 books / 6 highlights / 3 important), banner + checklist ("2 of 4 done"); the sample map
+    renders with all node types **and edges** (the earlier "0 edges" was the hidden-pane 0-size artifact, not a
+    bug); opening a book shows real highlights + important marking and ticks the checklist; **Remove sample data**
+    leaves every store at 0 with no residue and returns to import (incl. the open-book case, now fixed); an
+    empty-but-returning user skips the welcome; invalid-file message shows. `tsc -b` + `vite build` green.
+
 ---
 
 ## Product roadmap (post-redesign sprints)
@@ -268,8 +300,9 @@ Local mockup source files live in the session scratchpad (not the repo).
      paper feel, and care around Export PNG (large embedded images).
 5. ✅ **Export Lite — done; see Export Lite below** (WYSIWYG hi-res PNG incl. wallpaper + ink, export all /
    selection; fixed the blurry-export bug). Full PDF still deferred.
-6. **Onboarding System ← NEXT**
-7. Backend Architecture Spike (Supabase vs Firebase; local-first IndexedDB migration path; sync)
+6. ✅ **Onboarding System — done; see Onboarding v1 below** (welcome, sample data, invalid-file feedback,
+   Getting-Started checklist). Kept lean: no spotlight tour, no video.
+7. **Backend Architecture Spike ← NEXT** (Supabase vs Firebase; local-first IndexedDB migration path; sync)
 8. Book Workspace UX (Study Mode UX only — reflections, marking, flow; no AI yet)
 9. AI Layer (concepts, summaries, study questions, connections; preserve highlightId + source metadata)
 10. Stats v2 (charts, Wrapped)

@@ -8,11 +8,16 @@ type Props = {
 
 export function FileUploader({ onFile, disabled }: Props) {
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(
     (file: File) => {
-      if (!file.name.endsWith('.txt')) return;
+      if (!file.name.toLowerCase().endsWith('.txt')) {
+        setError(`“${file.name}” isn’t a .txt file. Pick your Kindle My Clippings.txt.`);
+        return;
+      }
+      setError(null);
       onFile(file);
     },
     [onFile],
@@ -86,6 +91,12 @@ export function FileUploader({ onFile, disabled }: Props) {
         onChange={onInputChange}
         disabled={disabled}
       />
+
+      {error && (
+        <p className="text-xs font-medium" style={{ color: 'var(--ember, #B06A4F)' }} role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
