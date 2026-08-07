@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown, Pin, PinOff } from 'lucide-react';
-import { exportMapAsPng } from '../../utils/exportMapImage';
+import { exportMapAsPng, type ExportBounds } from '../../utils/exportMapImage';
 import {
   ReactFlow,
   Background,
@@ -8,9 +8,11 @@ import {
   useNodesState,
   useEdgesState,
   useViewport,
+  getNodesBounds,
   addEdge,
   ConnectionMode,
   MarkerType,
+  type ReactFlowInstance,
   type Node,
   type Edge,
   type Connection,
@@ -35,6 +37,7 @@ import {
   bulkSetNodeZIndices,
 } from '../../db/canvasRepository';
 import { updateMapBackground } from '../../db/mapsRepository';
+import { getStrokesByMap } from '../../db/canvasStrokesRepository';
 import type { EdgeDirection } from '../../types/canvas';
 import type { MapBackground } from '../../types/map';
 import { BookNode, type BookNodeData } from './BookNode';
@@ -54,7 +57,7 @@ import { CanvasToolContext, type CanvasTool } from './CanvasToolContext';
 import { DrawingLayer } from './DrawingLayer';
 import { resolveZ, applyLayerOp, type LayerOp } from './layerOrder';
 import type { Book } from '../../types/book';
-import type { CanvasNodeData, StrokeTool } from '../../types/canvas';
+import type { CanvasNodeData, CanvasStroke, StrokeTool } from '../../types/canvas';
 
 const STYLEABLE_TYPES = new Set(['topic', 'note', 'quote', 'shape', 'text', 'region']);
 
@@ -161,6 +164,30 @@ function buildInitialPosition(index: number): { x: number; y: number } {
     x: 60 + col * (NODE_WIDTH + GRID_COL_GAP),
     y: 60 + row * (NODE_HEIGHT + GRID_ROW_GAP),
   };
+}
+
+// Flow-space bounding box of all ink strokes (null when there are none), padded
+// by half the widest stroke so thick lines aren't clipped at the export edge.
+function strokeBounds(strokes: CanvasStroke[]): ExportBounds | null {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, pad = 0, found = false;
+  for (const s of strokes) {
+    pad = Math.max(pad, s.width / 2);
+    for (const p of s.points) {
+      found = true;
+      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+    }
+  }
+  if (!found) return null;
+  return { x: minX - pad, y: minY - pad, width: (maxX - minX) + pad * 2, height: (maxY - minY) + pad * 2 };
+}
+
+function unionBounds(a: ExportBounds | null, b: ExportBounds | null): ExportBounds | null {
+  if (!a) return b;
+  if (!b) return a;
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  return { x, y, width: Math.max(a.x + a.width, b.x + b.width) - x, height: Math.max(a.y + a.height, b.y + b.height) - y };
 }
 
 function buildReactFlowNode(
@@ -778,17 +805,34 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     updateMapBackground(mapId, bg);
   }, [mapId]);
 
-  // ── Export map as PNG ─────────────────────────────────────────────────────
+  // ── Export map as PNG (WYSIWYG fit-capture — see exportMapImage.ts) ────────
+  const rfInstanceRef = useRef<ReactFlowInstance | null>(null);
   const [exportingImage, setExportingImage] = useState(false);
-  const handleExportImage = useCallback(async () => {
-    if (nodes.length === 0) return;
+
+  const handleExport = useCallback(async (mode: 'all' | 'selection') => {
+    const instance = rfInstanceRef.current;
+    if (!instance) return;
+    const targetNodes = mode === 'selection' ? nodes.filter((n) => n.selected) : nodes;
+
+    // Content bounds. For "all" we also union the ink strokes so nothing that
+    // extends past the nodes gets clipped; "selection" frames the picked nodes.
+    let bounds: ExportBounds | null = targetNodes.length > 0 ? getNodesBounds(targetNodes) : null;
+    if (mode === 'all') {
+      const strokes = await getStrokesByMap(mapId);
+      const sb = strokeBounds(strokes);
+      bounds = unionBounds(bounds, sb);
+    }
+    if (!bounds || bounds.width === 0 || bounds.height === 0) return;
+
     setExportingImage(true);
     try {
-      await exportMapAsPng(nodes, map?.name ?? 'map');
+      await exportMapAsPng({ instance, bounds, mapName: map?.name ?? 'map' });
     } finally {
       setExportingImage(false);
     }
-  }, [nodes, map?.name]);
+  }, [nodes, mapId, map?.name]);
+
+  const hasSelection = useMemo(() => nodes.some((n) => n.selected), [nodes]);
 
   return (
     <CanvasToolContext.Provider value={{ activeTool, setActiveTool }}>
@@ -798,7 +842,9 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         background={map?.background}
         onBack={onBack}
         onAutoArrange={handleAutoArrange}
-        onExportImage={handleExportImage}
+        onExportAll={() => handleExport('all')}
+        onExportSelection={() => handleExport('selection')}
+        hasSelection={hasSelection}
         onBackgroundChange={handleBackgroundChange}
         exportingImage={exportingImage}
       />
@@ -810,6 +856,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        onInit={(instance) => { rfInstanceRef.current = instance; }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}

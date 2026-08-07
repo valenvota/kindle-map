@@ -6,7 +6,8 @@
 > **State:** redesign phases 0–4 COMPLETE. Sprint 2 (Library & Book Visual Modes) COMPLETE.
 > Sprint 3A (Canvas Interaction Polish) COMPLETE. Sprint 3B (Canvas Authoring) COMPLETE.
 > Sprint 4 (Canvas Creative Layer) COMPLETE. Sprint 4B (Ink — pencil/drawing) COMPLETE.
-> **Next up:** Export Lite (roadmap item 5).
+> Export Lite COMPLETE (WYSIWYG PNG: wallpaper + ink + nodes, hi-res, export all / selection).
+> **Next up:** Onboarding System (roadmap item 6).
 
 ---
 
@@ -216,6 +217,36 @@ Local mockup source files live in the session scratchpad (not the repo).
     select / `all` in pencil (guardrail); Export PNG with strokes present, console clean. `tsc -b` + `vite build`
     green.
 
+- **Export Lite ✅ COMPLETE** (roadmap item 5)
+  Faithful PNG export of a map, and the fix for the long-standing "blurry export".
+  - *Blur root cause + fix* — `getViewportForBounds`' `padding` argument is a **ratio of the container, not
+    pixels**. The old export passed `80`, read as 8000% padding, which collapsed the content to min-zoom and
+    rendered it tiny/letterboxed (hence blurry). Now `PADDING = 0.12` (~12% margin) → the content fills the frame.
+  - *WYSIWYG capture (wallpaper + ink + nodes)* — the old export cloned only `.react-flow__viewport` (nodes/edges),
+    so the wallpaper and ink strokes — which render as siblings *outside* that element — were missing. New approach
+    briefly fits the **live** React Flow viewport to the target bounds and captures the whole `.react-flow`
+    element, so wallpaper + strokes + nodes + edges all come through. Controls / panels / attribution are removed
+    via html-to-image's `filter`; the app toolbars sit outside `.react-flow` and are excluded already. The
+    original viewport is always restored in `finally`.
+  - *Hi-res* — output scaled toward ~2400px wide via `pixelRatio`, capped so neither side exceeds 4096px.
+    Background colour read from the live desk (`--canvas-bg`).
+  - *Export all vs selection* — the Export PNG button is now a small dropdown: **Export whole map** (bounds =
+    union of node bounds + ink-stroke bounds, so nothing clips) and **Export selection** (bounds of the selected
+    nodes; enabled only when something is selected).
+  - *Defensive* — throws early if the canvas has no on-screen size; a 30s `Promise.race` timeout means a
+    pathological html-to-image hang can't leave the canvas stuck (finally still restores the viewport).
+  - Data model: **none**. Files: rewrote `utils/exportMapImage.ts`; `ReadingCanvas.tsx` (`onInit` instance ref,
+    export-all/selection handlers, node+stroke bounds union); `CanvasToolbar.tsx` (export dropdown).
+  - Scope kept tight (per request): no PDF, no SVG, no clipboard, no transparent background, no custom draw-your-own
+    export area.
+  - Verified in-browser: the padding fix (fit zoom went from a broken 0.05 → a correct ~0.83 for the real bounds);
+    the real handler wiring end-to-end (onInit instance → dropdown → node+stroke bounds union → `setViewport` to the
+    fitted zoom 0.828); **viewport restores to its exact pre-export value and the button resets**; the 0-size guard
+    fires cleanly when the pane is hidden. `tsc -b` + `vite build` green. **Not verifiable in this sandbox:** the
+    actual toPng pixel output — html-to-image hangs on *everything* here (even a trivial detached `<div>`, and the
+    pre-existing export path), an environment limitation; the produced PNG's contents should be confirmed on a real
+    machine.
+
 ---
 
 ## Product roadmap (post-redesign sprints)
@@ -235,8 +266,9 @@ Local mockup source files live in the session scratchpad (not the repo).
      **not part of Sprint 4 or Sprint 4B.** Likely reuses `utils/downscaleImage.ts` and stores the data URI on the
      map's `background` field (or a sibling field); needs tiling/fit + opacity handling so it doesn't fight the
      paper feel, and care around Export PNG (large embedded images).
-5. **Export Lite ← NEXT** (high-res PNG, selected-area export, fix blurry export; defer full PDF)
-6. Onboarding System
+5. ✅ **Export Lite — done; see Export Lite below** (WYSIWYG hi-res PNG incl. wallpaper + ink, export all /
+   selection; fixed the blurry-export bug). Full PDF still deferred.
+6. **Onboarding System ← NEXT**
 7. Backend Architecture Spike (Supabase vs Firebase; local-first IndexedDB migration path; sync)
 8. Book Workspace UX (Study Mode UX only — reflections, marking, flow; no AI yet)
 9. AI Layer (concepts, summaries, study questions, connections; preserve highlightId + source metadata)
