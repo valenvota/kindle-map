@@ -11,6 +11,7 @@ import { CommandPalette } from './components/search/CommandPalette';
 import { AppShell } from './components/shell/AppShell';
 import type { ShellScreen } from './components/shell/Sidebar';
 import { WelcomeScreen } from './components/onboarding/WelcomeScreen';
+import { ImportGuide } from './components/onboarding/ImportGuide';
 import { SampleDataBanner } from './components/onboarding/SampleDataBanner';
 import { GettingStartedChecklist } from './components/onboarding/GettingStartedChecklist';
 import { readOnboarding, writeOnboarding, type OnboardingState } from './utils/onboarding';
@@ -18,12 +19,19 @@ import { loadSampleData, clearSampleData } from './utils/sampleData';
 
 type Screen = 'import' | 'library' | 'maps' | 'canvas' | 'stats';
 
+// Which onboarding scene is showing. `null` means "derive from the data" (empty
+// DB → welcome, otherwise → app). The explicit values are set by Back / next
+// navigation and are ephemeral (reset on reload), so Welcome is always reachable
+// and the user is never trapped.
+type OnbNav = 'welcome' | 'guide' | 'app' | null;
+
 export default function App() {
   const bookCount = useLiveQuery(() => db.books.count(), []);
   const mapCount = useLiveQuery(() => db.maps.count(), []);
   const strokeCount = useLiveQuery(() => db.canvasStrokes.count(), []);
   const [screen, setScreen] = useState<Screen | null>(null);
   const [activeMapId, setActiveMapId] = useState<string | null>(null);
+  const [onbNav, setOnbNav] = useState<OnbNav>(null);
 
   // Global "open book" drawer state — reachable from any screen
   const [openBookId, setOpenBookId] = useState<string | null>(null);
@@ -51,7 +59,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Default: no books → import; else → library (Library is now the home screen)
   const current: Screen = screen ?? (bookCount === 0 ? 'import' : 'library');
 
   const goToMap = (mapId: string) => {
@@ -75,19 +82,34 @@ export default function App() {
     setScreen('library');
   };
 
+  // ── Onboarding navigation ──────────────────────────────────────────────
   const handleExplore = async () => {
     await loadSampleData();
-    patchOnb({ welcomeSeen: true, sampleLoaded: true });
+    patchOnb({ sampleLoaded: true });
     setScreen('library');
+    setOnbNav('app');
+  };
+
+  const handleImportDone = () => {
+    setScreen('library');
+    setOnbNav('app');
+  };
+
+  const backToWelcome = () => {
+    closeBook();
+    setActiveMapId(null);
+    setOnbNav('welcome');
   };
 
   const handleRemoveSample = async () => {
     await clearSampleData();
     patchOnb({ sampleLoaded: false });
-    // The open book / active map may have been part of the sample — drop them.
+    // The open book / active map may have been part of the sample — drop them,
+    // and return to Welcome so the user can explore again or import their own.
     closeBook();
     setActiveMapId(null);
-    setScreen(null); // recompute: real books → library, none → import
+    setScreen(null);
+    setOnbNav('welcome');
   };
 
   // Shared props for the global app shell (persistent sidebar navigation)
@@ -99,39 +121,39 @@ export default function App() {
     mapCount,
   };
 
-  // Getting-started checklist (calm, optional). Shown on the in-app screens once
-  // there's something to work with, until dismissed or every step is done.
+  // First render before Dexie resolves the count — avoid flashing the wrong screen.
+  if (bookCount === undefined) return null;
+
+  // Effective onboarding scene: explicit navigation wins; otherwise derive.
+  const onbScreen: OnbNav = onbNav ?? (bookCount === 0 ? 'welcome' : 'app');
+
+  // Getting-started checklist (calm, optional). Only in the app, once there's
+  // something to work with, until dismissed or every step is done.
   const checklistSteps = [
-    { label: 'Import your highlights', done: (bookCount ?? 0) > 0 },
+    { label: 'Import your highlights', done: bookCount > 0 },
     { label: 'Open a book', done: onb.openedBook },
     { label: 'Create a map', done: (mapCount ?? 0) > 0 },
     { label: 'Draw on a canvas', done: (strokeCount ?? 0) > 0 },
   ];
   const showChecklist =
+    onbScreen === 'app' &&
     !onb.checklistDismissed &&
     !checklistSteps.every((s) => s.done) &&
-    (bookCount ?? 0) > 0 &&
+    bookCount > 0 &&
     !openBookId &&
     (current === 'library' || current === 'maps' || current === 'stats');
 
-  const sampleBanner = onb.sampleLoaded ? <SampleDataBanner onRemove={handleRemoveSample} /> : null;
-
-  // First render before Dexie resolves the count — avoid flashing the wrong screen.
-  if (bookCount === undefined) return null;
-
-  const showWelcome = screen === null && bookCount === 0 && !onb.welcomeSeen;
+  const sampleBanner = onb.sampleLoaded
+    ? <SampleDataBanner onBackToWelcome={backToWelcome} onRemove={handleRemoveSample} />
+    : null;
 
   let content;
-  if (showWelcome) {
-    content = (
-      <WelcomeScreen
-        onImport={() => { patchOnb({ welcomeSeen: true }); setScreen('import'); }}
-        onExplore={handleExplore}
-      />
-    );
+  if (onbScreen === 'welcome') {
+    content = <WelcomeScreen onImport={() => setOnbNav('guide')} onExplore={handleExplore} />;
+  } else if (onbScreen === 'guide') {
+    content = <ImportGuide onBack={() => setOnbNav('welcome')} onDone={handleImportDone} />;
   } else if (openBookId) {
-    // Full-screen book workspace, inside the shell (sidebar stays). Navigating
-    // away via the sidebar closes the book first.
+    // Full-screen book workspace, inside the shell (sidebar stays).
     content = (
       <AppShell
         active="library"
@@ -140,25 +162,16 @@ export default function App() {
         onImport={() => { closeBook(); setScreen('import'); }}
       >
         {sampleBanner}
-        <BookDetailView
-          bookId={openBookId}
-          focusHighlightId={focusHighlightId}
-          onClose={closeBook}
-        />
+        <BookDetailView bookId={openBookId} focusHighlightId={focusHighlightId} onClose={closeBook} />
       </AppShell>
     );
   } else if (current === 'import') {
-    // Full-bleed, outside the shell (first-run / import flow)
+    // Full-bleed, outside the shell (returning-user import from the sidebar)
     content = <ImportPage onDone={() => setScreen('library')} />;
   } else if (current === 'canvas' && activeMapId) {
-    // Canvas inside the shell (dark sidebar stays, matching the Maps mockup).
     content = (
       <AppShell active="maps" {...shellProps}>
-        <ReadingCanvas
-          mapId={activeMapId}
-          onBack={() => setScreen('maps')}
-          onOpenBook={openBook}
-        />
+        <ReadingCanvas mapId={activeMapId} onBack={() => setScreen('maps')} onOpenBook={openBook} />
       </AppShell>
     );
   } else if (current === 'stats') {
@@ -179,11 +192,7 @@ export default function App() {
     content = (
       <AppShell active="library" {...shellProps}>
         {sampleBanner}
-        <LibraryPage
-          onImport={() => setScreen('import')}
-          onOpenBook={openBook}
-          initialTag={pendingTag}
-        />
+        <LibraryPage onImport={() => setScreen('import')} onOpenBook={openBook} initialTag={pendingTag} />
       </AppShell>
     );
   }

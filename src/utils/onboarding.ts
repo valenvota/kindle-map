@@ -1,9 +1,12 @@
 // Onboarding is UX state (per device/browser), not user knowledge — so it lives
 // in localStorage, not Dexie. One JSON blob under a single key.
+//
+// Note: there is deliberately no "welcomeSeen" flag. Which onboarding screen to
+// show is derived from the actual data (empty DB → welcome, has books → app) plus
+// an ephemeral in-app override for Back/next navigation — see App.tsx. That keeps
+// Welcome always reachable and never traps the user.
 
 export type OnboardingState = {
-  /** User has passed the first-run welcome (imported, explored, or skipped). */
-  welcomeSeen: boolean;
   /** Example data is currently loaded (drives the "remove sample data" banner). */
   sampleLoaded: boolean;
   /** User has opened a book at least once (a Getting-Started step). */
@@ -15,7 +18,6 @@ export type OnboardingState = {
 const KEY = 'km-onboarding';
 
 const DEFAULT_STATE: OnboardingState = {
-  welcomeSeen: false,
   sampleLoaded: false,
   openedBook: false,
   checklistDismissed: false,

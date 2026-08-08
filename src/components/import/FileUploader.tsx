@@ -4,9 +4,11 @@ import { Upload, FileText } from 'lucide-react';
 type Props = {
   onFile: (file: File) => void;
   disabled?: boolean;
+  /** 'light' = the standalone import page; 'dark' = the compact onboarding guide. */
+  tone?: 'light' | 'dark';
 };
 
-export function FileUploader({ onFile, disabled }: Props) {
+export function FileUploader({ onFile, disabled, tone = 'light' }: Props) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -23,32 +25,62 @@ export function FileUploader({ onFile, disabled }: Props) {
     [onFile],
   );
 
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(true);
-  };
-
+  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true); };
   const onDragLeave = () => setDragging(false);
-
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   };
-
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
   };
 
+  const open = () => !disabled && inputRef.current?.click();
+  const fileInput = (
+    <input ref={inputRef} type="file" accept=".txt" className="hidden" onChange={onInputChange} disabled={disabled} />
+  );
+
+  // Compact dark variant — the onboarding import guide (steps already explain
+  // where the file lives, so this is just the action).
+  if (tone === 'dark') {
+    return (
+      <>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload My Clippings.txt"
+          onClick={open}
+          onKeyDown={(e) => e.key === 'Enter' && open()}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          className={`km-onb__drop${dragging ? ' km-onb__drop--drag' : ''}`}
+        >
+          <span className="km-onb__drop-ico">
+            {dragging ? <FileText className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
+          </span>
+          <span className="km-onb__drop-text">
+            <b>{dragging ? 'Drop it to import' : 'Drop My Clippings.txt here'}</b>
+            <small>or click to browse — .txt only</small>
+          </span>
+          {fileInput}
+        </div>
+        {error && <p className="km-onb__drop-err" role="alert">{error}</p>}
+      </>
+    );
+  }
+
+  // Light variant — the standalone import page.
   return (
     <div
       role="button"
       tabIndex={0}
       aria-label="Upload My Clippings.txt"
-      onClick={() => !disabled && inputRef.current?.click()}
-      onKeyDown={(e) => e.key === 'Enter' && !disabled && inputRef.current?.click()}
+      onClick={open}
+      onKeyDown={(e) => e.key === 'Enter' && open()}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -83,14 +115,7 @@ export function FileUploader({ onFile, disabled }: Props) {
         Find it at: <code className="rounded px-1 py-0.5" style={{ background: 'var(--surface-2)' }}>Kindle/documents/My Clippings.txt</code>
       </p>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".txt"
-        className="hidden"
-        onChange={onInputChange}
-        disabled={disabled}
-      />
+      {fileInput}
 
       {error && (
         <p className="text-xs font-medium" style={{ color: 'var(--ember, #B06A4F)' }} role="alert">
