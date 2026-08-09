@@ -34,6 +34,12 @@ export async function exportMapAsPng(opts: {
 
   const saved = instance.getViewport();
   try {
+    // html-to-image rasterizes the nodes' layered / negative-spread box-shadows
+    // through React Flow's transformed viewport as a hard, displaced grey slab
+    // (fine on screen, wrong in the PNG). This class swaps them for one soft,
+    // small-offset shadow that captures cleanly; removed again in `finally`.
+    flowEl.classList.add('km-exporting');
+
     // Fit the bounds into the on-screen container, then capture as-is.
     const vp = getViewportForBounds(bounds, rect.width, rect.height, 0.05, 4, PADDING);
     instance.setViewport(vp);
@@ -78,6 +84,7 @@ export async function exportMapAsPng(opts: {
     a.download = `${mapName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-map.png`;
     a.click();
   } finally {
+    flowEl.classList.remove('km-exporting');
     instance.setViewport(saved);
   }
 }

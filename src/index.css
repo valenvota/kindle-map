@@ -502,6 +502,20 @@
   z-index: 6;
 }
 
+/* Export capture — while the .react-flow is being snapshotted to PNG
+   (utils/exportMapImage.ts adds .km-exporting), swap the nodes' layered /
+   negative-spread shadows for one soft, small-offset shadow. html-to-image
+   rasterizes the originals through React Flow's viewport transform as a hard,
+   displaced grey slab; this renders cleanly. Live canvas is unaffected. */
+.km-exporting .km-booknode__card,
+.km-exporting .km-imagenode,
+.km-exporting .km-booknode--cover .km-cover,
+.km-exporting .km-booknode__thumb .km-cover,
+.km-exporting .react-flow__node .shadow-md,
+.km-exporting .react-flow__node .shadow-lg {
+  box-shadow: 0 3px 9px rgba(28, 26, 23, 0.15) !important;
+}
+
 /* Glass floating chrome shared by top toolbar + left rail */
 .km-glass { background: rgba(251,249,244,0.86); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid var(--hair); box-shadow: var(--shadow-lg); }
 
