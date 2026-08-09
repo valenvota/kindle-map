@@ -503,17 +503,24 @@
 }
 
 /* Export capture — while the .react-flow is being snapshotted to PNG
-   (utils/exportMapImage.ts adds .km-exporting), swap the nodes' layered /
-   negative-spread shadows for one soft, small-offset shadow. html-to-image
-   rasterizes the originals through React Flow's viewport transform as a hard,
-   displaced grey slab; this renders cleanly. Live canvas is unaffected. */
+   (utils/exportMapImage.ts adds .km-exporting), drop the nodes' drop-shadows.
+   html-to-image rasterizes box-shadow through React Flow's viewport transform
+   as a hard, displaced grey slab (fine on screen, never natural in the PNG), so
+   we flatten to just the hairline border — clean and diagram-like. A hairline is
+   added to the shadow-only surfaces (covers, image) so they keep an edge without
+   it. Live canvas is unaffected. */
 .km-exporting .km-booknode__card,
 .km-exporting .km-imagenode,
 .km-exporting .km-booknode--cover .km-cover,
 .km-exporting .km-booknode__thumb .km-cover,
 .km-exporting .react-flow__node .shadow-md,
 .km-exporting .react-flow__node .shadow-lg {
-  box-shadow: 0 3px 9px rgba(28, 26, 23, 0.15) !important;
+  box-shadow: none !important;
+}
+.km-exporting .km-imagenode,
+.km-exporting .km-booknode--cover .km-cover,
+.km-exporting .km-booknode__thumb .km-cover {
+  border: 1px solid var(--hair-md) !important;
 }
 
 /* Glass floating chrome shared by top toolbar + left rail */
