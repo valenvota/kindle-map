@@ -8,7 +8,9 @@
 > Sprint 4 (Canvas Creative Layer) COMPLETE. Sprint 4B (Ink — pencil/drawing) COMPLETE.
 > Export Lite COMPLETE (WYSIWYG PNG: wallpaper + ink + nodes, hi-res, export all / selection).
 > Onboarding v1 COMPLETE (two-step full-screen: Welcome slideshow → Import guide; sample data; checklist).
-> **Next up:** Backend Architecture Spike (roadmap item 7).
+> Backend Architecture Spike COMPLETE (decision + design spec in `BACKEND_SPIKE.md`).
+> **Next up:** implement the backend per `BACKEND_SPIKE.md` — Phase A (local foundation:
+> Dexie migration + auto-stamp/soft-delete middleware), still fully offline.
 
 ---
 
@@ -306,7 +308,14 @@ Local mockup source files live in the session scratchpad (not the repo).
 6. ✅ **Onboarding System — done; see Onboarding v1 below** (two-step full-screen flow: Welcome slideshow →
    Import guide; sample data; invalid-file feedback; Back navigation; Getting-Started checklist). Kept lean: no
    spotlight tour, no video.
-7. **Backend Architecture Spike ← NEXT** (Supabase vs Firebase; local-first IndexedDB migration path; sync)
+7. ✅ **Backend Architecture Spike — done; decision + deep design spec in `BACKEND_SPIKE.md`.**
+   Decision: **Supabase** (Postgres + Auth + RLS + Storage) with a deliberately minimal
+   **single-user last-write-wins sync** (no outbox/CRDT; tombstones for deletes; auto-stamped
+   via Dexie middleware). Identity is **anonymous-local by default, claimed on optional
+   sign-in** → app forever usable with no account, login progressive. **Ship backup before
+   sync.** Dexie Cloud = documented fallback; Firestore rejected (relational mismatch + 1 MB
+   doc limit); PowerSync/Electric parked (would replace Dexie as the local store). Phased
+   rollout A→F in the doc. **← implementation is NEXT** (Phase A: local foundation, no backend).
 8. Book Workspace UX (Study Mode UX only — reflections, marking, flow; no AI yet)
 9. AI Layer (concepts, summaries, study questions, connections; preserve highlightId + source metadata)
 10. Stats v2 (charts, Wrapped)
