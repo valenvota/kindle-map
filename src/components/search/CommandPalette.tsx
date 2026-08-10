@@ -3,6 +3,10 @@ import { Search, BookOpen, Quote, StickyNote, Lightbulb, Map as MapIcon, Tag as 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
+import { notDeleted } from '../../db/softDelete';
+import { getAllBooks } from '../../db/booksRepository';
+import { getAllMaps } from '../../db/mapsRepository';
+import { getAllCanvasNodes } from '../../db/canvasRepository';
 import type { Highlight } from '../../types/highlight';
 
 type ResultType = 'book' | 'highlight' | 'map' | 'topic' | 'note' | 'quote' | 'tag';
@@ -55,9 +59,9 @@ export function CommandPalette({ open, onClose, onOpenBook, onOpenMap, onOpenTag
   const [activeIndex, setActiveIndex] = useState(0);
   const [highlightMatches, setHighlightMatches] = useState<Highlight[]>([]);
 
-  const books = useLiveQuery(() => db.books.toArray(), []);
-  const maps = useLiveQuery(() => db.maps.toArray(), []);
-  const canvasNodes = useLiveQuery(() => db.canvasNodes.toArray(), []);
+  const books = useLiveQuery(() => getAllBooks(), []);
+  const maps = useLiveQuery(() => getAllMaps(), []);
+  const canvasNodes = useLiveQuery(() => getAllCanvasNodes(), []);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -84,7 +88,7 @@ export function CommandPalette({ open, onClose, onOpenBook, onOpenMap, onOpenTag
     let cancelled = false;
     const timer = setTimeout(async () => {
       const matches = await db.highlights
-        .filter((h) => h.text.toLowerCase().includes(q))
+        .filter((h) => notDeleted(h) && h.text.toLowerCase().includes(q))
         .limit(MAX_HIGHLIGHT_RESULTS)
         .toArray();
       if (!cancelled) setHighlightMatches(matches);

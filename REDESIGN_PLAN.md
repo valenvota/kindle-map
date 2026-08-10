@@ -9,10 +9,11 @@
 > Export Lite COMPLETE (WYSIWYG PNG: wallpaper + ink + nodes, hi-res, export all / selection).
 > Onboarding v1 COMPLETE (two-step full-screen: Welcome slideshow → Import guide; sample data; checklist).
 > Backend Architecture Spike COMPLETE (decision + design spec in `BACKEND_SPIKE.md`).
-> Backend **Phase A1** COMPLETE (Dexie v11 migration: `ownerId`/`updatedAt`/`deletedAt` on
-> synced tables + global auto-stamp hooks; still 100% offline, nothing user-visible).
-> **Next up:** Phase A2 — soft-delete (hard deletes → `deletedAt` tombstones + read filtering,
-> via DBCore middleware so the ~40 read sites stay untouched). Then Phase B (Supabase).
+> Backend **Phase A1 + A2** COMPLETE (still 100% offline, nothing user-visible). A1: Dexie v11
+> migration (`ownerId`/`updatedAt`/`deletedAt` + auto-stamp hooks). A2: soft-delete — hard deletes
+> → `deletedAt` tombstones; reads filter tombstones via an explicit repository funnel (`db/softDelete.ts`
+> `notDeleted`); re-import revives a deleted book; sample-data removal stays a hard purge.
+> **Next up:** Phase B — Supabase project + Auth + schema/RLS (needs the user to provision it).
 
 ---
 

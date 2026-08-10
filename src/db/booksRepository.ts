@@ -1,4 +1,5 @@
 import { db } from './db';
+import { notDeleted } from './softDelete';
 import type { Book, ReadingStatus } from '../types/book';
 
 export async function createBook(
@@ -18,12 +19,15 @@ export async function createBook(
 }
 
 export async function upsertBook(book: Book): Promise<void> {
+  // Raw get (not filtered) — an existing row may be a soft-delete tombstone.
   const existing = await db.books.get(book.id);
   if (existing) {
     await db.books.update(book.id, {
       // Preserve manual edits; update counts and timestamps
       totalHighlights: book.totalHighlights,
       updatedAt: book.updatedAt,
+      // Re-importing a deleted book revives it (clears the tombstone).
+      deletedAt: undefined,
     });
   } else {
     await db.books.add(book);
@@ -31,15 +35,22 @@ export async function upsertBook(book: Book): Promise<void> {
 }
 
 export async function getAllBooks(): Promise<Book[]> {
-  return db.books.orderBy('title').toArray();
+  return db.books.orderBy('title').filter(notDeleted).toArray();
+}
+
+/** Live book count (excludes tombstones). */
+export async function countBooks(): Promise<number> {
+  return db.books.filter(notDeleted).count();
 }
 
 export async function getBook(id: string): Promise<Book | undefined> {
-  return db.books.get(id);
+  // Display read — a tombstoned book reads as absent.
+  const book = await db.books.get(id);
+  return book && notDeleted(book) ? book : undefined;
 }
 
 export async function updateBookHighlightCount(bookId: string): Promise<void> {
-  const count = await db.highlights.where('bookId').equals(bookId).count();
+  const count = await db.highlights.where('bookId').equals(bookId).and(notDeleted).count();
   await db.books.update(bookId, {
     totalHighlights: count,
     updatedAt: new Date().toISOString(),
@@ -75,9 +86,12 @@ export async function updateBookCover(id: string, coverImage: string | null): Pr
 }
 
 export async function deleteBook(id: string): Promise<void> {
+  // Soft delete (tombstone) — the book, its highlights, and its book-nodes on any
+  // map. The `updating` hook bumps `updatedAt` on each. Reads filter these out.
+  const deletedAt = new Date().toISOString();
   await db.transaction('rw', db.books, db.highlights, db.canvasNodes, async () => {
-    await db.books.delete(id);
-    await db.highlights.where('bookId').equals(id).delete();
-    await db.canvasNodes.where('bookId').equals(id).delete();
+    await db.books.update(id, { deletedAt });
+    await db.highlights.where('bookId').equals(id).modify({ deletedAt });
+    await db.canvasNodes.where('bookId').equals(id).modify({ deletedAt });
   });
 }

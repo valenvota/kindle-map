@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Search, X, ArrowLeft, BookOpen, Quote } from 'lucide-react';
-import { db } from '../../db/db';
 import { upsertCanvasNode } from '../../db/canvasRepository';
+import { getAllBooks } from '../../db/booksRepository';
+import { getHighlightsByBook } from '../../db/highlightsRepository';
 import type { Book } from '../../types/book';
 import type { Highlight } from '../../types/highlight';
 
@@ -20,12 +21,12 @@ export function AddQuoteModal({ mapId, newNodePosition, onClose }: Props) {
   const [hlQuery, setHlQuery] = useState('');
   const [adding, setAdding] = useState(false);
 
-  const books = useLiveQuery(() => db.books.orderBy('title').toArray(), []);
+  const books = useLiveQuery(() => getAllBooks(), []);
 
   // Load highlights when a book is selected
   useEffect(() => {
     if (!selectedBook) return;
-    db.highlights.where('bookId').equals(selectedBook.id).toArray().then(setHighlights);
+    getHighlightsByBook(selectedBook.id).then(setHighlights);
   }, [selectedBook]);
 
   const filteredBooks = books?.filter((b) => {

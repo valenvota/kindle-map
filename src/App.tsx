@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from './db/db';
+import { countBooks } from './db/booksRepository';
+import { countMaps } from './db/mapsRepository';
+import { countStrokes } from './db/canvasStrokesRepository';
 import { ImportPage } from './pages/ImportPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MapsPage } from './pages/MapsPage';
@@ -26,9 +28,9 @@ type Screen = 'import' | 'library' | 'maps' | 'canvas' | 'stats';
 type OnbNav = 'welcome' | 'guide' | 'app' | null;
 
 export default function App() {
-  const bookCount = useLiveQuery(() => db.books.count(), []);
-  const mapCount = useLiveQuery(() => db.maps.count(), []);
-  const strokeCount = useLiveQuery(() => db.canvasStrokes.count(), []);
+  const bookCount = useLiveQuery(() => countBooks(), []);
+  const mapCount = useLiveQuery(() => countMaps(), []);
+  const strokeCount = useLiveQuery(() => countStrokes(), []);
   const [screen, setScreen] = useState<Screen | null>(null);
   const [activeMapId, setActiveMapId] = useState<string | null>(null);
   const [onbNav, setOnbNav] = useState<OnbNav>(null);

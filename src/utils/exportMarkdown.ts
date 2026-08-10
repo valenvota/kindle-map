@@ -1,4 +1,5 @@
 import { db } from '../db/db';
+import { notDeleted } from '../db/softDelete';
 
 import type { Book } from '../types/book';
 import type { Highlight } from '../types/highlight';
@@ -20,6 +21,7 @@ export async function exportBookToMarkdown(book: Book, highlights: Highlight[]):
   // Load all notes for this book
   const notes = await db.bookNotes
     .where('bookId').equals(book.id)
+    .and(notDeleted)
     .toArray();
   const generalNote = notes.find((n) => !n.linkedHighlightId);
   const noteByHighlight = new Map<string, BookNote>(

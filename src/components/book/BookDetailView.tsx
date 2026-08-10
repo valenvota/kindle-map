@@ -4,12 +4,11 @@ import {
   AlertCircle, Play,
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/db';
 import { getHighlightsByBook } from '../../db/highlightsRepository';
 import { exportBookToMarkdown, downloadMarkdown } from '../../utils/exportMarkdown';
 import { detectAttentionIssues } from '../../utils/cleanBookMetadata';
 import { getDisplayTitle } from '../../utils/displayTitle';
-import { updateReadingStatus } from '../../db/booksRepository';
+import { updateReadingStatus, getBook } from '../../db/booksRepository';
 import { getGeneralBookNote, upsertGeneralBookNote } from '../../db/bookNotesRepository';
 import { HighlightCard } from './HighlightCard';
 import { BookEditForm } from './BookEditForm';
@@ -41,7 +40,7 @@ type Tab = 'highlights' | 'notes' | 'study';
 type HlFilter = 'all' | 'important';
 
 export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
-  const liveBook = useLiveQuery(() => db.books.get(bookId), [bookId]);
+  const liveBook = useLiveQuery(() => getBook(bookId), [bookId]);
 
   const [highlights, setHighlights]   = useState<Highlight[]>([]);
   const [loading, setLoading]         = useState(true);

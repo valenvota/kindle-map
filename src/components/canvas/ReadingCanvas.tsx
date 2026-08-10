@@ -27,6 +27,7 @@ import {
   updateCanvasNodePosition,
   deleteCanvasNode,
   upsertCanvasNode,
+  getCanvasNodesByMap,
   getCanvasEdgesByMap,
   addCanvasEdge,
   deleteCanvasEdge,
@@ -36,7 +37,9 @@ import {
   updateCanvasNodeLocked,
   bulkSetNodeZIndices,
 } from '../../db/canvasRepository';
-import { updateMapBackground } from '../../db/mapsRepository';
+import { updateMapBackground, getMap } from '../../db/mapsRepository';
+import { getAllBooks } from '../../db/booksRepository';
+import { getAllHighlights } from '../../db/highlightsRepository';
 import { getStrokesByMap } from '../../db/canvasStrokesRepository';
 import type { EdgeDirection } from '../../types/canvas';
 import type { MapBackground } from '../../types/map';
@@ -354,13 +357,10 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
   const isRestoring = useRef(false);
 
   // Live queries
-  const mapNodes = useLiveQuery(
-    () => db.canvasNodes.where('mapId').equals(mapId).toArray(),
-    [mapId],
-  );
-  const allBooks = useLiveQuery(() => db.books.toArray(), []);
-  const allHighlights = useLiveQuery(() => db.highlights.toArray(), []);
-  const map = useLiveQuery(() => db.maps.get(mapId), [mapId]);
+  const mapNodes = useLiveQuery(() => getCanvasNodesByMap(mapId), [mapId]);
+  const allBooks = useLiveQuery(() => getAllBooks(), []);
+  const allHighlights = useLiveQuery(() => getAllHighlights(), []);
+  const map = useLiveQuery(() => getMap(mapId), [mapId]);
 
   // Important-highlight count per book — quiet metadata on card-mode nodes.
   const importantByBook = useMemo(() => {
@@ -415,8 +415,17 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
       const snapshot = historyStack.current[newIndex];
       isRestoring.current = true;
 
-      const current = await db.canvasNodes.where('mapId').equals(mapId).toArray();
-      await db.canvasNodes.bulkDelete(current.map((n) => n.id));
+      // Restore a node-history snapshot. Soft-delete only the live nodes that the
+      // snapshot drops (tombstone → hidden, and sync-ready); bulkPut the snapshot,
+      // which revives/overwrites its own nodes (the snapshot objects carry no
+      // deletedAt, so a previously-tombstoned node in the snapshot comes back).
+      const live = await getCanvasNodesByMap(mapId);
+      const keep = new Set(snapshot.map((n) => n.id));
+      const toRemove = live.filter((n) => !keep.has(n.id)).map((n) => n.id);
+      const deletedAt = new Date().toISOString();
+      if (toRemove.length > 0) {
+        await db.canvasNodes.where('id').anyOf(toRemove).modify({ deletedAt });
+      }
       if (snapshot.length > 0) await db.canvasNodes.bulkPut(snapshot);
 
       setTimeout(() => { isRestoring.current = false; }, 600);

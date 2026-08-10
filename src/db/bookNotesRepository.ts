@@ -1,10 +1,15 @@
 import { db } from './db';
+import { notDeleted } from './softDelete';
 import type { BookNote } from '../types/book';
+
+export async function getAllBookNotes(): Promise<BookNote[]> {
+  return db.bookNotes.filter(notDeleted).toArray();
+}
 
 export async function getGeneralBookNote(bookId: string): Promise<BookNote | undefined> {
   return db.bookNotes
     .where('bookId').equals(bookId)
-    .and((n) => !n.linkedHighlightId)
+    .and((n) => !n.linkedHighlightId && notDeleted(n))
     .first();
 }
 
@@ -15,7 +20,7 @@ export async function upsertGeneralBookNote(bookId: string, text: string): Promi
     if (text.trim()) {
       await db.bookNotes.update(existing.id, { text, updatedAt: now });
     } else {
-      await db.bookNotes.delete(existing.id);
+      await db.bookNotes.update(existing.id, { deletedAt: now });
     }
   } else if (text.trim()) {
     const id = `note-${bookId}-general-${Date.now()}`;
@@ -29,7 +34,7 @@ export async function getBookNoteByHighlight(
 ): Promise<BookNote | undefined> {
   return db.bookNotes
     .where('bookId').equals(bookId)
-    .and((n) => n.linkedHighlightId === highlightId)
+    .and((n) => n.linkedHighlightId === highlightId && notDeleted(n))
     .first();
 }
 
@@ -53,5 +58,5 @@ export async function deleteBookNoteByHighlight(
   highlightId: string,
 ): Promise<void> {
   const existing = await getBookNoteByHighlight(bookId, highlightId);
-  if (existing) await db.bookNotes.delete(existing.id);
+  if (existing) await db.bookNotes.update(existing.id, { deletedAt: new Date().toISOString() });
 }

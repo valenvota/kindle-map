@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, Map, Trash2, ChevronRight } from 'lucide-react';
-import { db } from '../db/db';
-import { createMap, deleteMap } from '../db/mapsRepository';
+import { createMap, deleteMap, getAllMaps } from '../db/mapsRepository';
+import { getAllCanvasNodes } from '../db/canvasRepository';
 import type { KindleMap } from '../types/map';
 
 type Props = {
@@ -10,8 +10,8 @@ type Props = {
 };
 
 export function MapsPage({ onOpenMap }: Props) {
-  const maps = useLiveQuery(() => db.maps.orderBy('createdAt').toArray(), []);
-  const allNodes = useLiveQuery(() => db.canvasNodes.toArray(), []);
+  const maps = useLiveQuery(() => getAllMaps(), []);
+  const allNodes = useLiveQuery(() => getAllCanvasNodes(), []);
 
   const nodeCountByMap = useMemo(() => {
     const counts: Record<string, number> = {};

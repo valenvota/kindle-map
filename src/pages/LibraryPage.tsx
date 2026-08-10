@@ -3,7 +3,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Upload, BookOpen, Search, Plus, ChevronDown, X, User, SlidersHorizontal,
 } from 'lucide-react';
-import { db } from '../db/db';
+import { getAllBooks } from '../db/booksRepository';
+import { getAllHighlights } from '../db/highlightsRepository';
+import { getAllCanvasNodes } from '../db/canvasRepository';
 import { AddBookModal } from '../components/book/AddBookModal';
 import { BookCover } from '../components/book/BookCover';
 import { SegmentedControl } from '../components/ui';
@@ -51,18 +53,16 @@ export function LibraryPage({ onImport, onOpenBook, initialTag }: Props) {
   const [sortKey, setSortKey]               = useState<SortKey>('title-asc');
   const [filterOpen, setFilterOpen]         = useState(false);
 
-  const books      = useLiveQuery(() => db.books.toArray(), []);
-  const highlights = useLiveQuery(() => db.highlights.toArray(), []);
+  const books      = useLiveQuery(() => getAllBooks(), []);
+  const highlights = useLiveQuery(() => getAllHighlights(), []);
 
-  const bookNodeIds = useLiveQuery(
-    () => db.canvasNodes.where('type').equals('book').toArray(),
-    [],
-  );
+  const allNodes = useLiveQuery(() => getAllCanvasNodes(), []);
   const bookIdsInMaps = useMemo(() => {
     const set = new Set<string>();
-    bookNodeIds?.forEach((n) => { if (n.bookId) set.add(n.bookId); });
+    // Only book-type nodes tie a book to a map (quote nodes also carry a bookId).
+    allNodes?.forEach((n) => { if (n.type === 'book' && n.bookId) set.add(n.bookId); });
     return set;
-  }, [bookNodeIds]);
+  }, [allNodes]);
 
   // Per-book insights: important count + a representative highlight (prefers an
   // important one). Also drives the "Important" figure in the stat rail.

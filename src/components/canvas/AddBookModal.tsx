@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Search, X, BookOpen, CheckCircle2, Plus } from 'lucide-react';
-import { db } from '../../db/db';
 import { upsertCanvasNode } from '../../db/canvasRepository';
-import { createBook } from '../../db/booksRepository';
+import { createBook, getAllBooks } from '../../db/booksRepository';
 
 const NODE_WIDTH = 208;
 const NODE_HEIGHT = 180;
@@ -56,7 +55,7 @@ function BookPicker({
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState<string | null>(null);
 
-  const books = useLiveQuery(() => db.books.orderBy('title').toArray(), []);
+  const books = useLiveQuery(() => getAllBooks(), []);
 
   const filtered = books?.filter((b) => {
     if (!query) return true;

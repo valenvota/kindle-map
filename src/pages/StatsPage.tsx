@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { BookOpen, Quote, Star, StickyNote, Tag } from 'lucide-react';
-import { db } from '../db/db';
+import { getAllBooks } from '../db/booksRepository';
+import { getAllHighlights } from '../db/highlightsRepository';
+import { getAllBookNotes } from '../db/bookNotesRepository';
 import { getDisplayTitle } from '../utils/displayTitle';
 
 const STATUS_CONFIG = {
@@ -11,9 +13,9 @@ const STATUS_CONFIG = {
 } as const;
 
 export function StatsPage() {
-  const books      = useLiveQuery(() => db.books.toArray(), []);
-  const highlights = useLiveQuery(() => db.highlights.toArray(), []);
-  const bookNotes  = useLiveQuery(() => db.bookNotes.toArray(), []);
+  const books      = useLiveQuery(() => getAllBooks(), []);
+  const highlights = useLiveQuery(() => getAllHighlights(), []);
+  const bookNotes  = useLiveQuery(() => getAllBookNotes(), []);
 
   const stats = useMemo(() => {
     if (!books || !highlights || !bookNotes) return null;

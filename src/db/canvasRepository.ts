@@ -1,4 +1,5 @@
 import { db } from './db';
+import { notDeleted } from './softDelete';
 import type { CanvasNodeData, CanvasEdge } from '../types/canvas';
 
 export async function upsertCanvasNode(node: CanvasNodeData): Promise<void> {
@@ -6,11 +7,11 @@ export async function upsertCanvasNode(node: CanvasNodeData): Promise<void> {
 }
 
 export async function getCanvasNodesByMap(mapId: string): Promise<CanvasNodeData[]> {
-  return db.canvasNodes.where('mapId').equals(mapId).toArray();
+  return db.canvasNodes.where('mapId').equals(mapId).and(notDeleted).toArray();
 }
 
 export async function deleteCanvasNode(id: string): Promise<void> {
-  await db.canvasNodes.delete(id);
+  await db.canvasNodes.update(id, { deletedAt: new Date().toISOString() });
 }
 
 export async function updateCanvasNodeContent(id: string, content: string): Promise<void> {
@@ -66,7 +67,7 @@ export async function updateCanvasNodeLocked(id: string, locked: boolean): Promi
 // ─── Edges ──────────────────────────────────────────────────────────────────
 
 export async function getCanvasEdgesByMap(mapId: string): Promise<CanvasEdge[]> {
-  return db.canvasEdges.where('mapId').equals(mapId).toArray();
+  return db.canvasEdges.where('mapId').equals(mapId).and(notDeleted).toArray();
 }
 
 export async function addCanvasEdge(edge: CanvasEdge): Promise<void> {
@@ -74,7 +75,7 @@ export async function addCanvasEdge(edge: CanvasEdge): Promise<void> {
 }
 
 export async function deleteCanvasEdge(id: string): Promise<void> {
-  await db.canvasEdges.delete(id);
+  await db.canvasEdges.update(id, { deletedAt: new Date().toISOString() });
 }
 
 export async function updateCanvasEdgeDirection(id: string, direction: import('../types/canvas').EdgeDirection): Promise<void> {
@@ -85,7 +86,6 @@ export async function updateCanvasEdgeLabel(id: string, label: string): Promise<
   await db.canvasEdges.update(id, { label });
 }
 
-/** @deprecated use getCanvasNodesByMap */
 export async function getAllCanvasNodes(): Promise<CanvasNodeData[]> {
-  return db.canvasNodes.toArray();
+  return db.canvasNodes.filter(notDeleted).toArray();
 }
