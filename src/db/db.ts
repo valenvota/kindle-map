@@ -3,6 +3,14 @@ import type { Book, BookNote } from '../types/book';
 import type { Highlight } from '../types/highlight';
 import type { CanvasNodeData, CanvasEdge, CanvasStroke, Group } from '../types/canvas';
 import type { KindleMap } from '../types/map';
+import { getLocalOwnerId } from '../utils/localOwner';
+
+// Tables that participate in cloud sync (Backend Spike). `groups` is legacy/unused
+// and deliberately excluded. Every write to these gets `ownerId` + `updatedAt`
+// auto-stamped (see installSyncHooks); the v11 migration backfills existing rows.
+const SYNCED_TABLES = [
+  'books', 'highlights', 'bookNotes', 'maps', 'canvasNodes', 'canvasEdges', 'canvasStrokes',
+] as const;
 
 export class KindleMapDB extends Dexie {
   books!: Table<Book, string>;
@@ -173,6 +181,70 @@ export class KindleMapDB extends Dexie {
       groups: 'id, title, createdAt',
       bookNotes: 'id, bookId, createdAt',
     });
+
+    // v11 — Backend Spike Phase A (local foundation, still 100% offline). Adds the
+    // sync-ready fields `ownerId` / `updatedAt` / `deletedAt` to every synced table.
+    // `updatedAt` becomes an index (drives the future push-scan). This is the first
+    // non-no-op migration since v2: it backfills existing rows (canvasNodes never
+    // had a timestamp → `now`; strokes/edges → their `createdAt`) and stamps the
+    // per-device `ownerId`. `deletedAt` needs no backfill (absence ⇒ live).
+    this.version(11)
+      .stores({
+        books: 'id, title, author, source, createdAt, updatedAt',
+        highlights: 'id, bookId, type, addedAt, createdAt, updatedAt',
+        canvasNodes: 'id, bookId, mapId, type, updatedAt',
+        canvasEdges: 'id, mapId, source, target, updatedAt',
+        canvasStrokes: 'id, mapId, updatedAt',
+        maps: 'id, name, createdAt, updatedAt',
+        groups: 'id, title, createdAt',
+        bookNotes: 'id, bookId, createdAt, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        const ownerId = getLocalOwnerId();
+        const now = new Date().toISOString();
+        // Sequential (not Promise.all) — it's a one-time migration, and running the
+        // modifies one table at a time avoids any parallel-op subtleties on the
+        // single upgrade transaction.
+        for (const name of SYNCED_TABLES) {
+          await tx.table(name).toCollection().modify((row) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const r = row as any;
+            if (!r.ownerId) r.ownerId = ownerId;
+            if (!r.updatedAt) r.updatedAt = r.createdAt ?? now;
+          });
+        }
+      });
+
+    this.installSyncHooks();
+  }
+
+  /**
+   * Auto-stamp sync metadata on every write to a synced table, so the ~36
+   * scattered write sites don't each have to remember (Backend Spike §6.3).
+   * `creating` fills missing `ownerId` / `updatedAt`; `updating` bumps
+   * `updatedAt` on any mutation (unless the caller set it) so the future
+   * push-scan always sees the change. Soft-delete (the `deleting` interceptor)
+   * is deliberately NOT here yet — it lands in Phase A2.
+   */
+  private installSyncHooks() {
+    const stampCreate = (obj: unknown) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = obj as any;
+      if (!r.ownerId) r.ownerId = getLocalOwnerId();
+      if (!r.updatedAt) r.updatedAt = new Date().toISOString();
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stampUpdate = (mods: any, obj: any): Record<string, unknown> | undefined => {
+      const extra: Record<string, unknown> = {};
+      if (mods.updatedAt === undefined) extra.updatedAt = new Date().toISOString();
+      if (obj.ownerId === undefined && mods.ownerId === undefined) extra.ownerId = getLocalOwnerId();
+      return Object.keys(extra).length ? extra : undefined;
+    };
+    for (const name of SYNCED_TABLES) {
+      const table = this.table(name);
+      table.hook('creating', (_pk, obj) => stampCreate(obj));
+      table.hook('updating', (mods, _pk, obj) => stampUpdate(mods, obj));
+    }
   }
 }
 

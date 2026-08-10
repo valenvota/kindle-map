@@ -12,4 +12,7 @@ export type Highlight = {
   important?: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Sync (Backend Spike Phase A): per-row owner + soft-delete tombstone. */
+  ownerId?: string;
+  deletedAt?: string;
 };

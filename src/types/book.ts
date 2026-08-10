@@ -14,6 +14,9 @@ export type Book = {
   totalHighlights: number;
   createdAt: string;
   updatedAt: string;
+  /** Sync (Backend Spike Phase A): per-row owner + soft-delete tombstone. */
+  ownerId?: string;
+  deletedAt?: string;
 };
 
 export type BookNote = {
@@ -23,4 +26,7 @@ export type BookNote = {
   linkedHighlightId?: string;
   createdAt: string;
   updatedAt: string;
+  /** Sync (Backend Spike Phase A): per-row owner + soft-delete tombstone. */
+  ownerId?: string;
+  deletedAt?: string;
 };

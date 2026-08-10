@@ -9,8 +9,10 @@
 > Export Lite COMPLETE (WYSIWYG PNG: wallpaper + ink + nodes, hi-res, export all / selection).
 > Onboarding v1 COMPLETE (two-step full-screen: Welcome slideshow → Import guide; sample data; checklist).
 > Backend Architecture Spike COMPLETE (decision + design spec in `BACKEND_SPIKE.md`).
-> **Next up:** implement the backend per `BACKEND_SPIKE.md` — Phase A (local foundation:
-> Dexie migration + auto-stamp/soft-delete middleware), still fully offline.
+> Backend **Phase A1** COMPLETE (Dexie v11 migration: `ownerId`/`updatedAt`/`deletedAt` on
+> synced tables + global auto-stamp hooks; still 100% offline, nothing user-visible).
+> **Next up:** Phase A2 — soft-delete (hard deletes → `deletedAt` tombstones + read filtering,
+> via DBCore middleware so the ~40 read sites stay untouched). Then Phase B (Supabase).
 
 ---
 

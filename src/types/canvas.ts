@@ -35,6 +35,11 @@ export type CanvasNodeData = {
     border?: string;
     text?: string;
   };
+  /** Sync (Backend Spike Phase A). Nodes had no timestamp before; the v11 migration
+   *  backfills `updatedAt`. `ownerId` = per-row owner, `deletedAt` = tombstone. */
+  updatedAt?: string;
+  ownerId?: string;
+  deletedAt?: string;
 };
 
 export type EdgeDirection = 'forward' | 'backward' | 'both' | 'none';
@@ -49,6 +54,11 @@ export type CanvasEdge = {
   direction?: EdgeDirection;
   label?: string;
   createdAt: string;
+  /** Sync (Backend Spike Phase A): the v11 migration backfills `updatedAt` from
+   *  `createdAt`. `ownerId` = per-row owner, `deletedAt` = tombstone. */
+  updatedAt?: string;
+  ownerId?: string;
+  deletedAt?: string;
 };
 
 export type StrokePoint = { x: number; y: number; pressure: number };
@@ -62,6 +72,11 @@ export type CanvasStroke = {
   width: number;
   points: StrokePoint[];
   createdAt: string;
+  /** Sync (Backend Spike Phase A): the v11 migration backfills `updatedAt` from
+   *  `createdAt`. `ownerId` = per-row owner, `deletedAt` = tombstone. */
+  updatedAt?: string;
+  ownerId?: string;
+  deletedAt?: string;
 };
 
 export type Group = {
