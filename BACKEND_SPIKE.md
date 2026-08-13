@@ -9,12 +9,18 @@
 > documented fallback; Firestore is rejected; PowerSync/ElectricSQL are parked.
 > Rollout is phased so **backup ships before sync**, and login is **optional and
 > progressive** — the app is fully usable, forever, with no account.
+>
+> **Status (2026-08):** the local groundwork is **shipped** — Dexie is at **v11**,
+> and **Phase A1 (sync-ready schema + auto-stamp) and A2 (soft-delete tombstones)**
+> are done, still 100% offline with nothing user-visible. **Phase B (Supabase
+> project + Auth + schema/RLS) is paused** until we choose to resume backend work.
+> The architecture decision below is unchanged.
 
 ---
 
 ## 1. Context & goals
 
-KindleMap is local-first today: all data lives in **IndexedDB via Dexie (v10)**,
+Loci is local-first today: all data lives in **IndexedDB via Dexie (v11)**,
 per browser. There is no backend. The practical consequence the user already
 feels: **data does not move between their PC and their Mac** — GitHub syncs the
 *code*, not the *library*. Each browser is an island.
@@ -331,10 +337,10 @@ tidied opportunistically, but it's no longer a blocker.)
 Ordered so **each phase ships value and is reversible**, and **backup lands before
 sync**:
 
-- **Phase A — Local foundation (no backend).** Dexie migration (§6.2) +
+- **Phase A — Local foundation (no backend). ✅ SHIPPED (A1 + A2).** Dexie migration (§6.2) +
   auto-stamp/soft-delete middleware (§6.3) + `ownerId`/`deletedAt`. App still 100%
   offline; nothing user-visible changes. De-risks the data model first.
-- **Phase B — Supabase project + Auth + schema/RLS.** Provisioned by the user
+- **Phase B — Supabase project + Auth + schema/RLS. ⏸ PAUSED.** Provisioned by the user
   (they create the project and supply keys — see §9); schema, RLS, `.env` wiring.
 - **Phase C — Backup (one-way push).** "Back up now" uploads all local rows.
   Delivers the "backup" value alone, no pull/conflict complexity yet.

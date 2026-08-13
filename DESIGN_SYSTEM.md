@@ -1,225 +1,122 @@
-# KindleMap Design System — v1.0
+# Loci — Design System (v2, shipped)
 
-> Reference for all KindleMap UI work. Copy from here to maintain visual consistency.
-> Last updated: Sprint 1 — July 2026
+> The visual source of truth for Loci. This describes the system **actually
+> implemented** in `src/index.css`; that file is the canonical token/class source,
+> this doc is the reasoning around it. (Historical evolution lives in
+> `REDESIGN_PLAN.md` — not needed for day-to-day UI work.)
 
 ---
 
-## Visual Philosophy
+## Philosophy
 
 Three words: **calm, editorial, intentional.**
 
-- **Calm**: The app is a reading companion. It should feel like opening a well-designed book or sitting at a clean desk. No visual noise. Space is meaning.
-- **Editorial**: Typography-first. Hierarchy comes from weight and size, not color.
-- **Intentional**: Every color decision has a reason. Accent appears rarely and always means something.
+- **Calm** — a reading companion; space is meaning, no visual noise.
+- **Editorial** — typography-first; hierarchy from weight/size, not color.
+- **Intentional** — every color has a reason; accent appears rarely and means something.
 
-Feels like: Kindle's focus + Apple's restraint + a high-end literary magazine's confidence.
+Locked rules:
+
+- **Serif = content, sans = controls.** Newsreader for reading/content moments,
+  Inter for UI. Both self-hosted via `@fontsource-variable`.
+- **Paper + ink + one restrained blue accent.** Ember is reserved **only** for the
+  "important" marker — never for chrome, buttons, or text.
+- **Status is shown by dot + label, not colored fills.**
+- **No emoji in the UI.** (The 3 emoji in `utils/exportMarkdown.ts` write into
+  exported `.md` files, not the UI, and are intentional.)
+- **Midnight ink-blue sidebar over warm paper content**, app-wide.
 
 ---
 
 ## Typography
 
-**Font**: Inter (system fallback: system-ui, sans-serif). Already available.
+| Role | Family | Notes |
+|---|---|---|
+| Content / reading / display | `--font-serif` (Newsreader Variable) | titles, quotes, reading surfaces |
+| UI / controls / labels | `--font-sans` (Inter Variable) | buttons, nav, metadata, forms |
 
-| Role | Size | Weight | Notes |
-|---|---|---|---|
-| Page title | `text-2xl–3xl` | 300 light | `tracking-tight leading-tight` |
-| Section header | `text-lg–xl` | 400 | `tracking-tight` |
-| Card title | `text-sm–base` | 600 semibold | `leading-snug` |
-| Body | `text-sm` | 400 | `leading-relaxed` |
-| Secondary body | `text-sm` | 300 light | `text-[--text-2]` |
-| Label / eyebrow | `text-[10px]–[11px]` | 700 bold | `uppercase tracking-[0.15em]` |
-| Mono / metadata | `text-xs` | 400 | `font-mono` |
+Use `.font-display` for editorial serif moments.
 
 ---
 
-## Color Tokens
+## Color tokens (important ones — `index.css` is canonical)
+
+The full palette, elevation, radii and sidebar scales live in `src/index.css`. The
+tokens that matter conceptually:
 
 ```css
-:root {
-  /* Backgrounds */
-  --bg:           #F8F6F2;   /* bone white — warm, paper-like */
-  --surface:      #FFFFFF;   /* cards, modals */
-  --surface-2:    #F2F0EC;   /* nested cards, subtle areas */
-  --canvas-bg:    #EDEAE4;   /* reading canvas — physical desk feel */
+/* Grounds */
+--paper:   #F3F0E9;  /* app background */
+--surface: #FBF9F4;  /* cards, sheets, elevated surfaces */
+--canvas:  #EEEAE1;  /* reading-desk canvas */
 
-  /* Brand — Night Blue */
-  --brand:        #1C2B3A;   /* identity: logo, primary buttons */
-  --brand-mid:    #2C4159;   /* hover on dark surfaces */
-  --brand-soft:   rgba(28,43,58,0.07);
-  --brand-border: rgba(28,43,58,0.12);
+/* Ink (text hierarchy) */
+--ink: #1C1A17;  --ink-soft: #5E5B57;  --ink-faint: #9B968D;
 
-  /* Accent — Restrained Blue */
-  --accent:       #3D6B8E;   /* active states, links, selection, focus */
-  --accent-soft:  rgba(61,107,142,0.10);
-  --accent-border: rgba(61,107,142,0.20);
+/* Accent — the single restrained blue */
+--accent: #3E6B8E;  --accent-deep: #2F5470;  --accent-soft/-border (tints)
 
-  /* Warm — Micro accent (replaces amber/orange as identity) */
-  --warm:         #C4894A;   /* active tool, focus rings, tiny highlights ONLY */
-  --warm-soft:    rgba(196,137,74,0.12);
+/* Ember — the important marker ONLY */
+--ember: #B06A4F;  --ember-soft (tint)
 
-  /* Text */
-  --text:         #181614;   /* ink black with warmth */
-  --text-2:       #5C5650;   /* warm charcoal, secondary */
-  --text-3:       #9C9590;   /* labels, placeholders, metadata */
-
-  /* Borders */
-  --border:       rgba(24,22,20,0.07);
-  --border-md:    rgba(24,22,20,0.13);
-  --border-strong: rgba(24,22,20,0.22);
-
-  /* Status */
-  --status-reading:  #3D6B8E;   /* same as --accent */
-  --status-finished: #3A7A5C;   /* forest green */
-  --status-want:     #7A6A54;   /* warm brown-gray */
-
-  /* Canvas node tints */
-  --node-book:   #FFFFFF;
-  --node-topic:  #EEF2F7;
-  --node-note:   #F7F4EE;
-  --node-quote:  #F2F0F7;
-}
+/* Sidebar — midnight ink-blue */
+--nav-bg-top: #182534;  --nav-bg-bot: #131E2B;  --nav-accent: #79A9CE; …
 ```
 
-### Color Rules
+Also in `index.css` (not repeated here): `--surface-2`, hairlines
+(`--hair`/`-soft`/`-md`), elevation (`--shadow-sm/md/lg/glass/cover`), and radii
+(`--radius-sm 8` / `--radius 12` / `--radius-lg 16`).
 
-| Color | Use | Never use for |
+### Color rules
+
+| Token | Use | Never for |
 |---|---|---|
-| `--brand` (#1C2B3A) | Logo, primary CTA buttons, navbar logo area | Body backgrounds mid-page |
-| `--accent` (#3D6B8E) | Active filters, focus rings, selected state, links | Drawing tool active state |
-| `--warm` (#C4894A) | Active drawing/canvas tool indicator, handle glow | Identity, buttons, text |
-| Orange (`orange-*`) | Attention/warning states only | Brand or UI chrome |
-| Red | Destructive confirm only | Any other use |
+| `--accent` (#3E6B8E) | active/selected state, focus rings, links | destructive; the "important" marker |
+| `--ember` (#B06A4F) | the important-highlight marker **only** | chrome, buttons, text, identity |
+| ink scale | all text hierarchy | — |
+| green / red | success / destructive confirm only (semantic, kept inline) | general UI accent |
+
+> **Backward-compat aliases** (`--bg`, `--brand`, `--warm`, `--text`, `--text-2/3`,
+> `--border(-md)`, `--canvas-bg`) remain mapped onto v2 in `index.css` for older
+> code paths. Prefer the canonical tokens above in new work; don't reintroduce the
+> old v1 values behind them.
 
 ---
 
-## Spacing & Layout
+## Component primitives (in `index.css`)
 
-| Use | Value |
-|---|---|
-| Tight (labels, gaps) | `gap-1` – `gap-2` |
-| Card internals | `p-4` – `p-5` |
-| Comfortable sections | `p-6` – `p-8` |
-| Page padding | `px-6 py-8` |
-| Content max-width | `max-w-5xl mx-auto` |
+Use these instead of ad-hoc utility clusters:
 
-### Radius
-
-| Element | Radius |
-|---|---|
-| Cards, modals | `rounded-xl` or `rounded-2xl` |
-| Buttons, pills | `rounded-full` or `rounded-lg` |
-| Inputs | `rounded-lg` |
-| Canvas nodes | `rounded-xl` or `rounded-2xl` |
-| Tooltips, menus | `rounded-lg` |
-
-### Shadows
-
-```
-shadow-sm  → subtle card
-shadow-md  → hover state
-shadow-lg  → modals, floating panels
-```
-
-Selected node: `ring-2 ring-[#3D6B8E]/40`
+- **Buttons** — `.km-btn` with `--primary` / `--secondary` / `--ghost` / `--danger`
+  and `--sm` / `--md` / `--lg`; `.km-iconbtn` for icon-only.
+- **Forms** — `.km-field`, `.km-label`.
+- **Surfaces** — `.km-surface` (`--elevated`), `.km-modal`, `.km-menu`
+  (`.km-menu__item`, `--danger`, `__sep`), `.km-glass` for floating chrome.
+- **Shell** — `.km-side`, `.km-nav` (dark sidebar).
+- **Library** — `.lib-*` (masthead, row/card, `.lib-dot--{want|reading|finished}`).
+- **Covers / canvas** — `.km-cover` (+ `--type` typographic fallback, `--compact`),
+  `.km-booknode` (`--cover` / `--card`).
 
 ---
 
-## Component Rules
+## Covers & canvas
 
-### Library Cards
-- White surface, `rounded-2xl`, `shadow-sm`, `border-[--border-md]`
-- Hover: stronger border, `shadow-md` — no scale
-- Title hover: `group-hover:text-[#3D6B8E]`
-- Highlight badge: `bg-stone-100 text-stone-600`
-
-### BookDetailView
-- Panel: `bg-[#F8F6F2]` shell, `bg-white` header
-- Source label: `text-[#3D6B8E]` (accent, not amber)
-- Tabs: underline `border-b-2 border-[#1C2B3A]` on active, not filled pill
-- Important filter active: `bg-[#3D6B8E] text-white`
-- Focus inputs: `focus:border-[#3D6B8E] focus:ring-[#3D6B8E]/10`
-- Study button: `bg-[#3D6B8E]/10 text-[#3D6B8E]`
-
-### Status Pills
-```
-want-to-read: bg-[#7A6A54]/10 text-[#7A6A54] border-[#7A6A54]/20
-reading:      bg-[#3D6B8E]/10 text-[#3D6B8E] border-[#3D6B8E]/20
-finished:     bg-[#3A7A5C]/10 text-[#3A7A5C] border-[#3A7A5C]/20
-```
-
-### Buttons
-
-| Variant | Style |
-|---|---|
-| Primary | `bg-[#1C2B3A] text-white rounded-lg hover:bg-[#2C4159]` |
-| Secondary | `border border-stone-200 text-stone-600 hover:bg-stone-50` |
-| Ghost | `text-stone-500 hover:bg-stone-100 rounded-lg` |
-| Destructive | `bg-red-50 text-red-600 hover:bg-red-100` |
-| Active filter | `bg-[#1C2B3A] text-white` |
-
-### Canvas Toolbar
-- Default icon: `text-stone-400`
-- Active node tool (book, topic, etc.): `bg-[#1C2B3A] text-white`
-- Active draw tool (pencil, marker, eraser): `bg-[#C4894A]/15 text-[#C4894A]`
-
-### Canvas Handles
-- Color: `#C4894A` (warm) — not amber-500
-- Glow: `box-shadow: 0 0 0 2px #C4894A55`
-
-### Canvas Nodes (selected)
-- `ring-2 ring-[#3D6B8E]/50 shadow-lg`
-
-### Drawing Color Picker
-Colors (left to right): `#FFFFFF`, `#181614`, `#ef4444`, `#3b82f6`, `#10b981`, `#C4894A`, `#8b5cf6`
-Selected ring: `#C4894A`
-
-### Modals
-- Backdrop: `bg-black/30 backdrop-blur-sm`
-- Panel: `bg-white rounded-2xl shadow-2xl`
-- Focus inputs: accent blue ring
-
-### Stats Cards
-- Number: `text-3xl font-light text-[#1C2B3A]`
-- Label: `text-[10px] uppercase tracking-[0.15em] text-stone-400 font-bold`
-
-### Status Progress Bars
-- want-to-read: `bg-[#7A6A54]`
-- reading: `bg-[#3D6B8E]`
-- finished: `bg-[#3A7A5C]`
+- **Covers always feel like books:** strict **2:3**, soft shadow, **no square-crop**.
+  Typographic fallback cover (Penguin-Great-Ideas style) when there's no image.
+- **Canvas = reading desk:** faint dot-grid paper, nodes as paper objects, glass tool
+  rail, contextual controls shown **only on selection**.
 
 ---
 
-## Animation Rules
+## Motion
 
-- Hover transitions: `transition-all duration-150` (Tailwind)
-- Modal entry: `opacity 0→1, y 8→0`, `duration: 0.25s`
-- No bounce/spring exaggeration
-- No scale on cards (only on cover cards in Sprint 2)
-- Canvas interactions: instant (0 delay)
+- Hover/transition ~150ms; modal entry opacity 0→1 + y 8→0 (~250ms).
+- No bounce/spring exaggeration. Canvas interactions instant.
 
 ---
 
-## What NOT to change in Sprint 1
+## Avoid
 
-- Canvas node structure or behavior
-- React Flow edge styles (functional)
-- Drawing layer logic
-- Data models
-- Study Mode, Export, Import screens (beyond basic token alignment)
-- Any feature functionality
-
----
-
-## Implementation Checklist (Sprint 1)
-
-- [x] CSS tokens in index.css
-- [x] Canvas handle color → warm
-- [x] Canvas edge selected color → accent blue
-- [x] LibraryPage header, cards, filters, buttons
-- [x] BookDetailView status pills, tabs, inputs, source label
-- [x] StatsPage stat cards, status bars
-- [x] MapsPage buttons, map cards
-- [x] BookNode selected ring → accent blue
-- [x] CanvasLeftToolbar active colors
-- [x] ReadingCanvas canvas bg, drawing colors (add white)
+Glassmorphism (beyond the one restrained `.km-glass`), neon/AI gradients, generic
+SaaS gradients, corporate-dashboard styling, excessive rounding, **emoji in UI**,
+and the dead v1 tokens (`--warm` amber `#C4894A`, `#F8F6F2`, `stone-*` utilities).
