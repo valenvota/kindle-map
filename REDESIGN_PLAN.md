@@ -1,5 +1,10 @@
 # KindleMap — Redesign Plan & Roadmap
 
+> **⤳ The product is pivoting to _Loci_.** The forward-looking direction now lives in
+> `LOCI_PIVOT.md` (north star) and `LOCI_ROADMAP.md` (phases L1…L8). This file remains
+> the record of the redesign + pre-pivot sprints (the foundation Loci builds on) — it
+> is concluded, not superseded.
+>
 > Continuity doc for the Apple-inspired redesign and the product sprints that follow it.
 > Read alongside `DESIGN_SYSTEM.md`.
 >
