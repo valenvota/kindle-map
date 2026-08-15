@@ -173,7 +173,7 @@ export default function App() {
   } else if (current === 'canvas' && activeMapId) {
     content = (
       <AppShell active="maps" {...shellProps}>
-        <ReadingCanvas mapId={activeMapId} onBack={() => setScreen('maps')} onOpenBook={openBook} />
+        <ReadingCanvas mapId={activeMapId} onBack={() => setScreen('maps')} onOpenBook={openBook} onOpenMap={goToMap} />
       </AppShell>
     );
   } else if (current === 'stats') {

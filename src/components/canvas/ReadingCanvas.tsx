@@ -36,8 +36,9 @@ import {
   updateCanvasNodeDisplayMode,
   updateCanvasNodeLocked,
   bulkSetNodeZIndices,
+  getAllCanvasNodes,
 } from '../../db/canvasRepository';
-import { updateMapBackground, getMap } from '../../db/mapsRepository';
+import { updateMapBackground, getMap, getMapAncestry } from '../../db/mapsRepository';
 import { getAllBooks } from '../../db/booksRepository';
 import { getAllHighlights } from '../../db/highlightsRepository';
 import { getStrokesByMap } from '../../db/canvasStrokesRepository';
@@ -52,6 +53,7 @@ import { ShapeNode, type ShapeNodeData } from './nodes/ShapeNode';
 import { TextBoxNode, type TextBoxNodeData } from './nodes/TextBoxNode';
 import { RegionNode, type RegionNodeData } from './nodes/RegionNode';
 import { ImageNode, type ImageNodeData } from './nodes/ImageNode';
+import { RoomNode, type RoomNodeData } from './nodes/RoomNode';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasLeftToolbar } from './CanvasLeftToolbar';
 import { PlusMenu } from './PlusMenu';
@@ -88,6 +90,7 @@ const nodeTypes = {
   text: TextBoxNode,
   region: RegionNode,
   image: ImageNode,
+  room: RoomNode,
 };
 
 // Note/quote/text default sizes when a node has never been resized. Kept here so
@@ -197,6 +200,7 @@ function buildReactFlowNode(
   mn: CanvasNodeData,
   bookMap: Map<string, Book>,
   importantByBook: Map<string, number>,
+  roomItemCount: Map<string, number>,
 ): Node | null {
   // A pinned node can't be dragged or connected but stays selectable (so it can
   // be unpinned). The `km-pinned` class draws the pin badge — see index.css.
@@ -304,6 +308,20 @@ function buildReactFlowNode(
         } satisfies RegionNodeData,
       };
     }
+    case 'room': {
+      // A Room card references a child map (roomId). No width/height: it sizes
+      // to its own content like a book/topic node. Not connectable/resizable.
+      return {
+        ...base,
+        type: 'room',
+        data: {
+          nodeId: mn.id,
+          roomId: mn.roomId ?? '',
+          name: mn.content ?? '',
+          itemCount: roomItemCount.get(mn.roomId ?? '') ?? 0,
+        } satisfies RoomNodeData,
+      };
+    }
     case 'image': {
       const width = mn.width ?? DEFAULT_SIZE.image.width;
       const height = mn.height ?? DEFAULT_SIZE.image.height;
@@ -329,11 +347,12 @@ function buildReactFlowNode(
 
 type Props = {
   mapId: string;
-  onBack: () => void;    // → Maps list
+  onBack: () => void;    // → Maps list (fallback when there's no parent)
   onOpenBook: (bookId: string) => void;
+  onOpenMap: (mapId: string) => void;  // enter a Room / go up / breadcrumb jump
 };
 
-export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
+export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   const [activeTool, setActiveTool] = useState<CanvasTool>('select');
   const [drawColor, setDrawColor] = useState('#181614');
   const [drawWidth, setDrawWidth] = useState(3);
@@ -360,7 +379,18 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
   const mapNodes = useLiveQuery(() => getCanvasNodesByMap(mapId), [mapId]);
   const allBooks = useLiveQuery(() => getAllBooks(), []);
   const allHighlights = useLiveQuery(() => getAllHighlights(), []);
+  const allNodes = useLiveQuery(() => getAllCanvasNodes(), []);
   const map = useLiveQuery(() => getMap(mapId), [mapId]);
+  // Locus path (root → current) for the breadcrumb; undefined until it resolves.
+  const ancestry = useLiveQuery(() => getMapAncestry(mapId), [mapId]);
+
+  // Item count per map (drives the Room card preview). Room nodes reference a
+  // child map by roomId; the count is how many live nodes live in that map.
+  const roomItemCount = useMemo(() => {
+    const m = new Map<string, number>();
+    allNodes?.forEach((n) => m.set(n.mapId, (m.get(n.mapId) ?? 0) + 1));
+    return m;
+  }, [allNodes]);
 
   // Important-highlight count per book — quiet metadata on card-mode nodes.
   const importantByBook = useMemo(() => {
@@ -455,11 +485,13 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
 
   // ── Initialize nodes from Dexie once ────────────────────────────────────
   useEffect(() => {
-    if (!mapNodes || !allBooks || initialized.current) return;
+    // Wait for allNodes too, so Room cards render with the right item count on
+    // first paint (a Room's count comes from a different map's nodes).
+    if (!mapNodes || !allBooks || !allNodes || initialized.current) return;
 
     const bookMap = new Map(allBooks.map((b) => [b.id, b]));
     const initial = mapNodes
-      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook))
+      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook, roomItemCount))
       .filter((n): n is Node => n !== null);
 
     setNodes(initial);
@@ -470,7 +502,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     // first user action lands at index 0 and undoing it hits index -1 (no-op).
     historyStack.current = [mapNodes.map((n) => ({ ...n }))];
     historyIndex.current = 0;
-  }, [mapNodes, allBooks]);
+  }, [mapNodes, allBooks, allNodes, roomItemCount]);
 
   // ── Sync additions and deletions from Dexie without resetting layout ─────
   useEffect(() => {
@@ -494,13 +526,13 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
             ...mn,
             position: mn.position ?? buildInitialPosition(remaining.length + i),
           };
-          return buildReactFlowNode(withPosition, bookMap, importantByBook);
+          return buildReactFlowNode(withPosition, bookMap, importantByBook, roomItemCount);
         })
         .filter((n): n is Node => n !== null);
 
       return [...remaining, ...newNodes];
     });
-  }, [mapNodes, allBooks]);
+  }, [mapNodes, allBooks, roomItemCount]);
 
   // ── Sync style overrides from Dexie into existing nodes ──────────────────
   useEffect(() => {
@@ -629,10 +661,15 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
 
   // ── Double-click book node → open detail drawer ──────────────────────────
   const onNodeDoubleClick: NodeMouseHandler = useCallback((_, node) => {
+    if (node.type === 'room') {
+      const roomId = (node.data as RoomNodeData).roomId;
+      if (roomId) onOpenMap(roomId);   // enter the Room's child map (reuse goToMap)
+      return;
+    }
     if (node.type !== 'book') return;
     const book = (node.data as BookNodeData).book;
     onOpenBook(book.id);
-  }, [onOpenBook]);
+  }, [onOpenBook, onOpenMap]);
 
   // ── Auto arrange ─────────────────────────────────────────────────────────
   const handleAutoArrange = useCallback(async () => {
@@ -809,6 +846,20 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     viewportCache.set(mapId, vp);
   }, [mapId]);
 
+  // ── Back / up: walk up the Locus tree; fall back to the Maps list at the root
+  // (or any parent-less/orphan map), so Maps stays reachable. ──────────────────
+  const parentId = map?.parentId;
+  const handleBackOrUp = useCallback(() => {
+    if (parentId) onOpenMap(parentId);
+    else onBack();
+  }, [parentId, onOpenMap, onBack]);
+
+  // Breadcrumb segments (root → current). Only shown once ancestry resolves.
+  const breadcrumb = useMemo(
+    () => ancestry?.map((m) => ({ id: m.id, name: m.name })),
+    [ancestry],
+  );
+
   // ── Wallpaper (per-map, persisted on the map). Not part of node undo/redo. ──
   const handleBackgroundChange = useCallback((bg: MapBackground) => {
     updateMapBackground(mapId, bg);
@@ -848,8 +899,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook }: Props) {
     <div className="km-canvas-desk relative h-full w-full overflow-hidden">
       <CanvasToolbar
         mapName={map?.name ?? '…'}
+        breadcrumb={breadcrumb}
+        onCrumb={onOpenMap}
+        backLabel={parentId ? 'Up' : 'Maps'}
         background={map?.background}
-        onBack={onBack}
+        onBack={handleBackOrUp}
         onAutoArrange={handleAutoArrange}
         onExportAll={() => handleExport('all')}
         onExportSelection={() => handleExport('selection')}

@@ -58,6 +58,24 @@ export async function ensureLocusRoot(): Promise<KindleMap> {
   return root;
 }
 
+/**
+ * The chain of maps from the Locus root down to `mapId`, inclusive
+ * (`[root, …, current]`), by walking `parentId` upward. Drives the breadcrumb.
+ * A `seen` guard makes a malformed parent cycle terminate instead of hanging.
+ * Tombstoned ancestors read as absent (getMap filters them), so the chain stops.
+ */
+export async function getMapAncestry(mapId: string): Promise<KindleMap[]> {
+  const chain: KindleMap[] = [];
+  const seen = new Set<string>();
+  let cur = await getMap(mapId);
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    chain.unshift(cur);
+    cur = cur.parentId ? await getMap(cur.parentId) : undefined;
+  }
+  return chain;
+}
+
 export async function getMap(id: string): Promise<KindleMap | undefined> {
   // Display read — a tombstoned map reads as absent.
   const map = await db.maps.get(id);
