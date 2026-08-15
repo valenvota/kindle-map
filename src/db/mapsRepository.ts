@@ -23,6 +23,41 @@ export async function countMaps(): Promise<number> {
   return db.maps.filter(notDeleted).count();
 }
 
+/**
+ * The Locus root (Loci L1). Identified by the explicit `isRoot` marker, never by
+ * `parentId` absence (legacy/orphan maps also lack a parent) and never derived
+ * from `ownerId` (a future auth claim rewrites owner but keeps ids). If more than
+ * one live root exists — the deferred L7 multi-device claim edge case — the
+ * earliest is returned deterministically; L7 owns reconciling the duplicate.
+ * Not wired into app startup in Slice 1 (no navigation yet); used by later slices.
+ */
+export async function getRootMap(): Promise<KindleMap | undefined> {
+  const roots = await db.maps.filter((m) => !!m.isRoot && notDeleted(m)).toArray();
+  if (roots.length === 0) return undefined;
+  return roots.sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+}
+
+/**
+ * Get-or-create the Locus root (idempotent). Covers the fresh-install path where
+ * the v12 `.upgrade()` never runs (a new DB opens straight at v12). Deliberately
+ * not called at startup yet — that wiring lands with the navigation slice.
+ */
+export async function ensureLocusRoot(): Promise<KindleMap> {
+  const existing = await getRootMap();
+  if (existing) return existing;
+  const now = new Date().toISOString();
+  const uuid = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const root: KindleMap = {
+    id: `locus-${uuid}`,
+    name: 'My Locus',
+    isRoot: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.maps.add(root);
+  return root;
+}
+
 export async function getMap(id: string): Promise<KindleMap | undefined> {
   // Display read — a tombstoned map reads as absent.
   const map = await db.maps.get(id);

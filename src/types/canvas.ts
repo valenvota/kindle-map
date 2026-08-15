@@ -8,10 +8,17 @@ export type CanvasNodeData = {
   bookId?: string;
   /** Present for quote nodes — source of truth for the original highlight */
   highlightId?: string;
-  type: 'book' | 'topic' | 'note' | 'quote' | 'shape' | 'text' | 'image' | 'region';
+  /**
+   * Present for room nodes (Loci L1) — the child map this Room card references,
+   * structurally identical to how a book node carries `bookId`. The Room's own
+   * contents live in that map (scoped by `mapId`), not duplicated here.
+   */
+  roomId?: string;
+  type: 'book' | 'topic' | 'note' | 'quote' | 'shape' | 'text' | 'image' | 'region' | 'room';
   /**
    * Topic label, note text, denormalized quote text, shape label, text-box text,
-   * region title, or — for image nodes — the (downscaled) image data URI.
+   * region title, denormalized Room name (room nodes), or — for image nodes —
+   * the (downscaled) image data URI.
    */
   content?: string;
   /** Present for shape nodes */

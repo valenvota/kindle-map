@@ -4,6 +4,13 @@ import type { Highlight } from '../types/highlight';
 import type { CanvasNodeData, CanvasEdge, CanvasStroke, Group } from '../types/canvas';
 import type { KindleMap } from '../types/map';
 import { getLocalOwnerId } from '../utils/localOwner';
+import { planLocusMigration } from './locusMigration';
+
+/** Fresh, owner-independent id for a Locus root (see locusMigration.ts). */
+function freshRootId(): string {
+  const uuid = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `locus-${uuid}`;
+}
 
 // Tables that participate in cloud sync (Backend Spike). `groups` is legacy/unused
 // and deliberately excluded. Every write to these gets `ownerId` + `updatedAt`
@@ -212,6 +219,45 @@ export class KindleMapDB extends Dexie {
             if (!r.ownerId) r.ownerId = ownerId;
             if (!r.updatedAt) r.updatedAt = r.createdAt ?? now;
           });
+        }
+      });
+
+    // v12 — Loci L1 (the Locus spine, data layer only; no UI yet). Adds the map
+    // tree (`parentId` + `isRoot` on maps) and the `room` node type carrying a
+    // `roomId`. The one real migration: create a Locus root per owner, re-parent
+    // every existing map under it, and generate one `room` card on the root per
+    // map — so today's maps immediately become Rooms on the Locus. Additive and
+    // idempotent (no row is re-keyed or destructively changed); the transform is
+    // the pure `planLocusMigration`, verified against seed data. `parentId` is
+    // indexed to drive the future breadcrumb/children queries; `isRoot`/`roomId`
+    // are non-indexed optional fields (root lookup filters in JS).
+    this.version(12)
+      .stores({
+        books: 'id, title, author, source, createdAt, updatedAt',
+        highlights: 'id, bookId, type, addedAt, createdAt, updatedAt',
+        canvasNodes: 'id, bookId, mapId, type, updatedAt',
+        canvasEdges: 'id, mapId, source, target, updatedAt',
+        canvasStrokes: 'id, mapId, updatedAt',
+        maps: 'id, name, createdAt, updatedAt, parentId',
+        groups: 'id, title, createdAt',
+        bookNotes: 'id, bookId, createdAt, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        const now = new Date().toISOString();
+        const maps = await tx.table('maps').toArray();
+        // No 'room' nodes exist before v12; on a re-run this dedupes the cards.
+        const roomNodes = await tx.table('canvasNodes').where('type').equals('room').toArray();
+
+        const plan = planLocusMigration({ maps, roomNodes, now, newRootId: freshRootId });
+
+        for (const root of plan.rootsToAdd) {
+          await tx.table('maps').add(root);
+        }
+        for (const r of plan.mapsToReparent) {
+          await tx.table('maps').update(r.id, { parentId: r.parentId });
+        }
+        if (plan.roomNodesToAdd.length > 0) {
+          await tx.table('canvasNodes').bulkAdd(plan.roomNodesToAdd);
         }
       });
 
