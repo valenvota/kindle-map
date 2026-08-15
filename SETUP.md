@@ -96,3 +96,9 @@ Si el hash y el mensaje coinciden en ambas, tienen el mismo estado.
 
 - **No mezclar cambios sin pushear.** El único escenario que trae dolor es dejar
   trabajo sin subir en una máquina y editar en la otra. La regla de oro lo evita.
+
+- **La base de datos de desarrollo está aislada de la real.** En `npm run dev`
+  la app usa una IndexedDB separada (`kindle-map-dev`); el build de producción
+  usa `kindle-map-db`. Es intencional: el trabajo visual de desarrollo nunca
+  abre ni migra tus datos locales reales. Para probar contra datos reales, usá
+  un build/preview de producción.

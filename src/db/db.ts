@@ -30,7 +30,11 @@ export class KindleMapDB extends Dexie {
   bookNotes!: Table<BookNote, string>;
 
   constructor() {
-    super('kindle-map-db');
+    // Dev runs in an isolated IndexedDB ('kindle-map-dev') so normal visual work
+    // (`npm run dev`, the preview server) never opens or migrates the real
+    // 'kindle-map-db'. In a production build `import.meta.env.DEV` is statically
+    // false, so this tree-shakes to the literal 'kindle-map-db' — prod unchanged.
+    super(import.meta.env.DEV ? 'kindle-map-dev' : 'kindle-map-db');
 
     // v1 — original schema (never change this block)
     this.version(1).stores({
