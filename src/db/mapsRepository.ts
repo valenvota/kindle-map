@@ -18,9 +18,13 @@ export async function getAllMaps(): Promise<KindleMap[]> {
   return db.maps.orderBy('createdAt').filter(notDeleted).toArray();
 }
 
-/** Live map count (excludes tombstones). */
+/**
+ * Live count of user-created maps (excludes tombstones AND the Locus root). The
+ * root is product infrastructure, not a Map the user made, so it must not inflate
+ * the sidebar badge or falsely complete the "Create a map" onboarding step.
+ */
 export async function countMaps(): Promise<number> {
-  return db.maps.filter(notDeleted).count();
+  return db.maps.filter((m) => notDeleted(m) && !m.isRoot).count();
 }
 
 /**
@@ -39,23 +43,30 @@ export async function getRootMap(): Promise<KindleMap | undefined> {
 
 /**
  * Get-or-create the Locus root (idempotent). Covers the fresh-install path where
- * the v12 `.upgrade()` never runs (a new DB opens straight at v12). Deliberately
- * not called at startup yet — that wiring lands with the navigation slice.
+ * the v12 `.upgrade()` never runs (a new DB opens straight at v12).
+ *
+ * The get-and-create runs inside a single `rw` transaction on `maps`: Dexie
+ * serializes transactions that share a table, so concurrent callers — notably
+ * React StrictMode's double-invoked startup effect in dev — can't race two roots
+ * into existence; the second caller runs after the first commits and sees its
+ * root. (getRootMap here executes within this transaction's Dexie zone.)
  */
 export async function ensureLocusRoot(): Promise<KindleMap> {
-  const existing = await getRootMap();
-  if (existing) return existing;
-  const now = new Date().toISOString();
-  const uuid = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const root: KindleMap = {
-    id: `locus-${uuid}`,
-    name: 'My Locus',
-    isRoot: true,
-    createdAt: now,
-    updatedAt: now,
-  };
-  await db.maps.add(root);
-  return root;
+  return db.transaction('rw', db.maps, async () => {
+    const existing = await getRootMap();
+    if (existing) return existing;
+    const now = new Date().toISOString();
+    const uuid = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const root: KindleMap = {
+      id: `locus-${uuid}`,
+      name: 'My Locus',
+      isRoot: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.maps.add(root);
+    return root;
+  });
 }
 
 /**

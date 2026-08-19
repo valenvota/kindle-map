@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { countBooks } from './db/booksRepository';
-import { countMaps } from './db/mapsRepository';
+import { countMaps, ensureLocusRoot } from './db/mapsRepository';
 import { countStrokes } from './db/canvasStrokesRepository';
 import { ImportPage } from './pages/ImportPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MapsPage } from './pages/MapsPage';
+import { DeskPage } from './pages/DeskPage';
 import { StatsPage } from './pages/StatsPage';
 import { ReadingCanvas } from './components/canvas/ReadingCanvas';
 import { BookDetailView } from './components/book/BookDetailView';
@@ -19,7 +20,7 @@ import { GettingStartedChecklist } from './components/onboarding/GettingStartedC
 import { readOnboarding, writeOnboarding, type OnboardingState } from './utils/onboarding';
 import { loadSampleData, clearSampleData } from './utils/sampleData';
 
-type Screen = 'import' | 'library' | 'maps' | 'canvas' | 'stats';
+type Screen = 'import' | 'library' | 'maps' | 'canvas' | 'stats' | 'desk';
 
 // Which onboarding scene is showing. `null` means "derive from the data" (empty
 // DB → welcome, otherwise → app). The explicit values are set by Back / next
@@ -61,11 +62,30 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Ensure the Locus root exists so the Locus nav always resolves — including a
+  // fresh install where the v12 upgrade never ran. Idempotent + transactional
+  // (StrictMode-safe), so the double-invoked dev effect can't create two roots.
+  useEffect(() => { void ensureLocusRoot(); }, []);
+
   const current: Screen = screen ?? (bookCount === 0 ? 'import' : 'library');
 
   const goToMap = (mapId: string) => {
     setActiveMapId(mapId);
     setScreen('canvas');
+  };
+
+  // Open the Locus directly (no Maps detour): resolve/create the root, then
+  // render it through the existing canvas path.
+  const openLocus = async () => {
+    const root = await ensureLocusRoot();
+    goToMap(root.id);
+  };
+
+  // Sidebar nav: 'locus' is not a Screen (it's the canvas on the root map); every
+  // other ShellScreen maps 1:1 to a Screen.
+  const handleNavigate = (s: ShellScreen) => {
+    if (s === 'locus') { void openLocus(); return; }
+    setScreen(s);
   };
 
   const openBook = (bookId: string, highlightId?: string) => {
@@ -116,7 +136,7 @@ export default function App() {
 
   // Shared props for the global app shell (persistent sidebar navigation)
   const shellProps = {
-    onNavigate: (s: ShellScreen) => setScreen(s),
+    onNavigate: handleNavigate,
     onSearch: () => setPaletteOpen(true),
     onImport: () => setScreen('import'),
     bookCount,
@@ -160,7 +180,7 @@ export default function App() {
       <AppShell
         active="library"
         {...shellProps}
-        onNavigate={(s) => { closeBook(); setScreen(s); }}
+        onNavigate={(s) => { closeBook(); handleNavigate(s); }}
         onImport={() => { closeBook(); setScreen('import'); }}
       >
         {sampleBanner}
@@ -171,9 +191,18 @@ export default function App() {
     // Full-bleed, outside the shell (returning-user import from the sidebar)
     content = <ImportPage onDone={() => setScreen('library')} />;
   } else if (current === 'canvas' && activeMapId) {
+    // The canvas renders the Locus root and every Room/map — highlight Locus.
     content = (
-      <AppShell active="maps" {...shellProps}>
+      <AppShell active="locus" {...shellProps}>
         <ReadingCanvas mapId={activeMapId} onBack={() => setScreen('maps')} onOpenBook={openBook} onOpenMap={goToMap} />
+      </AppShell>
+    );
+  } else if (current === 'desk') {
+    // Slice 3 placeholder — real Desk lands in Slice 4 (Library stays the default).
+    content = (
+      <AppShell active="desk" {...shellProps}>
+        {sampleBanner}
+        <DeskPage />
       </AppShell>
     );
   } else if (current === 'stats') {
