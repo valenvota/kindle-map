@@ -185,6 +185,7 @@ export function LibraryPage({ onImport, onOpenBook, initialTag }: Props) {
           {/* ── Masthead ──────────────────────────────────────────────────── */}
           <header className="lib-masthead">
             <h1 className="lib-h1">Library</h1>
+            <p className="lib-sub">Your books and highlights.</p>
             <div className="lib-statrail">
               <div className="lib-stat"><b>{totals.totalBooks.toLocaleString()}</b><span>Books</span></div>
               <span className="lib-statsep" />
@@ -230,61 +231,59 @@ export function LibraryPage({ onImport, onOpenBook, initialTag }: Props) {
             </div>
           </div>
 
-          {/* ── Covers ────────────────────────────────────────────────────── */}
-          {view === 'covers' && filtered.length > 0 && (
-            <section className="lib-shelf">
-              {filtered.map((book) => (
-                <button key={book.id} className="lib-book" onClick={() => onOpenBook(book.id)} title={fullTitle(book.title)}>
-                  <BookCover book={book} />
-                  <div className="lib-cap">
-                    <span className="lib-cap__title">{getDisplayTitle(book.title)}</span>
-                    {book.author && <span className="lib-cap__author">{book.author}</span>}
-                    <span className="lib-cap__meta">
-                      {book.readingStatus && <span className={`lib-dot lib-dot--${DOT_CLASS[book.readingStatus]}`} />}
-                      {book.totalHighlights} highlight{book.totalHighlights !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </section>
-          )}
+          {/* ── Books shelf ───────────────────────────────────────────────── */}
+          {filtered.length > 0 && (
+            <>
+              <div className="lib-section">
+                <span className="lib-section__icon"><BookOpen /></span>
+                <span className="lib-section__title">Books</span>
+                <span className="lib-section__count">{filtered.length}</span>
+              </div>
 
-          {/* ── Cards / reading index ─────────────────────────────────────── */}
-          {view === 'cards' && filtered.length > 0 && (
-            <section className="lib-list">
-              {filtered.map((book) => {
-                const info = insights.get(book.id);
-                return (
-                  <button key={book.id} className="lib-row" onClick={() => onOpenBook(book.id)} title={fullTitle(book.title)}>
-                    <div className="lib-row__cover"><BookCover book={book} variant="row" /></div>
-                    <div className="lib-row__main">
-                      <div className="lib-row__head">
-                        <span className="lib-row__title">{getDisplayTitle(book.title)}</span>
-                        {book.author && <span className="lib-row__author">{book.author}</span>}
+              {view === 'covers' ? (
+                <section className="lib-shelf">
+                  {filtered.map((book) => (
+                    <button key={book.id} className="lib-book" onClick={() => onOpenBook(book.id)} title={fullTitle(book.title)}>
+                      <BookCover book={book} />
+                      <div className="lib-cap">
+                        <span className="lib-cap__title">{getDisplayTitle(book.title)}</span>
+                        {book.author && <span className="lib-cap__author">{book.author}</span>}
+                        <span className="lib-cap__meta">
+                          {book.readingStatus && <span className={`lib-dot lib-dot--${DOT_CLASS[book.readingStatus]}`} />}
+                          {book.totalHighlights} highlight{book.totalHighlights !== 1 ? 's' : ''}
+                        </span>
                       </div>
-                      {info?.quote && (
-                        <span className="lib-row__quote">
-                          {info.quoteImportant && <span className="mark">★ </span>}
-                          “{info.quote}”
-                        </span>
-                      )}
-                    </div>
-                    <div className="lib-row__meta">
-                      {book.readingStatus && (
-                        <span className="lib-row__status">
-                          <span className={`lib-dot lib-dot--${DOT_CLASS[book.readingStatus]}`} />
-                          {STATUS_LABEL[book.readingStatus]}
-                        </span>
-                      )}
-                      <span className="lib-row__hl">
-                        {book.totalHighlights} highlight{book.totalHighlights !== 1 ? 's' : ''}
-                        {info && info.important > 0 && <> · <b>{info.important} important</b></>}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </section>
+                    </button>
+                  ))}
+                </section>
+              ) : (
+                <section className="lib-cards">
+                  {filtered.map((book) => {
+                    const info = insights.get(book.id);
+                    const tags = (book.tags ?? []).filter(Boolean).slice(0, 3);
+                    return (
+                      <button key={book.id} className="lib-card" onClick={() => onOpenBook(book.id)} title={fullTitle(book.title)}>
+                        <div className="lib-card__cover"><BookCover book={book} variant="row" /></div>
+                        <div className="lib-card__body">
+                          <span className="lib-card__title">{getDisplayTitle(book.title)}</span>
+                          {book.author && <span className="lib-card__author">{book.author}</span>}
+                          <span className="lib-card__meta">
+                            {book.readingStatus && <span className={`lib-dot lib-dot--${DOT_CLASS[book.readingStatus]}`} />}
+                            {book.totalHighlights} highlight{book.totalHighlights !== 1 ? 's' : ''}
+                            {info && info.important > 0 && <> · <b>{info.important} important</b></>}
+                          </span>
+                          {tags.length > 0 && (
+                            <span className="lib-card__tags">
+                              {tags.map((t) => <span key={t} className="lib-card__tag">#{t}</span>)}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </section>
+              )}
+            </>
           )}
 
           {/* ── No results ────────────────────────────────────────────────── */}

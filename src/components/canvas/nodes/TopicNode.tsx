@@ -37,13 +37,13 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
     <div
       onDoubleClick={startEditing}
       className={[
-        'flex min-h-[44px] min-w-[140px] max-w-[260px] items-center justify-center rounded-2xl border-2',
+        'flex min-h-[44px] min-w-[140px] max-w-[260px] items-center justify-center rounded-2xl border',
         'px-4 py-2.5 shadow-md transition-shadow select-none',
         selected
           ? 'border-[#3D6B8E] shadow-lg ring-2 ring-[#3D6B8E]/30'
           : style?.border
             ? 'hover:shadow-lg'
-            : 'border-[#3D6B8E]/60 bg-white hover:border-[#3D6B8E] hover:shadow-lg',
+            : 'border-[var(--hair-md)] bg-[var(--surface)] hover:border-[var(--accent-border)] hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
       style={{
@@ -70,7 +70,7 @@ function TopicNodeComponent({ id, data, selected }: NodeProps) {
       ) : (
         <span
           className={[
-            'text-center text-sm font-semibold',
+            'font-display text-center text-[15px] font-medium',
             text ? (style?.text ? '' : 'text-[var(--ink)]') : 'italic text-[var(--ink-faint)]',
           ].join(' ')}
           style={{ color: text ? style?.text : undefined }}

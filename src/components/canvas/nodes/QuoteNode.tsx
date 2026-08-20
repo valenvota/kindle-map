@@ -29,10 +29,10 @@ function QuoteNodeComponent({ id, data, selected }: NodeProps) {
           ? 'border-[#3D6B8E] shadow-lg ring-2 ring-[#3D6B8E]/30'
           : style?.border
             ? 'hover:shadow-lg'
-            : 'border-violet-200 hover:border-violet-300 hover:shadow-lg',
+            : 'border-[var(--hair-md)] hover:border-[var(--accent-border)] hover:shadow-lg',
       ].join(' ')}
       style={{
-        backgroundColor: style?.background ?? '#FFFFFF',
+        backgroundColor: style?.background ?? 'var(--surface)',
         borderColor: !selected ? style?.border : undefined,
       }}
     >
@@ -48,16 +48,13 @@ function QuoteNodeComponent({ id, data, selected }: NodeProps) {
       <Handle type="source" id="right"  position={Position.Right} />
       <Handle type="source" id="bottom" position={Position.Bottom} />
       <Handle type="source" id="left"   position={Position.Left} />
-      {/* Top accent */}
-      <div className="h-1 w-full flex-none bg-violet-400" />
-
-      <div className="flex min-h-0 flex-1 flex-col px-4 py-3">
+      <div className="flex min-h-0 flex-1 flex-col px-4 py-3.5">
         {/* Quote icon */}
-        <Quote className="mb-1.5 h-3.5 w-3.5 flex-none text-violet-400" />
+        <Quote className="mb-1.5 h-4 w-4 flex-none text-[var(--accent)]" />
 
-        {/* Quote text */}
+        {/* Quote text — editorial serif pulled quote */}
         <p
-          className={['min-h-0 flex-1 overflow-auto text-sm leading-relaxed italic', style?.text ? '' : 'text-[var(--ink-soft)]'].join(' ')}
+          className={['font-display min-h-0 flex-1 overflow-auto text-[15px] leading-relaxed italic', style?.text ? '' : 'text-[var(--ink)]'].join(' ')}
           style={{ color: style?.text }}
         >
           {d.content || '(empty quote)'}
@@ -65,7 +62,7 @@ function QuoteNodeComponent({ id, data, selected }: NodeProps) {
 
         {/* Source */}
         <div className="mt-3 flex-none border-t border-[var(--hair)] pt-2">
-          <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-violet-500">
+          <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
             {d.bookTitle}
           </p>
         </div>

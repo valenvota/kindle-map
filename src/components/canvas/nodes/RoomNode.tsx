@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import { DoorOpen } from 'lucide-react';
+import { DoorOpen, Star, ArrowRight } from 'lucide-react';
 
 export type RoomNodeData = {
   nodeId: string;
@@ -13,40 +13,42 @@ export type RoomNodeData = {
 };
 
 /**
- * A Room on the Locus: a foreground card that references a child map. Distinct
- * from RegionNode (a passive tinted backdrop) — this is an openable container.
- * Double-clicking it enters the child map (handled in ReadingCanvas). No edge
- * handles: Rooms aren't connected in L1. Visual polish is deferred to L2/3.5;
- * this is the minimal card (name + item count + enter hint).
+ * A Room on the Locus: a framed "place" card that references a child map. Styled
+ * to the Locus mockup — warm paper, serif name, a stacked-paper edge that reads
+ * as a container, an accent selection ring + soft glow (see `.km-roomnode` in
+ * index.css). Distinct from RegionNode (a passive tinted backdrop): this is an
+ * openable container. Double-clicking it enters the child map (handled in
+ * ReadingCanvas). No edge handles — Rooms aren't connected in L1. The star and
+ * enter-hint are decorative only; this stays a visual pass (no CRUD, no live
+ * preview, no new behavior or data — those belong to L2).
  */
 function RoomNodeComponent({ data, selected }: NodeProps) {
   const d = data as RoomNodeData;
+  const count = d.itemCount;
   return (
     <div
-      className={[
-        'flex w-[240px] flex-col rounded-2xl border-2 bg-white px-4 py-3 shadow-md transition-shadow select-none',
-        'cursor-grab active:cursor-grabbing',
-        selected
-          ? 'border-[#3D6B8E] shadow-lg ring-2 ring-[#3D6B8E]/30'
-          : 'border-[#3D6B8E]/50 hover:border-[#3D6B8E] hover:shadow-lg',
-      ].join(' ')}
+      className={`km-roomnode${selected ? ' km-roomnode--selected' : ''}`}
       title={d.name || 'Room'}
     >
-      <div className="flex items-center gap-2">
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: 'rgba(61,107,142,0.10)' }}
-        >
-          <DoorOpen className="h-4 w-4" style={{ color: '#3D6B8E' }} />
-        </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--ink)]">
-          {d.name || 'Room'}
-        </span>
+      <div className="km-roomnode__card">
+        <div className="km-roomnode__head">
+          <span className="km-roomnode__icon">
+            <DoorOpen />
+          </span>
+          <span className="km-roomnode__name">{d.name || 'Room'}</span>
+          <span className="km-roomnode__star" aria-hidden="true">
+            <Star />
+          </span>
+        </div>
+        <div className="km-roomnode__body">
+          <span className="km-roomnode__count">
+            {count} item{count !== 1 ? 's' : ''}
+          </span>
+          <span className="km-roomnode__enter">
+            Double click to enter <ArrowRight />
+          </span>
+        </div>
       </div>
-      <span className="mt-2 text-xs text-[var(--ink-faint)]">
-        {d.itemCount} item{d.itemCount !== 1 ? 's' : ''}
-      </span>
-      <p className="mt-1 text-[11px] italic text-[var(--ink-faint)]">double-click to enter</p>
     </div>
   );
 }

@@ -41,7 +41,7 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
           ? 'border-[#3D6B8E] shadow-lg ring-2 ring-[#3D6B8E]/30'
           : style?.border
             ? 'hover:shadow-lg'
-            : 'border-[#C4894A]/40 hover:border-[#C4894A]/70 hover:shadow-lg',
+            : 'border-[var(--hair-md)] hover:border-[var(--accent-border)] hover:shadow-lg',
         editing ? 'cursor-text' : 'cursor-grab active:cursor-grabbing',
       ].join(' ')}
       style={{
@@ -62,12 +62,12 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
       <Handle type="source" id="bottom" position={Position.Bottom} />
       <Handle type="source" id="left"   position={Position.Left} />
       {/* Header bar */}
-      <div className="flex flex-none items-center justify-between rounded-t-2xl border-b border-[#C4894A]/20 px-3 py-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[#C4894A]">Note</span>
+      <div className="flex flex-none items-center justify-between rounded-t-2xl border-b border-[var(--hair)] px-3 py-2">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-faint)]">Note</span>
         {editing && (
           <button
             onMouseDown={(e) => { e.preventDefault(); handleSave(); }}
-            className="nodrag nopan rounded px-2 py-0.5 text-[10px] font-semibold text-[#a96f35] hover:bg-[#C4894A]/15"
+            className="nodrag nopan rounded px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)] hover:bg-[var(--accent-soft)]"
           >
             Save
           </button>
@@ -90,8 +90,8 @@ function NoteNodeComponent({ id, data, selected }: NodeProps) {
         ) : (
           <p
             className={[
-              'whitespace-pre-wrap text-sm leading-relaxed',
-              text ? (style?.text ? '' : 'text-[var(--ink-soft)]') : 'italic text-[var(--ink-faint)]',
+              'font-display whitespace-pre-wrap text-[15px] leading-relaxed',
+              text ? (style?.text ? '' : 'text-[var(--ink)]') : 'italic text-[var(--ink-faint)]',
             ].join(' ')}
             style={{ color: text ? style?.text : undefined }}
           >

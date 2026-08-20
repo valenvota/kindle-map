@@ -109,7 +109,12 @@ const edgeTypes = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const ARROW = { type: MarkerType.ArrowClosed, color: '#94a3b8' };
+const ARROW = { type: MarkerType.ArrowClosed, color: 'rgba(28,26,23,0.34)' };
+
+// Thin dashed warm ink-grey — the Locus mockup's connector language. Kept next to
+// ARROW so every edge (loaded + newly connected) shares one source of truth; the
+// matching CSS in index.css covers the drag-preview and selected states.
+const EDGE_STYLE = { stroke: 'rgba(28,26,23,0.26)', strokeWidth: 1.6, strokeDasharray: '7 5', fill: 'none' };
 
 // Notebook-style horizontal ruling. Rendered as a repeating-linear-gradient
 // (not a React Flow <Background>): the SVG Lines variant needs a huge horizontal
@@ -477,7 +482,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
         sourceHandle: e.sourceHandle ?? null,
         targetHandle: e.targetHandle ?? null,
         data: { label: e.label ?? '' },
-        style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
+        style: EDGE_STYLE,
         ...edgeMarkersForDirection(e.direction),
       })));
     });
@@ -706,7 +711,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
       data: { label: '' },
-      style: { stroke: '#94a3b8', strokeWidth: 2, fill: 'none' },
+      style: EDGE_STYLE,
       ...edgeMarkersForDirection('forward'),
     };
     setEdges((eds) => addEdge(newEdge, eds));
@@ -860,6 +865,13 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     [ancestry],
   );
 
+  // Editorial header: the surface reads as "Locus" anywhere on the Locus tree
+  // (its top ancestor is the root); a standalone map (Maps fallback) keeps its own
+  // name. The tagline shows only at the Locus root itself. Both are display-only.
+  const underLocus = !!ancestry && ancestry.length > 0 && !!ancestry[0].isRoot;
+  const surfaceTitle = underLocus ? 'Locus' : (map?.name ?? '…');
+  const surfaceSubtitle = underLocus && ancestry.length === 1 ? 'Shape what you’re thinking.' : undefined;
+
   // ── Wallpaper (per-map, persisted on the map). Not part of node undo/redo. ──
   const handleBackgroundChange = useCallback((bg: MapBackground) => {
     updateMapBackground(mapId, bg);
@@ -899,6 +911,8 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     <div className="km-canvas-desk relative h-full w-full overflow-hidden">
       <CanvasToolbar
         mapName={map?.name ?? '…'}
+        surfaceTitle={surfaceTitle}
+        subtitle={surfaceSubtitle}
         breadcrumb={breadcrumb}
         onCrumb={onOpenMap}
         backLabel={parentId ? 'Up' : 'Maps'}

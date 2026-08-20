@@ -1,4 +1,4 @@
-import { Home, BookOpen, Shapes, Map, BarChart2, Upload, Search } from 'lucide-react';
+import { Home, BookOpen, Waypoints, Search, Map, BarChart2, Upload } from 'lucide-react';
 
 export type ShellScreen = 'desk' | 'library' | 'locus' | 'maps' | 'stats';
 
@@ -7,62 +7,61 @@ type Props = {
   onNavigate: (screen: ShellScreen) => void;
   onSearch?: () => void;
   onImport?: () => void;
+  /** Accepted for shell-prop compatibility; the Loci nav no longer shows counts. */
   bookCount?: number;
   mapCount?: number;
 };
 
-type NavDef = { key: ShellScreen; label: string; icon: React.ReactNode; count?: number };
+type NavDef = { key: ShellScreen; label: string; icon: React.ReactNode };
 
 /**
- * Persistent midnight ink-blue sidebar — the app's global navigation shell.
- * Primary nav is the Loci mental model (Desk / Library / Locus); Maps (legacy
- * fallback) and Stats sit in a demoted secondary group. Relabel/regroup only —
- * the visual language redesign is a later slice.
+ * Persistent sidebar — the app's global navigation shell, styled to the approved
+ * Loci mockups: near-black warm charcoal, a serif "Loci" wordmark, and the Loci
+ * mental model as the primary nav (Desk / Library / Locus / Search). Maps (the
+ * L1 fallback) and Stats stay reachable as quiet secondary utilities under a
+ * divider — subordinate, not hidden, while Maps remains our fallback.
  */
-export function Sidebar({ active, onNavigate, onSearch, onImport, bookCount, mapCount }: Props) {
+export function Sidebar({ active, onNavigate, onSearch, onImport }: Props) {
   const primary: NavDef[] = [
     { key: 'desk',    label: 'Desk',    icon: <Home /> },
-    { key: 'library', label: 'Library', icon: <BookOpen />, count: bookCount },
-    { key: 'locus',   label: 'Locus',   icon: <Shapes /> },
+    { key: 'library', label: 'Library', icon: <BookOpen /> },
+    { key: 'locus',   label: 'Locus',   icon: <Waypoints /> },
   ];
   const secondary: NavDef[] = [
-    { key: 'maps',  label: 'Maps',  icon: <Map />,       count: mapCount },
+    { key: 'maps',  label: 'Maps',  icon: <Map /> },
     { key: 'stats', label: 'Stats', icon: <BarChart2 /> },
   ];
 
-  const renderNav = (item: NavDef) => (
+  const renderNav = (item: NavDef, muted = false) => (
     <button
       key={item.key}
-      className={`km-nav${active === item.key ? ' on' : ''}`}
+      className={`km-nav${muted ? ' km-nav--muted' : ''}${active === item.key ? ' on' : ''}`}
       onClick={() => onNavigate(item.key)}
     >
       {item.icon}
       {item.label}
-      {typeof item.count === 'number' && <span className="km-nav__count">{item.count}</span>}
     </button>
   );
 
   return (
     <aside className="km-side">
       <div className="km-side__brand">
-        <div className="km-side__mark">L</div>
-        <div className="km-side__name">Loci</div>
+        <span className="km-side__word">Loci</span>
       </div>
 
-      <button className="km-side__search" onClick={onSearch}>
-        <Search size={15} strokeWidth={1.6} />
-        <span>Search books &amp; highlights</span>
-        <kbd>⌘K</kbd>
-      </button>
-
-      <div className="km-side__label">Workspace</div>
       <nav className="km-side__nav">
-        {primary.map(renderNav)}
+        {primary.map((item) => renderNav(item))}
+        {/* Search is an action (opens the existing ⌘K command palette), not a screen. */}
+        <button className="km-nav" onClick={onSearch}>
+          <Search />
+          Search
+        </button>
       </nav>
 
-      <div className="km-side__label">More</div>
+      <div className="km-side__divider" />
+
       <nav className="km-side__nav">
-        {secondary.map(renderNav)}
+        {secondary.map((item) => renderNav(item, true))}
       </nav>
 
       <div className="km-side__spacer" />
