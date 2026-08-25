@@ -87,6 +87,55 @@ export async function getMapAncestry(mapId: string): Promise<KindleMap[]> {
   return chain;
 }
 
+export type RecentRoom = {
+  /** The Room's own map id — pass to `goToMap` / `onOpenMap` to enter it. */
+  id: string;
+  name: string;
+  /** Live nodes inside the Room (tombstones excluded). */
+  nodeCount: number;
+  /** ISO timestamp of the Room's most recent node activity. */
+  lastActivity: string;
+};
+
+/**
+ * Rooms ordered by real activity, most recent first (Desk — Loci L1).
+ *
+ * Recency deliberately comes from the Room's **contents**, not from
+ * `maps.updatedAt`: that field only moves when the map row itself changes
+ * (rename, wallpaper, tombstone), so a Room you edited all afternoon would look
+ * stale. We walk `canvasNodes` newest-first on the `updatedAt` index and stop as
+ * soon as `limit` distinct live Rooms have been seen, so a large library is not
+ * fully scanned.
+ *
+ * Excludes tombstoned nodes, tombstoned maps, and the **Locus root** (it is the
+ * container for Rooms, not a Room). A Room with no live nodes has no activity and
+ * therefore does not appear — intentional for a "recent activity" surface.
+ */
+export async function getRecentRooms(limit = 5): Promise<RecentRoom[]> {
+  const rooms = await db.maps.filter((m) => notDeleted(m) && !m.isRoot).toArray();
+  if (rooms.length === 0) return [];
+  const byId = new Map(rooms.map((m) => [m.id, m]));
+
+  // First sighting of a mapId while walking newest-first IS its last activity.
+  const lastActivity = new Map<string, string>();
+  await db.canvasNodes
+    .orderBy('updatedAt')
+    .reverse()
+    .until(() => lastActivity.size >= limit)
+    .each((n) => {
+      if (!notDeleted(n) || lastActivity.has(n.mapId) || !byId.has(n.mapId)) return;
+      lastActivity.set(n.mapId, n.updatedAt ?? '');
+    });
+
+  const ordered = [...lastActivity.entries()].sort((a, b) => b[1].localeCompare(a[1]));
+  const recent: RecentRoom[] = [];
+  for (const [mapId, last] of ordered) {
+    const nodeCount = await db.canvasNodes.where('mapId').equals(mapId).and(notDeleted).count();
+    recent.push({ id: mapId, name: byId.get(mapId)!.name, nodeCount, lastActivity: last });
+  }
+  return recent;
+}
+
 export async function getMap(id: string): Promise<KindleMap | undefined> {
   // Display read — a tombstoned map reads as absent.
   const map = await db.maps.get(id);

@@ -198,11 +198,17 @@ export default function App() {
       </AppShell>
     );
   } else if (current === 'desk') {
-    // Slice 3 placeholder — real Desk lands in Slice 4 (Library stays the default).
+    // The return surface (Loci L1, Slice 4). Library stays the default landing
+    // until the Desk is reviewed — flipping the default is a separate decision.
     content = (
       <AppShell active="desk" {...shellProps}>
         {sampleBanner}
-        <DeskPage />
+        <DeskPage
+          onOpenLocus={() => void openLocus()}
+          onOpenMap={goToMap}
+          onOpenBook={openBook}
+          roomCount={mapCount}
+        />
       </AppShell>
     );
   } else if (current === 'stats') {

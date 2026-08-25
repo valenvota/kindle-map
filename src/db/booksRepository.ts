@@ -43,6 +43,24 @@ export async function countBooks(): Promise<number> {
   return db.books.filter(notDeleted).count();
 }
 
+/**
+ * Titles of **live** books, keyed by id — the join behind the Desk's recent
+ * queries. Tombstoned and missing books are simply absent from the map, so a
+ * caller can drop rows whose source no longer exists with a `.has()` check.
+ * Returns the raw title; run it through `getDisplayTitle` in the UI, as the rest
+ * of the app does.
+ */
+export async function getLiveBookTitles(ids: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Map();
+  const rows = await db.books.bulkGet(unique);
+  const titles = new Map<string, string>();
+  for (const b of rows) {
+    if (b && notDeleted(b)) titles.set(b.id, b.title);
+  }
+  return titles;
+}
+
 export async function getBook(id: string): Promise<Book | undefined> {
   // Display read — a tombstoned book reads as absent.
   const book = await db.books.get(id);

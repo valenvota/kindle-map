@@ -253,6 +253,146 @@
 .km-cover__ctitle { font-family: var(--font-serif); font-size: 8.5px; line-height: 1.12; font-weight: 500; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   Desk (Loci L1) — the return surface
+   A threshold, not a dashboard: no metrics, no charts, no widget grid.
+   Every element is a door back into the work.
+   ═════════════════════════════════════════════════════════════════════ */
+/* The one wooden screen. Library and Locus stay paper — in the mockups the wood
+   sits *outside* their window (presentation framing); here it is the content
+   surface itself, because the Desk literally is your desk. Every wood value is a
+   local token, so a photographic texture can replace the generated stack later
+   without touching a single component. */
+.desk {
+  --desk-wood-deep: #4A3320;
+  --desk-wood-base: #6A4A2F;
+  --desk-wood-warm: #825C3B;
+  --desk-ink:       #F7F1E6;
+  --desk-ink-soft:  rgba(247,241,230,0.76);
+  --desk-ink-faint: rgba(247,241,230,0.54);
+  --desk-paper:     #F4EEE1;
+
+  position: relative;
+  min-height: 100%;
+  background-color: var(--desk-wood-base);
+  background-image:
+    /* Key light spilling in from the upper left — everything on the desk casts
+       its shadow down-right to match, which is what makes the objects read as
+       physically sitting on the surface rather than pasted onto a texture. */
+    radial-gradient(85% 65% at 16% -8%, rgba(255,226,175,0.28), transparent 62%),
+    /* Falloff into the far corner */
+    radial-gradient(75% 65% at 92% 112%, rgba(16,8,2,0.40), transparent 62%),
+    /* Vignette */
+    radial-gradient(140% 120% at 42% 36%, transparent 34%, rgba(20,10,4,0.46) 100%),
+    linear-gradient(3deg, var(--desk-wood-deep) 0%, var(--desk-wood-base) 22%, var(--desk-wood-warm) 48%, var(--desk-wood-base) 72%, var(--desk-wood-deep) 100%);
+}
+
+/* Fibre + grain, baked as a static data-URI: the browser rasterises it once. An
+   feTurbulence used as a live CSS `filter` on a surface this large would repaint
+   on every scroll — this does not. */
+.desk::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .5;
+  mix-blend-mode: overlay;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014 0.78' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23w)'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(2deg, rgba(0,0,0,0.055) 0 2px, rgba(255,255,255,0.022) 2px 6px, rgba(0,0,0,0.03) 6px 11px, transparent 11px 19px);
+  background-size: 320px 320px, auto;
+}
+
+.desk__inner { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 44px 52px 56px; }
+.desk__head { margin-bottom: 26px; }
+.desk__title { margin: 0; font-family: var(--font-serif); font-size: 40px; line-height: 1.02; font-weight: 470; letter-spacing: -0.018em; color: var(--desk-ink); text-shadow: 0 1px 3px rgba(20,10,4,0.38); }
+.desk__sub { margin-top: 7px; font-size: 14px; color: var(--desk-ink-soft); text-shadow: 0 1px 2px rgba(20,10,4,0.32); }
+.desk__eyebrow { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em; color: var(--desk-ink-soft); text-shadow: 0 1px 2px rgba(20,10,4,0.32); }
+.desk__eyebrow svg { width: 15px; height: 15px; opacity: .85; }
+
+/* Asymmetric composition: tactile material left, structured column right. */
+.desk__grid { display: grid; grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr); gap: 46px; align-items: start; }
+.desk__col { min-width: 0; }
+.desk__empty { margin: 0; padding: 18px 2px 6px; font-family: var(--font-serif); font-style: italic; font-size: 14.5px; color: var(--desk-ink-faint); text-shadow: 0 1px 2px rgba(20,10,4,0.3); }
+.desk__count { margin: 6px 2px 0; font-family: var(--font-sans); font-size: 11.5px; color: var(--desk-ink-faint); text-shadow: 0 1px 2px rgba(20,10,4,0.3); }
+.desk__quote { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 10px; margin: 52px 0 0; font-family: var(--font-serif); font-style: italic; font-size: 15px; color: var(--desk-ink-soft); text-shadow: 0 1px 2px rgba(20,10,4,0.35); }
+.desk__quote-by { font-style: normal; font-size: 12.5px; color: var(--desk-ink-faint); }
+
+/* ── Paper snippets — highlights as loose scraps tossed on the wood ──────
+   Deliberately NOT a card grid: each scrap has its own width and is pulled up
+   over the previous one, so the pile overlaps and staggers. Block flow keeps it
+   safe — longer text pushes the pile down instead of colliding. Shadows fall
+   down-right to agree with the desk's key light. */
+.desk__snips { position: relative; padding-bottom: 8px; }
+.desk-snip { position: relative; width: var(--w, 56%); margin-left: var(--ml, 0); margin-top: var(--mt, 0); transform: rotate(var(--rot, 0deg)); filter: drop-shadow(7px 13px 17px rgba(18,9,3,0.42)) drop-shadow(2px 3px 4px rgba(18,9,3,0.30)); transition: transform .2s ease, filter .2s ease; }
+.desk-snip:hover { z-index: 6; transform: rotate(var(--rot, 0deg)) translateY(-5px) scale(1.012); filter: drop-shadow(10px 20px 26px rgba(18,9,3,0.46)) drop-shadow(3px 4px 5px rgba(18,9,3,0.32)); }
+/* Deckled edge via clip-path; the shadow lives on the parent as drop-shadow so it
+   follows the torn silhouette instead of being clipped away. */
+/* Pulled-quote treatment. We store whole highlights, never phrase ranges, so the
+   mockup's word-level marker cannot be reproduced from real data — the ember rule
+   carries the "you marked this" meaning instead, as BookDetail's quotes do. */
+.desk-snip__paper { display: block; width: 100%; padding: 17px 20px 14px 21px; border: 0; text-align: left; cursor: pointer; background: var(--desk-paper); background-image: linear-gradient(172deg, rgba(255,255,255,0.55), rgba(0,0,0,0.035)); box-shadow: inset 3px 0 0 var(--ember); clip-path: polygon(0.8% 1.8%, 14% 0.5%, 29% 2.2%, 43% 0.6%, 58% 2%, 72% 0.4%, 87% 1.9%, 99.2% 0.8%, 98.6% 16%, 99.5% 33%, 98.4% 50%, 99.3% 67%, 98.5% 84%, 99.4% 98.6%, 86% 97.6%, 71% 99.4%, 57% 97.8%, 42% 99.5%, 28% 97.6%, 13% 99.3%, 0.7% 98%, 1.4% 84%, 0.4% 67%, 1.5% 50%, 0.5% 33%, 1.3% 16%); }
+.desk-snip__paper:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Real highlights vary wildly in length — clamp so one long quote can't dominate. */
+.desk-snip__text { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; margin: 0; font-family: var(--font-serif); font-size: 15.5px; line-height: 1.42; letter-spacing: -0.004em; color: #241F19; }
+.desk-snip__src { display: block; margin: 11px 0 0; font-family: var(--font-sans); font-size: 10.5px; color: #8A8073; }
+.desk-snip__dot { opacity: .55; }
+
+/* ── Continue in Locus — a stacked notebook object, not a flat tile ─────── */
+.desk-book { position: relative; display: block; width: 100%; margin: 0 0 22px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; transform: rotate(-1.1deg); transition: transform .2s ease; }
+.desk-book:hover { transform: rotate(-1.1deg) translateY(-4px); }
+/* Three sheets, each tilted differently, so the object has real thickness. */
+.desk-book__stack { position: absolute; inset: 10px -9px -12px 8px; border-radius: 5px; background: #E4DBCA; box-shadow: 14px 22px 30px rgba(18,9,3,0.44); transform: rotate(2.2deg); }
+.desk-book__stack::after { content: ''; position: absolute; inset: -6px 7px 7px -7px; border-radius: 5px; background: #D9D0BD; box-shadow: 6px 10px 16px rgba(18,9,3,0.26); transform: rotate(-3deg); }
+.desk-book__page { position: relative; display: block; padding: 24px 26px 22px; border-radius: 5px; background-color: #FBF6EA; background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(92,122,150,0.15) 27px 28px); box-shadow: 9px 17px 28px rgba(18,9,3,0.40), 2px 3px 5px rgba(18,9,3,0.26); }
+.desk-book__bind { position: absolute; top: -9px; right: 30px; width: 14px; height: 22px; border: 2.4px solid #A83E2C; border-radius: 8px; }
+.desk-book__title { display: block; font-family: var(--font-serif); font-size: 24px; font-style: italic; font-weight: 500; line-height: 1.15; letter-spacing: -0.01em; color: #22201C; }
+.desk-book__note { display: block; max-width: 34ch; margin-top: 9px; font-family: var(--font-serif); font-style: italic; font-size: 13.5px; line-height: 1.5; color: #6B6559; }
+.desk-book__cta { display: inline-flex; align-items: center; gap: 7px; height: 34px; margin-top: 16px; padding: 0 15px; border-radius: 999px; background: #2A2622; color: #F6F1E7; font-family: var(--font-sans); font-size: 12.5px; font-weight: 550; }
+.desk-book__cta svg { width: 14px; height: 14px; transition: transform .16s; }
+.desk-book:hover .desk-book__cta svg { transform: translateX(3px); }
+.desk-book:focus-visible { outline: 2px solid #EBDCC0; outline-offset: 5px; border-radius: 7px; }
+
+/* ── Structured panels — Rooms / Notes ──────────────────────────────────── */
+/* Compact cards laid on the desk — placed, not snapped to a layout: a whisper of
+   rotation and a down-right shadow keep them in the same physical world. */
+.desk-panel { margin-bottom: 14px; padding: 13px 15px 9px; border-radius: var(--radius); background: rgba(252,249,242,0.97); box-shadow: 7px 14px 26px rgba(18,9,3,0.36), 2px 2px 4px rgba(18,9,3,0.20); transform: rotate(0.35deg); }
+.desk-panel:nth-of-type(even) { transform: rotate(-0.45deg); }
+.desk-panel__head { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; font-family: var(--font-sans); font-size: 11.5px; font-weight: 650; color: var(--ink); }
+.desk-panel__head svg { width: 14px; height: 14px; color: var(--ink-faint); }
+.desk-panel__list { margin: 0; padding: 0; list-style: none; }
+.desk-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 4px; border: 0; border-top: 1px solid var(--hair-soft); border-radius: 7px; background: none; text-align: left; cursor: pointer; transition: background .14s; }
+.desk-panel__list li:first-child .desk-row { border-top: 0; }
+.desk-row:hover { background: rgba(28,26,23,0.045); }
+.desk-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.desk-row__mark { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 34px; height: 30px; border-radius: 7px; background: var(--surface-2); color: var(--ink-faint); }
+.desk-row__mark svg { width: 23px; height: 21px; }
+.desk-row__mark--doc svg { width: 15px; height: 15px; }
+.desk-row__body { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.desk-row__name { font-family: var(--font-sans); font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desk-row__meta { font-family: var(--font-sans); font-size: 11px; color: var(--ink-faint); }
+.desk-row__when { flex: 0 0 auto; font-family: var(--font-sans); font-size: 11px; color: var(--ink-faint); }
+
+/* The two-column desk holds as long as it can: the sidebar already eats 246px, so
+   this breaks late and only then. Below it the scatter relaxes rather than
+   disappearing; on a phone the scraps straighten into a readable stack. */
+@media (max-width: 1080px) {
+  .desk__grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 30px; }
+  .desk__inner { padding: 40px 30px 52px; }
+  .desk-snip { width: min(calc(var(--w, 56%) + 16%), 100%); margin-left: calc(var(--ml, 0%) / 2); }
+}
+@media (max-width: 860px) {
+  .desk__grid { grid-template-columns: minmax(0, 1fr); gap: 34px; }
+  .desk-snip { width: min(calc(var(--w, 56%) + 26%), 100%); }
+}
+@media (max-width: 620px) {
+  .desk__inner { padding: 32px 18px 44px; }
+  .desk__title { font-size: 33px; }
+  .desk-snip { width: 100%; margin-left: 0; margin-top: 14px; transform: rotate(calc(var(--rot, 0deg) * 0.35)); }
+  .desk-snip:first-child { margin-top: 0; }
+  .desk-snip:hover { transform: rotate(calc(var(--rot, 0deg) * 0.35)) translateY(-4px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    Library screen (Phase 1)
    ═════════════════════════════════════════════════════════════════════ */
 .lib-inner { max-width: 1200px; margin: 0 auto; padding: 60px 56px 80px; }
