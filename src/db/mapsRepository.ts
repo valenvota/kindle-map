@@ -1,5 +1,6 @@
 import { db } from './db';
 import { notDeleted } from './softDelete';
+import { planLocusMigration } from './locusMigration';
 import type { KindleMap, MapBackground } from '../types/map';
 
 export async function createMap(name: string): Promise<KindleMap> {
@@ -39,6 +40,36 @@ export async function getRootMap(): Promise<KindleMap | undefined> {
   const roots = await db.maps.filter((m) => !!m.isRoot && notDeleted(m)).toArray();
   if (roots.length === 0) return undefined;
   return roots.sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+}
+
+/**
+ * Make the Locus reflect every Room that exists — creating the root if needed,
+ * re-parenting any unattached map under it, and generating the missing Room
+ * cards. Idempotent; returns the root.
+ *
+ * The v12 migration only ever sees the maps that exist at upgrade time. Maps
+ * created afterwards (the sample data, or `createMap` from the Maps list) would
+ * otherwise never reach the Locus: it would render empty while the rest of the
+ * app still counted them as Rooms. Reuses the migration's pure planner so the
+ * adoption rules — and their idempotency — live in exactly one place.
+ */
+export async function syncLocusRooms(): Promise<KindleMap> {
+  await db.transaction('rw', [db.maps, db.canvasNodes], async () => {
+    const maps = await db.maps.toArray();
+    const roomNodes = await db.canvasNodes.where('type').equals('room').toArray();
+    const plan = planLocusMigration({
+      maps,
+      roomNodes,
+      now: new Date().toISOString(),
+      newRootId: () => `locus-${crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`,
+    });
+    for (const root of plan.rootsToAdd) await db.maps.add(root);
+    for (const rp of plan.mapsToReparent) await db.maps.update(rp.id, { parentId: rp.parentId });
+    if (plan.roomNodesToAdd.length > 0) await db.canvasNodes.bulkAdd(plan.roomNodesToAdd);
+  });
+  // The planner creates a root when an owner has maps but none; ensureLocusRoot
+  // covers the remaining case of a brand-new install with no maps at all.
+  return ensureLocusRoot();
 }
 
 /**

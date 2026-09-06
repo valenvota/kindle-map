@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { countBooks } from './db/booksRepository';
-import { countMaps, ensureLocusRoot } from './db/mapsRepository';
+import { countMaps, syncLocusRooms } from './db/mapsRepository';
 import { countStrokes } from './db/canvasStrokesRepository';
 import { ImportPage } from './pages/ImportPage';
 import { LibraryPage } from './pages/LibraryPage';
@@ -62,10 +62,12 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Ensure the Locus root exists so the Locus nav always resolves — including a
-  // fresh install where the v12 upgrade never ran. Idempotent + transactional
-  // (StrictMode-safe), so the double-invoked dev effect can't create two roots.
-  useEffect(() => { void ensureLocusRoot(); }, []);
+  // Keep the Locus coherent on entry: create the root if missing and adopt any
+  // Room that isn't on it yet. The v12 upgrade only saw the maps that existed at
+  // upgrade time, so maps added later (sample data, `createMap`) would otherwise
+  // never appear. Idempotent + transactional, so StrictMode's double-invoked dev
+  // effect can't create two roots or duplicate cards.
+  useEffect(() => { void syncLocusRooms(); }, []);
 
   const current: Screen = screen ?? (bookCount === 0 ? 'import' : 'library');
 
@@ -77,7 +79,7 @@ export default function App() {
   // Open the Locus directly (no Maps detour): resolve/create the root, then
   // render it through the existing canvas path.
   const openLocus = async () => {
-    const root = await ensureLocusRoot();
+    const root = await syncLocusRooms();
     goToMap(root.id);
   };
 
