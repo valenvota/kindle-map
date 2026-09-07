@@ -55,17 +55,22 @@ export async function getRootMap(): Promise<KindleMap | undefined> {
  */
 export async function syncLocusRooms(): Promise<KindleMap> {
   await db.transaction('rw', [db.maps, db.canvasNodes], async () => {
+    const now = new Date().toISOString();
     const maps = await db.maps.toArray();
+    // Live AND tombstoned cards: the planner needs the tombstoned ones to revive
+    // them in place instead of colliding on their deterministic id.
     const roomNodes = await db.canvasNodes.where('type').equals('room').toArray();
     const plan = planLocusMigration({
       maps,
       roomNodes,
-      now: new Date().toISOString(),
+      now,
       newRootId: () => `locus-${crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`,
     });
     for (const root of plan.rootsToAdd) await db.maps.add(root);
     for (const rp of plan.mapsToReparent) await db.maps.update(rp.id, { parentId: rp.parentId });
     if (plan.roomNodesToAdd.length > 0) await db.canvasNodes.bulkAdd(plan.roomNodesToAdd);
+    for (const id of plan.roomNodesToRevive) await db.canvasNodes.update(id, { deletedAt: undefined });
+    for (const id of plan.roomNodesToTombstone) await db.canvasNodes.update(id, { deletedAt: now });
   });
   // The planner creates a root when an owner has maps but none; ensureLocusRoot
   // covers the remaining case of a brand-new install with no maps at all.
@@ -178,14 +183,61 @@ export async function updateMapBackground(id: string, background: MapBackground)
   await db.maps.update(id, { background, updatedAt: new Date().toISOString() });
 }
 
-export async function deleteMap(id: string): Promise<void> {
-  // Soft delete (tombstone) the map and all its canvas nodes.
-  // Books and highlights are intentionally NOT deleted — they belong to the Library.
-  // (Edges/strokes of this map are left as-is, matching prior behaviour — they
-  // simply stop rendering with the map gone; a pre-existing orphan, tracked separately.)
+/**
+ * Delete a Room and everything it owns (Loci L2.0) — the single deletion path.
+ *
+ * "Card = Room": there is no valid state where a Room stays alive while the card
+ * that leads to it is gone, so this tombstones the Room, its whole subtree, every
+ * entity those maps own, and the cards pointing into them (including the one on
+ * the parent). Soft-delete throughout, per the Backend Spike — nothing is erased.
+ *
+ * Map-owned entities are `canvasNodes`, `canvasEdges` and `canvasStrokes`; all
+ * three are cascaded, so a delete cannot silently leave edges or ink behind.
+ * Books, highlights and notes are deliberately untouched — they belong to the
+ * Library, not to a Room. The Locus root is never deletable.
+ */
+export async function deleteRoom(mapId: string): Promise<void> {
   const deletedAt = new Date().toISOString();
-  await db.transaction('rw', db.maps, db.canvasNodes, async () => {
-    await db.maps.update(id, { deletedAt });
-    await db.canvasNodes.where('mapId').equals(id).modify({ deletedAt });
+  await db.transaction('rw', [db.maps, db.canvasNodes, db.canvasEdges, db.canvasStrokes], async () => {
+    const all = await db.maps.toArray();
+    const target = all.find((m) => m.id === mapId);
+    if (!target || target.isRoot) return;   // never delete the Locus itself
+
+    const childrenOf = new Map<string, string[]>();
+    for (const m of all) {
+      if (!m.parentId) continue;
+      const list = childrenOf.get(m.parentId);
+      if (list) list.push(m.id); else childrenOf.set(m.parentId, [m.id]);
+    }
+
+    // Walk the subtree downward; `seen` also guards a malformed parent cycle.
+    const seen = new Set<string>();
+    const queue = [mapId];
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      for (const child of childrenOf.get(id) ?? []) queue.push(child);
+    }
+    const subtree = [...seen];
+
+    await db.maps.where('id').anyOf(subtree).modify({ deletedAt });
+    await db.canvasNodes.where('mapId').anyOf(subtree).modify({ deletedAt });
+    await db.canvasEdges.where('mapId').anyOf(subtree).modify({ deletedAt });
+    await db.canvasStrokes.where('mapId').anyOf(subtree).modify({ deletedAt });
+
+    // The cards that lead into the subtree — the parent's card included.
+    await db.canvasNodes.where('type').equals('room').modify((n) => {
+      if (n.roomId && seen.has(n.roomId) && !n.deletedAt) n.deletedAt = deletedAt;
+    });
   });
+}
+
+/**
+ * @deprecated Use `deleteRoom`. Kept so the legacy Maps list deletes a map through
+ * exactly the same path as deleting a Room from the Locus, leaving one consistent
+ * end state regardless of which surface the user came from.
+ */
+export async function deleteMap(id: string): Promise<void> {
+  return deleteRoom(id);
 }

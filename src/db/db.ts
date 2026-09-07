@@ -263,6 +263,13 @@ export class KindleMapDB extends Dexie {
         if (plan.roomNodesToAdd.length > 0) {
           await tx.table('canvasNodes').bulkAdd(plan.roomNodesToAdd);
         }
+        // Reconciliation of legacy/inconsistent rows — see planLocusMigration.
+        for (const id of plan.roomNodesToRevive) {
+          await tx.table('canvasNodes').update(id, { deletedAt: undefined });
+        }
+        for (const id of plan.roomNodesToTombstone) {
+          await tx.table('canvasNodes').update(id, { deletedAt: now });
+        }
       });
 
     this.installSyncHooks();

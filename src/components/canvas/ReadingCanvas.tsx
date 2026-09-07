@@ -38,7 +38,7 @@ import {
   bulkSetNodeZIndices,
   getAllCanvasNodes,
 } from '../../db/canvasRepository';
-import { updateMapBackground, getMap, getMapAncestry } from '../../db/mapsRepository';
+import { updateMapBackground, getMap, getMapAncestry, getAllMaps, deleteRoom } from '../../db/mapsRepository';
 import { getAllBooks } from '../../db/booksRepository';
 import { getAllHighlights } from '../../db/highlightsRepository';
 import { getStrokesByMap } from '../../db/canvasStrokesRepository';
@@ -206,6 +206,7 @@ function buildReactFlowNode(
   bookMap: Map<string, Book>,
   importantByBook: Map<string, number>,
   roomItemCount: Map<string, number>,
+  liveRoomIds: Set<string>,
 ): Node | null {
   // A pinned node can't be dragged or connected but stays selectable (so it can
   // be unpinned). The `km-pinned` class draws the pin badge — see index.css.
@@ -314,6 +315,10 @@ function buildReactFlowNode(
       };
     }
     case 'room': {
+      // Safety net: a card whose Room is gone must never render — it would look
+      // enterable and drop the user into a tombstoned map with no way back.
+      // Reconciliation tombstones these cards; this covers the render in between.
+      if (!mn.roomId || !liveRoomIds.has(mn.roomId)) return null;
       // A Room card references a child map (roomId). No width/height: it sizes
       // to its own content like a book/topic node. Not connectable/resizable.
       return {
@@ -386,6 +391,9 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   const allHighlights = useLiveQuery(() => getAllHighlights(), []);
   const allNodes = useLiveQuery(() => getAllCanvasNodes(), []);
   const map = useLiveQuery(() => getMap(mapId), [mapId]);
+  const allMaps = useLiveQuery(() => getAllMaps(), []);
+  /** Live (non-tombstoned) map ids — a Room card only renders if its Room lives. */
+  const liveRoomIds = useMemo(() => new Set((allMaps ?? []).map((m) => m.id)), [allMaps]);
   // Locus path (root → current) for the breadcrumb; undefined until it resolves.
   const ancestry = useLiveQuery(() => getMapAncestry(mapId), [mapId]);
 
@@ -492,11 +500,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   useEffect(() => {
     // Wait for allNodes too, so Room cards render with the right item count on
     // first paint (a Room's count comes from a different map's nodes).
-    if (!mapNodes || !allBooks || !allNodes || initialized.current) return;
+    if (!mapNodes || !allBooks || !allNodes || !allMaps || initialized.current) return;
 
     const bookMap = new Map(allBooks.map((b) => [b.id, b]));
     const initial = mapNodes
-      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook, roomItemCount))
+      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook, roomItemCount, liveRoomIds))
       .filter((n): n is Node => n !== null);
 
     setNodes(initial);
@@ -507,11 +515,11 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     // first user action lands at index 0 and undoing it hits index -1 (no-op).
     historyStack.current = [mapNodes.map((n) => ({ ...n }))];
     historyIndex.current = 0;
-  }, [mapNodes, allBooks, allNodes, roomItemCount]);
+  }, [mapNodes, allBooks, allNodes, allMaps, roomItemCount, liveRoomIds]);
 
   // ── Sync additions and deletions from Dexie without resetting layout ─────
   useEffect(() => {
-    if (!initialized.current || !mapNodes || !allBooks) return;
+    if (!initialized.current || !mapNodes || !allBooks || !allMaps) return;
 
     const mapNodeIds = new Set(mapNodes.map((mn) => mn.id));
     const bookMap = new Map(allBooks.map((b) => [b.id, b]));
@@ -531,13 +539,13 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
             ...mn,
             position: mn.position ?? buildInitialPosition(remaining.length + i),
           };
-          return buildReactFlowNode(withPosition, bookMap, importantByBook, roomItemCount);
+          return buildReactFlowNode(withPosition, bookMap, importantByBook, roomItemCount, liveRoomIds);
         })
         .filter((n): n is Node => n !== null);
 
       return [...remaining, ...newNodes];
     });
-  }, [mapNodes, allBooks, roomItemCount]);
+  }, [mapNodes, allBooks, allMaps, roomItemCount, liveRoomIds]);
 
   // ── Sync style overrides from Dexie into existing nodes ──────────────────
   useEffect(() => {
@@ -668,13 +676,14 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   const onNodeDoubleClick: NodeMouseHandler = useCallback((_, node) => {
     if (node.type === 'room') {
       const roomId = (node.data as RoomNodeData).roomId;
-      if (roomId) onOpenMap(roomId);   // enter the Room's child map (reuse goToMap)
+      // Never enter a Room that no longer exists (see the render guard above).
+      if (roomId && liveRoomIds.has(roomId)) onOpenMap(roomId);
       return;
     }
     if (node.type !== 'book') return;
     const book = (node.data as BookNodeData).book;
     onOpenBook(book.id);
-  }, [onOpenBook, onOpenMap]);
+  }, [onOpenBook, onOpenMap, liveRoomIds]);
 
   // ── Auto arrange ─────────────────────────────────────────────────────────
   const handleAutoArrange = useCallback(async () => {
@@ -728,9 +737,18 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   }, [mapId, setEdges]);
 
   // ── Delete nodes ──────────────────────────────────────────────────────────
+  // "Card = Room": removing a Room card removes the Room itself (and its subtree).
+  // Deleting only the card would leave a live Room with no way in — and the Locus
+  // reconciliation would simply put the card back.
+  const deleteNodeOrRoom = useCallback(async (nodeId: string) => {
+    const node = mapNodes?.find((n) => n.id === nodeId);
+    if (node?.type === 'room' && node.roomId) return deleteRoom(node.roomId);
+    return deleteCanvasNode(nodeId);
+  }, [mapNodes]);
+
   const onNodesDelete = useCallback(async (deletedNodes: Node[]) => {
-    await Promise.all(deletedNodes.map((n) => deleteCanvasNode(n.id)));
-  }, []);
+    await Promise.all(deletedNodes.map((n) => deleteNodeOrRoom(n.id)));
+  }, [deleteNodeOrRoom]);
 
   // ── Duplicate selected nodes (Ctrl+D) ────────────────────────────────────
   useEffect(() => {
@@ -807,8 +825,8 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     const nodeId = contextMenu.nodeId;
     closeContextMenu();
     setNodes((prev) => prev.filter((n) => n.id !== nodeId));
-    await deleteCanvasNode(nodeId);
-  }, [contextMenu, closeContextMenu, setNodes]);
+    await deleteNodeOrRoom(nodeId);
+  }, [contextMenu, closeContextMenu, setNodes, deleteNodeOrRoom]);
 
   const handleLayerOp = useCallback(async (op: LayerOp) => {
     if (!contextMenu || !mapNodes) return;
