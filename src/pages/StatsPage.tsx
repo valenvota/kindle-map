@@ -60,6 +60,7 @@ export function StatsPage() {
     <div className="lib-inner">
       <header className="lib-masthead">
         <h1 className="lib-h1">Reading Stats</h1>
+        <p className="lib-sub">A quiet look at your reading and highlights.</p>
       </header>
 
       <main className="mx-auto max-w-3xl pb-8">
@@ -197,7 +198,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number
           {label}
         </span>
       </div>
-      <p className="text-3xl font-light" style={{ color: 'var(--brand)' }}>{value.toLocaleString()}</p>
+      <p className="font-display text-3xl font-normal" style={{ color: 'var(--ink)' }}>{value.toLocaleString()}</p>
     </div>
   );
 }

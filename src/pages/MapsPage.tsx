@@ -10,8 +10,12 @@ type Props = {
 };
 
 export function MapsPage({ onOpenMap }: Props) {
-  const maps = useLiveQuery(() => getAllMaps(), []);
+  const allMaps = useLiveQuery(() => getAllMaps(), []);
   const allNodes = useLiveQuery(() => getAllCanvasNodes(), []);
+
+  // The Locus root is product infrastructure, not a user-made Map — it's reached
+  // from the sidebar's Locus, never listed here (mirrors countMaps excluding it).
+  const maps = useMemo(() => allMaps?.filter((m) => !m.isRoot), [allMaps]);
 
   const nodeCountByMap = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -24,73 +28,58 @@ export function MapsPage({ onOpenMap }: Props) {
   const [showCreate, setShowCreate] = useState(false);
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <header
-        className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-sm"
-        style={{ borderColor: 'var(--border-md)' }}
-      >
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <h1 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Maps</h1>
-
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
-            style={{ background: 'var(--brand)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-mid)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--brand)')}
-          >
-            <Plus className="h-4 w-4" />
-            New map
-          </button>
+    <div className="lib-inner">
+      {/* ── Masthead ──────────────────────────────────────────────────────── */}
+      <header className="mb-9 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="loci-title">Maps</h1>
+          <p className="loci-sub">Standalone canvases, kept alongside your Locus.</p>
         </div>
+        <button className="km-btn km-btn--primary km-btn--md" onClick={() => setShowCreate(true)}>
+          <Plus />
+          New map
+        </button>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        {maps && maps.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div
-              className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
-              style={{ background: 'var(--brand-soft)' }}
-            >
-              <Map className="h-8 w-8" style={{ color: 'var(--brand)' }} />
-            </div>
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>No maps yet</h2>
-            <p className="mt-2 max-w-xs text-sm" style={{ color: 'var(--text-2)' }}>
-              A map is a blank canvas where you add books from your Library and connect ideas.
-            </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="mt-6 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white"
-              style={{ background: 'var(--brand)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-mid)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--brand)')}
-            >
-              <Plus className="h-4 w-4" />
-              Create your first map
-            </button>
+      {maps && maps.length === 0 && (
+        <div className="lib-empty">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: 'var(--accent-soft)' }}>
+            <Map className="h-8 w-8" style={{ color: 'var(--accent)' }} />
           </div>
-        )}
+          <h2 className="font-display text-2xl" style={{ color: 'var(--ink)' }}>No maps yet</h2>
+          <p className="mt-2 max-w-xs text-sm" style={{ color: 'var(--ink-soft)' }}>
+            A map is a blank canvas where you add books from your Library and connect ideas.
+          </p>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="km-btn km-btn--primary km-btn--md mt-6"
+          >
+            <Plus />
+            Create your first map
+          </button>
+        </div>
+      )}
 
-        {maps && maps.length > 0 && (
-          <>
-            <div className="mb-6 flex items-baseline gap-2">
-              <span className="text-2xl font-semibold" style={{ color: 'var(--text)' }}>Your Maps</span>
-              <span className="text-sm" style={{ color: 'var(--text-3)' }}>{maps.length} map{maps.length !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {maps.map((map) => (
-                <MapCard
-                  key={map.id}
-                  map={map}
-                  nodeCount={nodeCountByMap[map.id] ?? 0}
-                  onOpen={() => onOpenMap(map.id)}
-                  onDelete={() => deleteMap(map.id)}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </main>
+      {maps && maps.length > 0 && (
+        <>
+          <div className="lib-section">
+            <span className="lib-section__icon"><Map /></span>
+            <span className="lib-section__title">Your maps</span>
+            <span className="lib-section__count">{maps.length}</span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {maps.map((map) => (
+              <MapCard
+                key={map.id}
+                map={map}
+                nodeCount={nodeCountByMap[map.id] ?? 0}
+                onOpen={() => onOpenMap(map.id)}
+                onDelete={() => deleteMap(map.id)}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {showCreate && (
         <CreateMapModal
@@ -129,27 +118,24 @@ function MapCard({
 
   return (
     <div
-      className="group relative flex flex-col rounded-2xl border bg-white p-5 transition-all hover:shadow-md"
-      style={{ borderColor: 'var(--border-md)' }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-md)')}
+      className="group relative flex flex-col rounded-2xl border p-5 shadow-sm transition-all hover:border-[var(--accent-border)] hover:shadow-md"
+      style={{ borderColor: 'var(--hair)', background: 'var(--surface)' }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-            style={{ background: 'var(--brand-soft)' }}
+            style={{ background: 'var(--accent-soft)' }}
           >
-            <Map className="h-4 w-4" style={{ color: 'var(--brand)' }} />
+            <Map className="h-4 w-4" style={{ color: 'var(--accent)' }} />
           </div>
-          <h3 className="font-semibold leading-snug line-clamp-2" style={{ color: 'var(--text)' }}>{map.name}</h3>
+          <h3 className="font-display line-clamp-2 text-[15px] font-medium leading-snug" style={{ color: 'var(--ink)' }}>{map.name}</h3>
         </div>
 
         {!confirmDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
-            className="shrink-0 rounded-lg p-1.5 opacity-0 transition-all hover:bg-red-50 hover:text-red-400 group-hover:opacity-100"
-            style={{ color: 'var(--text-3)' }}
+            className="km-iconbtn shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
             title="Delete map"
           >
             <Trash2 className="h-4 w-4" />
@@ -158,20 +144,19 @@ function MapCard({
       </div>
 
       {confirmDelete && (
-        <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5">
-          <p className="text-xs font-medium text-red-700">Delete this map?</p>
-          <p className="mt-0.5 text-xs text-red-500">Books and highlights are not affected.</p>
-          <div className="mt-2 flex gap-2">
+        <div className="mt-3 rounded-xl border px-3 py-2.5" style={{ borderColor: 'var(--hair-md)', background: 'var(--surface-2)' }}>
+          <p className="text-xs font-medium" style={{ color: 'var(--ink)' }}>Delete this map?</p>
+          <p className="mt-0.5 text-xs" style={{ color: 'var(--ink-faint)' }}>Books and highlights are not affected.</p>
+          <div className="mt-2.5 flex gap-2">
             <button
               onClick={() => { onDelete(); setConfirmDelete(false); }}
-              className="flex-1 rounded-lg bg-red-500 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
+              className="km-btn km-btn--danger km-btn--sm flex-1"
             >
               Yes, delete
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="flex-1 rounded-lg border py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface-2)]"
-              style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
+              className="km-btn km-btn--secondary km-btn--sm flex-1"
             >
               Cancel
             </button>
@@ -181,16 +166,10 @@ function MapCard({
 
       {!confirmDelete && (
         <div className="mt-4 flex items-center justify-between">
-          <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+          <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
             {nodeCount} element{nodeCount !== 1 ? 's' : ''} · {createdDate}
           </span>
-          <button
-            onClick={onOpen}
-            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
-            style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(28,43,58,0.12)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--brand-soft)'; }}
-          >
+          <button onClick={onOpen} className="km-btn km-btn--secondary km-btn--sm">
             Open
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -217,50 +196,31 @@ function CreateMapModal({
   };
 
   return (
-    <>
-      <div
-        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 shadow-2xl" style={{ background: 'var(--surface)' }}>
-        <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>New map</h2>
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-2)' }}>
-          Give your map a name. You can always rename it later.
-        </p>
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+    <div className="km-modal__backdrop" onClick={onClose}>
+      <form className="km-modal__panel" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+        <div className="km-modal__head">
+          <h2 className="km-modal__title">New map</h2>
+        </div>
+        <div className="km-modal__body">
+          <p style={{ marginBottom: 14 }}>Give your map a name. You can always rename it later.</p>
           <input
             autoFocus
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Philosophy reading list"
-            className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors"
-            style={{ borderColor: 'var(--border-md)', color: 'var(--text)' }}
-            onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(61,107,142,0.10)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'var(--border-md)'; e.target.style.boxShadow = 'none'; }}
+            className="km-field"
           />
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"
-              style={{ borderColor: 'var(--border-md)', color: 'var(--text-2)' }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim()}
-              className="flex-1 rounded-xl py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-40"
-              style={{ background: 'var(--brand)' }}
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'var(--brand-mid)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--brand)'; }}
-            >
-              Create map
-            </button>
-          </div>
-        </form>
-      </div>
-    </>
+        </div>
+        <div className="km-modal__foot">
+          <button type="button" onClick={onClose} className="km-btn km-btn--secondary km-btn--md">
+            Cancel
+          </button>
+          <button type="submit" disabled={!name.trim()} className="km-btn km-btn--primary km-btn--md">
+            Create map
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
