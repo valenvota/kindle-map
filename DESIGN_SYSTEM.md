@@ -5,6 +5,14 @@
 > this doc is the reasoning around it. (Historical evolution lives in
 > `REDESIGN_PLAN.md` — not needed for day-to-day UI work.)
 
+> **Status — transitional visual direction.** The current editorial/tactile
+> language (warm paper, serif display type, tactile cards, wooden Desk) is the
+> shipped L1 look, not a final commitment. Once the product structure matures,
+> LOCI is likely to undergo a later visual simplification pass toward a cleaner,
+> quieter, more neutral aesthetic. Treat everything below as describing what
+> exists today, not as a permanent spec — avoid hard-coding these scales/tokens as
+> if final.
+
 ---
 
 ## Philosophy
@@ -24,7 +32,9 @@ Locked rules:
 - **Status is shown by dot + label, not colored fills.**
 - **No emoji in the UI.** (The 3 emoji in `utils/exportMarkdown.ts` write into
   exported `.md` files, not the UI, and are intentional.)
-- **Midnight ink-blue sidebar over warm paper content**, app-wide.
+- **Near-black warm charcoal sidebar** (serif "Loci" wordmark, no tile mark) **over
+  warm paper content**, app-wide. (Shipped state; earlier drafts used a midnight
+  ink-blue sidebar.)
 
 ---
 
@@ -59,8 +69,8 @@ tokens that matter conceptually:
 /* Ember — the important marker ONLY */
 --ember: #B06A4F;  --ember-soft (tint)
 
-/* Sidebar — midnight ink-blue */
---nav-bg-top: #182534;  --nav-bg-bot: #131E2B;  --nav-accent: #79A9CE; …
+/* Sidebar — near-black warm charcoal */
+--nav-bg-top: #1E1C1A;  --nav-bg-bot: #191715;  --nav-accent: #79A9CE; …
 ```
 
 Also in `index.css` (not repeated here): `--surface-2`, hairlines
@@ -92,10 +102,30 @@ Use these instead of ad-hoc utility clusters:
 - **Forms** — `.km-field`, `.km-label`.
 - **Surfaces** — `.km-surface` (`--elevated`), `.km-modal`, `.km-menu`
   (`.km-menu__item`, `--danger`, `__sep`), `.km-glass` for floating chrome.
-- **Shell** — `.km-side`, `.km-nav` (dark sidebar).
-- **Library** — `.lib-*` (masthead, row/card, `.lib-dot--{want|reading|finished}`).
+- **Shell** — `.km-side`, `.km-nav` (charcoal sidebar; `.km-side__word` serif wordmark).
+- **Library** — `.lib-*` (masthead + `.lib-sub`, `.lib-section*` shelf header,
+  `.lib-card*` source cards, `.lib-dot--{want|reading|finished}`).
 - **Covers / canvas** — `.km-cover` (+ `--type` typographic fallback, `--compact`),
   `.km-booknode` (`--cover` / `--card`).
+
+---
+
+## Loci L1 additions (shipped)
+
+Brief — descriptive, not a permanent spec (see the transitional note above):
+
+- **Page headers** — a serif title over a quiet sans subtitle on paper surfaces
+  (`.loci-title` / `.loci-sub`; Library keeps its larger `.lib-h1`). Scales are
+  what shipped, not a fixed hierarchy.
+- **Locus canvas** — editorial in-flow header (`.km-locushdr`), corner-anchored
+  chrome, glass zoom pill, and **thin dashed warm-ink edges**.
+- **Room card** — a framed "place" object (`.km-roomnode`): warm paper, serif name,
+  stacked-paper edge, accent selection ring + soft glow.
+- **Desk (intentional exception)** — the Desk renders on a warm **wood** surface
+  with its own `--desk-*` ink tokens and header treatment (`.desk*`), deliberately
+  *not* the paper-surface header — the dark ground needs its own ink + shadow for
+  legibility. This is the one surface that legitimately diverges from the
+  paper-and-ink rules above.
 
 ---
 

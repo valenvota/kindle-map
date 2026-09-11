@@ -450,24 +450,6 @@
 .lib-cap__author { font-size: 11.5px; color: var(--ink-faint); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lib-cap__meta { margin-top: 4px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 
-/* Cards / reading index */
-.lib-list { display: flex; flex-direction: column; }
-.lib-row { display: flex; align-items: center; gap: 20px; padding: 18px 8px; border: none; border-bottom: 1px solid var(--hair-soft); background: none; cursor: pointer; border-radius: 10px; transition: background .15s; width: 100%; text-align: left; font-family: inherit; }
-.lib-row:hover { background: rgba(28,26,23,0.03); }
-.lib-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.lib-row__cover { flex: 0 0 auto; width: 54px; }
-.lib-row__cover .km-cover { box-shadow: 0 1px 2px rgba(28,26,23,0.16), 0 8px 16px -7px rgba(28,26,23,0.34); }
-.lib-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.lib-row__head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
-.lib-row__title { font-family: var(--font-serif); font-size: 18px; font-weight: 500; color: var(--ink); line-height: 1.15; letter-spacing: -0.005em; min-width: 0; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.lib-row__author { font-size: 12.5px; color: var(--ink-soft); flex: 0 0 auto; }
-.lib-row__quote { font-family: var(--font-serif); font-size: 14px; font-style: italic; line-height: 1.35; color: var(--ink-soft); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 62ch; }
-.lib-row__quote .mark { font-style: normal; color: var(--ember); font-weight: 600; }
-.lib-row__meta { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.lib-row__status { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-soft); }
-.lib-row__hl { font-size: 11.5px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
-.lib-row__hl b { color: var(--ember); font-weight: 600; }
-
 .lib-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 96px 0; text-align: center; }
 
 /* Masthead subtitle — editorial serif title over a quiet sans line (Library mockup). */
@@ -500,7 +482,6 @@
 @media (max-width: 900px) {
   .lib-inner { padding: 40px 28px 60px; }
   .lib-h1 { font-size: 38px; }
-  .lib-row__quote { display: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -625,7 +606,7 @@
 .km-booknode--cover .km-booknode__cap-t { font-family: var(--font-sans); font-size: 11px; font-weight: 500; color: var(--ink-soft); line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 
 /* Card mode — a horizontal information card: thumbnail left, title/author/meta
-   right. Same language as the Library's Cards index (.lib-row). */
+   right. Same language as the Library's Cards index (.lib-card). */
 .km-booknode--card { width: 288px; }
 .km-booknode__card { display: flex; align-items: flex-start; gap: 13px; padding: 13px 14px; background: var(--surface); border: 1px solid var(--hair); border-radius: var(--radius); box-shadow: var(--shadow-md); transition: box-shadow .15s, border-color .15s; }
 .km-booknode--card.selected .km-booknode__card { border-color: transparent; box-shadow: 0 0 0 2px var(--accent), var(--shadow-md); }
