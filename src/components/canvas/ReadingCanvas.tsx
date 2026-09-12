@@ -38,7 +38,7 @@ import {
   bulkSetNodeZIndices,
   getAllCanvasNodes,
 } from '../../db/canvasRepository';
-import { updateMapBackground, getMap, getMapAncestry, getAllMaps, deleteRoom } from '../../db/mapsRepository';
+import { updateMapBackground, getMap, getMapAncestry, getAllMaps, deleteRoom, createRoom } from '../../db/mapsRepository';
 import { getAllBooks } from '../../db/booksRepository';
 import { getAllHighlights } from '../../db/highlightsRepository';
 import { getStrokesByMap } from '../../db/canvasStrokesRepository';
@@ -54,6 +54,7 @@ import { TextBoxNode, type TextBoxNodeData } from './nodes/TextBoxNode';
 import { RegionNode, type RegionNodeData } from './nodes/RegionNode';
 import { ImageNode, type ImageNodeData } from './nodes/ImageNode';
 import { RoomNode, type RoomNodeData } from './nodes/RoomNode';
+import { requestRoomNameEdit } from './nodes/roomNameAutoEdit';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasLeftToolbar } from './CanvasLeftToolbar';
 import { PlusMenu } from './PlusMenu';
@@ -207,6 +208,7 @@ function buildReactFlowNode(
   importantByBook: Map<string, number>,
   roomItemCount: Map<string, number>,
   liveRoomIds: Set<string>,
+  roomNameById: Map<string, string>,
 ): Node | null {
   // A pinned node can't be dragged or connected but stays selectable (so it can
   // be unpinned). The `km-pinned` class draws the pin badge — see index.css.
@@ -327,7 +329,9 @@ function buildReactFlowNode(
         data: {
           nodeId: mn.id,
           roomId: mn.roomId ?? '',
-          name: mn.content ?? '',
+          // Live child-map name (single source of truth). The card's own `content`
+          // is a non-authoritative cache, kept only as a fallback on first paint.
+          name: roomNameById.get(mn.roomId ?? '') ?? mn.content ?? '',
           itemCount: roomItemCount.get(mn.roomId ?? '') ?? 0,
         } satisfies RoomNodeData,
       };
@@ -394,6 +398,10 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   const allMaps = useLiveQuery(() => getAllMaps(), []);
   /** Live (non-tombstoned) map ids — a Room card only renders if its Room lives. */
   const liveRoomIds = useMemo(() => new Set((allMaps ?? []).map((m) => m.id)), [allMaps]);
+  /** Live child-map name per id — the Room card renders this, not its cached content. */
+  const roomNameById = useMemo(() => new Map((allMaps ?? []).map((m) => [m.id, m.name])), [allMaps]);
+  /** Card id of a Room just created here, so the sync effect selects it on arrival. */
+  const pendingRoomSelectId = useRef<string | null>(null);
   // Locus path (root → current) for the breadcrumb; undefined until it resolves.
   const ancestry = useLiveQuery(() => getMapAncestry(mapId), [mapId]);
 
@@ -504,7 +512,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
 
     const bookMap = new Map(allBooks.map((b) => [b.id, b]));
     const initial = mapNodes
-      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook, roomItemCount, liveRoomIds))
+      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook, roomItemCount, liveRoomIds, roomNameById))
       .filter((n): n is Node => n !== null);
 
     setNodes(initial);
@@ -515,7 +523,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     // first user action lands at index 0 and undoing it hits index -1 (no-op).
     historyStack.current = [mapNodes.map((n) => ({ ...n }))];
     historyIndex.current = 0;
-  }, [mapNodes, allBooks, allNodes, allMaps, roomItemCount, liveRoomIds]);
+  }, [mapNodes, allBooks, allNodes, allMaps, roomItemCount, liveRoomIds, roomNameById]);
 
   // ── Sync additions and deletions from Dexie without resetting layout ─────
   useEffect(() => {
@@ -539,13 +547,23 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
             ...mn,
             position: mn.position ?? buildInitialPosition(remaining.length + i),
           };
-          return buildReactFlowNode(withPosition, bookMap, importantByBook, roomItemCount, liveRoomIds);
+          return buildReactFlowNode(withPosition, bookMap, importantByBook, roomItemCount, liveRoomIds, roomNameById);
         })
         .filter((n): n is Node => n !== null);
 
+      // A Room just created here becomes the sole selection when its card arrives,
+      // so the user stays on this canvas with the new Room selected (it does not
+      // auto-enter). One-shot: the id is cleared once matched.
+      const selId = pendingRoomSelectId.current;
+      if (selId && newNodes.some((n) => n.id === selId)) {
+        pendingRoomSelectId.current = null;
+        const mark = <T extends Node>(n: T): T => ({ ...n, selected: n.id === selId });
+        return [...remaining.map(mark), ...newNodes.map(mark)];
+      }
+
       return [...remaining, ...newNodes];
     });
-  }, [mapNodes, allBooks, allMaps, roomItemCount, liveRoomIds]);
+  }, [mapNodes, allBooks, allMaps, roomItemCount, liveRoomIds, roomNameById]);
 
   // ── Sync style overrides from Dexie into existing nodes ──────────────────
   useEffect(() => {
@@ -644,6 +662,28 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
       return changed ? next : prev;
     });
   }, [mapNodes, importantByBook]);
+
+  // ── Sync room node data (live name + item count) from Dexie ───────────────
+  // maps.name is the single source of truth; renaming a Room updates it, which
+  // moves the roomNameById live query. Mounted Room cards read their name/count
+  // from `data`, so — like the book-data sync above — push the live values in,
+  // otherwise a renamed card only refreshes on remount (re-entering the Room).
+  useEffect(() => {
+    if (!initialized.current) return;
+    setNodes((prev) => {
+      let changed = false;
+      const next = prev.map((n) => {
+        if (n.type !== 'room') return n;
+        const data = n.data as RoomNodeData;
+        const newName = roomNameById.get(data.roomId) ?? data.name;
+        const newCount = roomItemCount.get(data.roomId) ?? 0;
+        if (newName === data.name && newCount === data.itemCount) return n;
+        changed = true;
+        return { ...n, data: { ...n.data, name: newName, itemCount: newCount } };
+      });
+      return changed ? next : prev;
+    });
+  }, [roomNameById, roomItemCount, setNodes]);
 
   // ── Track selected node + edge for toolbars ──────────────────────────────
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -924,6 +964,22 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
 
   const hasSelection = useMemo(() => nodes.some((n) => n.selected), [nodes]);
 
+  // ── Room tool: click-to-place ─────────────────────────────────────────────
+  // A pane click while the Room tool is active drops a Room at the clicked flow
+  // position and opens it in inline-rename (create logic stays in createRoom).
+  // Otherwise a pane click just closes the context menu (prior behaviour).
+  const onPaneClick = useCallback(async (e: React.MouseEvent) => {
+    closeContextMenu();
+    if (activeTool !== 'room') return;
+    const instance = rfInstanceRef.current;
+    if (!instance) return;
+    const position = instance.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+    const { cardId } = await createRoom(mapId, position);
+    pendingRoomSelectId.current = cardId;   // select it when its card arrives
+    requestRoomNameEdit(cardId);            // mount straight into inline rename
+    setActiveTool('select');
+  }, [activeTool, mapId, closeContextMenu, setActiveTool]);
+
   return (
     <CanvasToolContext.Provider value={{ activeTool, setActiveTool }}>
     <div className="km-canvas-desk relative h-full w-full overflow-hidden">
@@ -961,7 +1017,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeContextMenu={onNodeContextMenu}
-        onPaneClick={closeContextMenu}
+        onPaneClick={onPaneClick}
         onSelectionChange={onSelectionChange}
         onMoveEnd={onMoveEnd}
         connectionMode={ConnectionMode.Loose}

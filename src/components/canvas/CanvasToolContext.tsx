@@ -8,6 +8,7 @@ export type CanvasTool =
   | 'note'
   | 'quote'
   | 'text'
+  | 'room'
   | 'rectangle'
   | 'circle'
   | 'region'

@@ -72,8 +72,10 @@ function gridPosition(index: number): { x: number; y: number } {
   return { x: ORIGIN + col * (CARD_W + COL_GAP), y: ORIGIN + row * (CARD_H + ROW_GAP) };
 }
 
-/** Deterministic card id — one Room can only ever have one card per parent. */
-function cardId(parentMapId: string, roomId: string): string {
+/** Deterministic card id — one Room can only ever have one card per parent.
+ *  Exported so `createRoom` produces the same id the planner would, keeping
+ *  direct creation and reconciliation on one scheme (no duplicate cards). */
+export function cardId(parentMapId: string, roomId: string): string {
   return `${parentMapId}:room-${roomId}`;
 }
 

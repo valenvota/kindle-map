@@ -1,7 +1,8 @@
 import { db } from './db';
 import { notDeleted } from './softDelete';
-import { planLocusMigration } from './locusMigration';
+import { planLocusMigration, cardId } from './locusMigration';
 import type { KindleMap, MapBackground } from '../types/map';
+import type { CanvasNodeData } from '../types/canvas';
 
 export async function createMap(name: string): Promise<KindleMap> {
   const now = new Date().toISOString();
@@ -13,6 +14,61 @@ export async function createMap(name: string): Promise<KindleMap> {
   };
   await db.maps.add(map);
   return map;
+}
+
+/**
+ * Create a Room directly on the current canvas (Loci L2.1) — the child map plus
+ * exactly one Room card on `parentMapId`, in one transaction, at the clicked
+ * position. `parentMapId` is simply the map the user is in, so a Room created
+ * from inside another Room nests naturally (its `parentId` chain extends).
+ *
+ * The card uses the same deterministic `cardId(parent, child)` the reconciliation
+ * planner uses, so this is the *exact* row `syncLocusRooms` would produce: a later
+ * reconcile treats it as the canonical card and leaves it untouched — no duplicate
+ * card, no ghost. This deliberately does not re-implement adoption/reconciliation.
+ *
+ * The name defaults to 'Untitled Room' so a Room is never nameless (breadcrumb /
+ * Desk / Maps read `maps.name`); the caller opens inline rename immediately.
+ */
+export async function createRoom(
+  parentMapId: string,
+  position: { x: number; y: number },
+  name?: string,
+): Promise<{ room: KindleMap; cardId: string }> {
+  const now = new Date().toISOString();
+  const roomName = name?.trim() || 'Untitled Room';
+  const room: KindleMap = {
+    id: `map-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: roomName,
+    parentId: parentMapId,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const cid = cardId(parentMapId, room.id);
+  const card: CanvasNodeData = {
+    id: cid,
+    mapId: parentMapId,
+    type: 'room',
+    roomId: room.id,
+    content: roomName,
+    position,
+    updatedAt: now,
+  };
+  await db.transaction('rw', [db.maps, db.canvasNodes], async () => {
+    await db.maps.add(room);
+    await db.canvasNodes.add(card);
+  });
+  return { room, cardId: cid };
+}
+
+/**
+ * Rename a Room. `maps.name` is the single source of truth — the Room card,
+ * breadcrumb, Desk and Maps all read it (the card's own `content` is a
+ * non-authoritative cache), so this one write updates every surface reactively.
+ * An empty name falls back to 'Untitled Room' so a Room is never nameless.
+ */
+export async function renameRoom(mapId: string, name: string): Promise<void> {
+  await db.maps.update(mapId, { name: name.trim() || 'Untitled Room', updatedAt: new Date().toISOString() });
 }
 
 export async function getAllMaps(): Promise<KindleMap[]> {
