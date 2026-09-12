@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown, Pin, PinOff } from 'lucide-react';
+import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown, Pin, PinOff, SquarePen } from 'lucide-react';
 import { exportMapAsPng, type ExportBounds } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -903,6 +903,21 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     ? mapNodes?.find((mn) => mn.id === contextMenu.nodeId)
     : undefined;
 
+  // Room node targeted by the context menu (drives the Renombrar item).
+  const contextRoomNode = contextMenu
+    ? mapNodes?.find((mn) => mn.id === contextMenu.nodeId && mn.type === 'room')
+    : undefined;
+
+  // Rename a Room from its card — reuse the same inline editor as creation by
+  // requesting it for the card's own id (the card is already mounted, so RoomNode
+  // catches it via its subscription). No navigation, no modal.
+  const handleContextRename = useCallback(() => {
+    if (!contextMenu) return;
+    const nodeId = contextMenu.nodeId;
+    closeContextMenu();
+    requestRoomNameEdit(nodeId);
+  }, [contextMenu, closeContextMenu]);
+
   // ── Remember viewport so returning from a book keeps the user's place ─────
   const savedViewport = viewportCache.get(mapId);
   const onMoveEnd = useCallback((_: unknown, vp: Viewport) => {
@@ -1100,6 +1115,14 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
         <>
           <div className="fixed inset-0 z-40" onClick={closeContextMenu} />
           <div className="km-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
+            {contextRoomNode && (
+              <>
+                <button onClick={handleContextRename} className="km-menu__item">
+                  <SquarePen className="h-4 w-4" /> Renombrar
+                </button>
+                <div className="km-menu__sep" />
+              </>
+            )}
             {contextBookNode && (
               <>
                 {(contextBookNode.displayMode ?? 'card') === 'cover' ? (

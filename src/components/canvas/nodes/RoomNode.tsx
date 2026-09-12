@@ -1,8 +1,8 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { type NodeProps } from '@xyflow/react';
 import { DoorOpen, Star, ArrowRight } from 'lucide-react';
 import { renameRoom } from '../../../db/mapsRepository';
-import { consumeRoomNameEdit } from './roomNameAutoEdit';
+import { consumeRoomNameEdit, subscribeRoomNameEdit } from './roomNameAutoEdit';
 
 export type RoomNodeData = {
   nodeId: string;
@@ -34,6 +34,19 @@ function RoomNodeComponent({ data, selected }: NodeProps) {
   // A freshly created card mounts already in rename mode (see roomNameAutoEdit).
   const [editing, setEditing] = useState(() => consumeRoomNameEdit(d.nodeId));
   const [text, setText] = useState('');
+
+  // An already-mounted card (Slice B: context-menu Renombrar) can't re-run the
+  // mount-time consume, so it listens for a rename request aimed at its own id.
+  // setState lives in the subscription callback, not the effect body.
+  useEffect(
+    () => subscribeRoomNameEdit((id) => {
+      if (id === d.nodeId && consumeRoomNameEdit(d.nodeId)) {
+        setText('');
+        setEditing(true);
+      }
+    }),
+    [d.nodeId],
+  );
 
   const commit = async () => {
     setEditing(false);
