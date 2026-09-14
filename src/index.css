@@ -657,10 +657,16 @@
 .km-roomnode--selected .km-roomnode__star { opacity: 1; }
 .km-roomnode__star svg { width: 15px; height: 15px; }
 .km-roomnode__body { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px 13px; }
-.km-roomnode__count { font-size: 12px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
-.km-roomnode__enter { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-style: italic; color: var(--ink-faint); opacity: 0; pointer-events: none; transition: opacity .15s; }
-.km-roomnode__enter svg { width: 12px; height: 12px; }
-.km-roomnode:hover .km-roomnode__enter, .km-roomnode--selected .km-roomnode__enter { opacity: 1; }
+/* Content summary — persistent, meaningful info, so it carries a bit more weight
+   than the transient enter-hint below it. */
+.km-roomnode__count { font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* Empty Room — a quiet invitation, deliberately recessive (fainter + italic). */
+.km-roomnode__count--empty { font-size: 12px; font-style: italic; color: var(--ink-faint); }
+/* Enter hint — transient instruction, demoted below the summary: smaller and, even
+   when revealed on hover/selection, only partly opaque. */
+.km-roomnode__enter { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-style: italic; color: var(--ink-faint); opacity: 0; pointer-events: none; transition: opacity .15s; }
+.km-roomnode__enter svg { width: 11px; height: 11px; }
+.km-roomnode:hover .km-roomnode__enter, .km-roomnode--selected .km-roomnode__enter { opacity: 0.7; }
 
 /* Pin badge — a node pinned to the desk (Sprint 4). Drawn on the React Flow node
    wrapper so it works for every node type with no per-component plumbing. */

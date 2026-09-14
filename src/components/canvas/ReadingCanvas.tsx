@@ -55,6 +55,7 @@ import { RegionNode, type RegionNodeData } from './nodes/RegionNode';
 import { ImageNode, type ImageNodeData } from './nodes/ImageNode';
 import { RoomNode, type RoomNodeData } from './nodes/RoomNode';
 import { requestRoomNameEdit } from './nodes/roomNameAutoEdit';
+import { buildRoomSummary, categoryForType, EMPTY_ROOM_SUMMARY, type CategoryCounts } from './nodes/roomSummary';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasLeftToolbar } from './CanvasLeftToolbar';
 import { PlusMenu } from './PlusMenu';
@@ -206,7 +207,7 @@ function buildReactFlowNode(
   mn: CanvasNodeData,
   bookMap: Map<string, Book>,
   importantByBook: Map<string, number>,
-  roomItemCount: Map<string, number>,
+  roomSummaryById: Map<string, string>,
   liveRoomIds: Set<string>,
   roomNameById: Map<string, string>,
 ): Node | null {
@@ -332,7 +333,7 @@ function buildReactFlowNode(
           // Live child-map name (single source of truth). The card's own `content`
           // is a non-authoritative cache, kept only as a fallback on first paint.
           name: roomNameById.get(mn.roomId ?? '') ?? mn.content ?? '',
-          itemCount: roomItemCount.get(mn.roomId ?? '') ?? 0,
+          summary: roomSummaryById.get(mn.roomId ?? '') ?? EMPTY_ROOM_SUMMARY,
         } satisfies RoomNodeData,
       };
     }
@@ -405,12 +406,21 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   // Locus path (root → current) for the breadcrumb; undefined until it resolves.
   const ancestry = useLiveQuery(() => getMapAncestry(mapId), [mapId]);
 
-  // Item count per map (drives the Room card preview). Room nodes reference a
-  // child map by roomId; the count is how many live nodes live in that map.
-  const roomItemCount = useMemo(() => {
-    const m = new Map<string, number>();
-    allNodes?.forEach((n) => m.set(n.mapId, (m.get(n.mapId) ?? 0) + 1));
-    return m;
+  // Content summary per map (drives the Room card). Room nodes reference a child
+  // map by roomId; we bucket that map's live nodes into content categories in one
+  // pass (scaffolding — shape/region — is ignored) and format a compact string.
+  const roomSummaryById = useMemo(() => {
+    const counts = new Map<string, CategoryCounts>();
+    allNodes?.forEach((n) => {
+      const cat = categoryForType(n.type);
+      if (!cat) return;
+      let c = counts.get(n.mapId);
+      if (!c) { c = {}; counts.set(n.mapId, c); }
+      c[cat] = (c[cat] ?? 0) + 1;
+    });
+    const out = new Map<string, string>();
+    for (const [mapId, c] of counts) out.set(mapId, buildRoomSummary(c));
+    return out;
   }, [allNodes]);
 
   // Important-highlight count per book — quiet metadata on card-mode nodes.
@@ -512,7 +522,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
 
     const bookMap = new Map(allBooks.map((b) => [b.id, b]));
     const initial = mapNodes
-      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook, roomItemCount, liveRoomIds, roomNameById))
+      .map((mn) => buildReactFlowNode(mn, bookMap, importantByBook, roomSummaryById, liveRoomIds, roomNameById))
       .filter((n): n is Node => n !== null);
 
     setNodes(initial);
@@ -523,7 +533,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     // first user action lands at index 0 and undoing it hits index -1 (no-op).
     historyStack.current = [mapNodes.map((n) => ({ ...n }))];
     historyIndex.current = 0;
-  }, [mapNodes, allBooks, allNodes, allMaps, roomItemCount, liveRoomIds, roomNameById]);
+  }, [mapNodes, allBooks, allNodes, allMaps, roomSummaryById, liveRoomIds, roomNameById]);
 
   // ── Sync additions and deletions from Dexie without resetting layout ─────
   useEffect(() => {
@@ -547,7 +557,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
             ...mn,
             position: mn.position ?? buildInitialPosition(remaining.length + i),
           };
-          return buildReactFlowNode(withPosition, bookMap, importantByBook, roomItemCount, liveRoomIds, roomNameById);
+          return buildReactFlowNode(withPosition, bookMap, importantByBook, roomSummaryById, liveRoomIds, roomNameById);
         })
         .filter((n): n is Node => n !== null);
 
@@ -563,7 +573,7 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
 
       return [...remaining, ...newNodes];
     });
-  }, [mapNodes, allBooks, allMaps, roomItemCount, liveRoomIds, roomNameById]);
+  }, [mapNodes, allBooks, allMaps, roomSummaryById, liveRoomIds, roomNameById]);
 
   // ── Sync style overrides from Dexie into existing nodes ──────────────────
   useEffect(() => {
@@ -663,11 +673,12 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
     });
   }, [mapNodes, importantByBook]);
 
-  // ── Sync room node data (live name + item count) from Dexie ───────────────
-  // maps.name is the single source of truth; renaming a Room updates it, which
-  // moves the roomNameById live query. Mounted Room cards read their name/count
-  // from `data`, so — like the book-data sync above — push the live values in,
-  // otherwise a renamed card only refreshes on remount (re-entering the Room).
+  // ── Sync room node data (live name + content summary) from Dexie ──────────
+  // maps.name and the child map's node mix are the sources of truth; renaming or
+  // adding/removing content moves the roomNameById / roomSummaryById live queries.
+  // Mounted Room cards read name/summary from `data`, so — like the book-data sync
+  // above — push the live values in, otherwise a card only refreshes on remount
+  // (re-entering the Room).
   useEffect(() => {
     if (!initialized.current) return;
     setNodes((prev) => {
@@ -676,14 +687,14 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
         if (n.type !== 'room') return n;
         const data = n.data as RoomNodeData;
         const newName = roomNameById.get(data.roomId) ?? data.name;
-        const newCount = roomItemCount.get(data.roomId) ?? 0;
-        if (newName === data.name && newCount === data.itemCount) return n;
+        const newSummary = roomSummaryById.get(data.roomId) ?? EMPTY_ROOM_SUMMARY;
+        if (newName === data.name && newSummary === data.summary) return n;
         changed = true;
-        return { ...n, data: { ...n.data, name: newName, itemCount: newCount } };
+        return { ...n, data: { ...n.data, name: newName, summary: newSummary } };
       });
       return changed ? next : prev;
     });
-  }, [roomNameById, roomItemCount, setNodes]);
+  }, [roomNameById, roomSummaryById, setNodes]);
 
   // ── Track selected node + edge for toolbars ──────────────────────────────
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);

@@ -3,6 +3,7 @@ import { type NodeProps } from '@xyflow/react';
 import { DoorOpen, Star, ArrowRight } from 'lucide-react';
 import { renameRoom } from '../../../db/mapsRepository';
 import { consumeRoomNameEdit, subscribeRoomNameEdit } from './roomNameAutoEdit';
+import { EMPTY_ROOM_SUMMARY } from './roomSummary';
 
 export type RoomNodeData = {
   nodeId: string;
@@ -10,8 +11,9 @@ export type RoomNodeData = {
   roomId: string;
   /** Live child-map name (`maps.name`, the single source of truth). */
   name: string;
-  /** Live count of nodes inside the child map — a minimal content preview. */
-  itemCount: number;
+  /** Compact content summary of the child map (see roomSummary.buildRoomSummary),
+   *  e.g. "3 notes · 2 books · +3", or "Empty". */
+  summary: string;
 };
 
 /**
@@ -29,7 +31,6 @@ export type RoomNodeData = {
  */
 function RoomNodeComponent({ data, selected }: NodeProps) {
   const d = data as RoomNodeData;
-  const count = d.itemCount;
 
   // A freshly created card mounts already in rename mode (see roomNameAutoEdit).
   const [editing, setEditing] = useState(() => consumeRoomNameEdit(d.nodeId));
@@ -89,8 +90,8 @@ function RoomNodeComponent({ data, selected }: NodeProps) {
           </span>
         </div>
         <div className="km-roomnode__body">
-          <span className="km-roomnode__count">
-            {count} item{count !== 1 ? 's' : ''}
+          <span className={`km-roomnode__count${d.summary === EMPTY_ROOM_SUMMARY ? ' km-roomnode__count--empty' : ''}`}>
+            {d.summary}
           </span>
           <span className="km-roomnode__enter">
             Double click to enter <ArrowRight />
