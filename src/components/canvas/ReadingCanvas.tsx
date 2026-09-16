@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown, Pin, PinOff, SquarePen } from 'lucide-react';
+import { Map as MapIcon, BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus, Copy, Trash2, Image, LayoutList, BringToFront, SendToBack, ArrowUp, ArrowDown, Pin, PinOff, SquarePen, DoorOpen, Compass } from 'lucide-react';
 import { exportMapAsPng, type ExportBounds } from '../../utils/exportMapImage';
 import {
   ReactFlow,
@@ -359,6 +359,40 @@ function buildReactFlowNode(
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
+
+/**
+ * The canvas empty-state overlay: one quiet icon box, a heading and a short
+ * supporting line. Room and root-Locus use it bare; the legacy standalone-Map
+ * state passes its icon-palette row as children. Purely decorative
+ * (`pointer-events-none`) so it never intercepts canvas interaction.
+ */
+function CanvasEmptyState({
+  icon: Icon,
+  heading,
+  line,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  heading: string;
+  line: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <div className="text-center">
+        <div
+          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-sm"
+          style={{ borderColor: 'var(--hair-md)', background: 'var(--surface)' }}
+        >
+          <Icon className="h-6 w-6" style={{ color: 'var(--ink-faint)' }} />
+        </div>
+        <p className="font-display text-base font-medium" style={{ color: 'var(--ink-soft)' }}>{heading}</p>
+        <p className="mt-1.5 text-sm" style={{ color: 'var(--ink-faint)' }}>{line}</p>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   mapId: string;
@@ -956,6 +990,20 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
   const surfaceTitle = underLocus ? 'Locus' : (map?.name ?? '…');
   const surfaceSubtitle = underLocus && ancestry.length === 1 ? 'Shape what you’re thinking.' : undefined;
 
+  // Empty-state branch (L2.2 Slice 2). For a Room or the root Locus, "empty" means
+  // no MEANINGFUL content (the Slice-1 taxonomy) — a canvas of only shapes/regions
+  // still reads as empty. roomSummaryById records a map only when it has ≥1
+  // meaningful node, so its presence IS that test, with no second definition.
+  // Legacy standalone Maps keep the literal "no nodes" behavior. We wait for the
+  // live queries to resolve before deciding, so neither the wrong branch nor the
+  // empty text flashes on open or map-switch.
+  const emptyStateReady =
+    map !== undefined && ancestry !== undefined && mapNodes !== undefined && allNodes !== undefined;
+  const hasMeaningfulContent = roomSummaryById.has(mapId);
+  const showLocusEmpty = emptyStateReady && !!map?.isRoot && !hasMeaningfulContent;
+  const showRoomEmpty = emptyStateReady && !map?.isRoot && underLocus && !hasMeaningfulContent;
+  const showLegacyEmpty = emptyStateReady && !map?.isRoot && !underLocus && nodes.length === 0;
+
   // ── Wallpaper (per-map, persisted on the map). Not part of node undo/redo. ──
   const handleBackgroundChange = useCallback((bg: MapBackground) => {
     updateMapBackground(mapId, bg);
@@ -1082,34 +1130,39 @@ export function ReadingCanvas({ mapId, onBack, onOpenBook, onOpenMap }: Props) {
         />
       </ReactFlow>
 
-      {/* Empty state */}
-      {nodes.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div
-              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-sm"
-              style={{ borderColor: 'var(--hair-md)', background: 'var(--surface)' }}
-            >
-              <MapIcon className="h-6 w-6" style={{ color: 'var(--ink-faint)' }} />
-            </div>
-            <p className="font-display text-base font-medium" style={{ color: 'var(--ink-soft)' }}>This map is empty</p>
-            <p className="mt-1.5 text-sm" style={{ color: 'var(--ink-faint)' }}>
-              Use the toolbar on the left to add books, topics,
-            </p>
-            <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>notes, quotes, shapes, regions, or images.</p>
-            <div className="mt-4 flex items-center justify-center gap-1.5" style={{ color: 'var(--ink-faint)' }}>
-              {[BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus].map((Icon, i) => (
-                <span
-                  key={i}
-                  className="flex h-7 w-7 items-center justify-center rounded-md border"
-                  style={{ borderColor: 'var(--hair-md)', background: 'var(--surface)' }}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                </span>
-              ))}
-            </div>
+      {/* Empty state — contextual for a Room / root Locus, generic for legacy Maps */}
+      {showRoomEmpty && (
+        <CanvasEmptyState
+          icon={DoorOpen}
+          heading="This Room is empty"
+          line="Add books, highlights, notes, or another Room to start shaping this context."
+        />
+      )}
+      {showLocusEmpty && (
+        <CanvasEmptyState
+          icon={Compass}
+          heading="Your Locus is empty"
+          line="Create a Room to start shaping a context for your thinking."
+        />
+      )}
+      {showLegacyEmpty && (
+        <CanvasEmptyState
+          icon={MapIcon}
+          heading="This map is empty"
+          line={<>Use the toolbar on the left to add books, topics,<br />notes, quotes, shapes, regions, or images.</>}
+        >
+          <div className="mt-4 flex items-center justify-center gap-1.5" style={{ color: 'var(--ink-faint)' }}>
+            {[BookOpen, Tag, StickyNote, Quote, Square, Group, ImagePlus].map((Icon, i) => (
+              <span
+                key={i}
+                className="flex h-7 w-7 items-center justify-center rounded-md border"
+                style={{ borderColor: 'var(--hair-md)', background: 'var(--surface)' }}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+            ))}
           </div>
-        </div>
+        </CanvasEmptyState>
       )}
 
       {/* Floating + menu */}
