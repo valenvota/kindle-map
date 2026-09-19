@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ArrowLeft, LayoutGrid, ImageDown, Wallpaper, Check, Map as MapIcon, SquareDashedMousePointer } from 'lucide-react';
 import type { MapBackground } from '../../types/map';
 
@@ -34,11 +34,6 @@ const WALLPAPERS: { value: MapBackground; label: string }[] = [
 
 export function CanvasToolbar({ mapName, surfaceTitle, subtitle, breadcrumb, onCrumb, backLabel, background, onBack, onAutoArrange, onExportAll, onExportSelection, hasSelection, onBackgroundChange, exportingImage }: Props) {
   const title = surfaceTitle ?? mapName;
-  // Show the breadcrumb context line when it adds information beyond the title:
-  // a nested path, or a root whose name differs from the surface title ('Locus'
-  // over 'My Locus'). A standalone map (single crumb == title) shows no context.
-  const lastCrumb = breadcrumb && breadcrumb.length > 0 ? breadcrumb[breadcrumb.length - 1].name : undefined;
-  const showCrumbs = !!breadcrumb && breadcrumb.length > 0 && (breadcrumb.length > 1 || title !== lastCrumb);
 
   return (
     <>
@@ -49,28 +44,10 @@ export function CanvasToolbar({ mapName, surfaceTitle, subtitle, breadcrumb, onC
           <button className="km-locushdr__back" onClick={onBack} title={backLabel ?? 'Maps'} aria-label={backLabel ?? 'Maps'}>
             <ArrowLeft />
           </button>
-          <h1 className="km-locushdr__title">{title}</h1>
+          <h1 className="km-locushdr__title" title={title}>{title}</h1>
         </div>
         {subtitle && <div className="km-locushdr__sub">{subtitle}</div>}
-        {showCrumbs && (
-          <nav className="km-locushdr__crumbs">
-            {breadcrumb!.map((c, i) => {
-              const last = i === breadcrumb!.length - 1;
-              return (
-                <span key={c.id} className="flex items-center gap-1.5">
-                  {i > 0 && <span className="km-locushdr__crumbsep">/</span>}
-                  {last ? (
-                    <span className="km-locushdr__crumb km-locushdr__crumb--current">{c.name}</span>
-                  ) : (
-                    <button className="km-locushdr__crumb" onClick={() => onCrumb?.(c.id)}>
-                      {c.name}
-                    </button>
-                  )}
-                </span>
-              );
-            })}
-          </nav>
-        )}
+        <Breadcrumbs crumbs={breadcrumb ?? []} onCrumb={onCrumb} />
       </div>
 
       {/* Action cluster — top-right (arrange / wallpaper / export). */}
@@ -85,6 +62,75 @@ export function CanvasToolbar({ mapName, surfaceTitle, subtitle, breadcrumb, onC
         />
       </div>
     </>
+  );
+}
+
+/**
+ * Locus ancestry (root → current). Visible ancestors are clickable; the current
+ * Room is a distinct, non-clickable segment. Beyond 4 levels the middle collapses
+ * to `root / … / parent / current`, where `…` is a small dropdown listing the
+ * hidden ancestors so none becomes unreachable (L2.3). A single crumb (root, or a
+ * standalone map) renders nothing — the header title already says where you are.
+ */
+function Breadcrumbs({ crumbs, onCrumb }: { crumbs: { id: string; name: string }[]; onCrumb?: (mapId: string) => void }) {
+  if (crumbs.length <= 1) return null;
+
+  const sep = (key: string) => <span key={key} className="km-locushdr__crumbsep">/</span>;
+  const crumb = (c: { id: string; name: string }, current: boolean) =>
+    current ? (
+      <span key={c.id} className="km-locushdr__crumb km-locushdr__crumb--current" title={c.name}>{c.name}</span>
+    ) : (
+      <button key={c.id} className="km-locushdr__crumb" title={c.name} onClick={() => onCrumb?.(c.id)}>{c.name}</button>
+    );
+
+  const items: ReactNode[] = [];
+  if (crumbs.length <= 4) {
+    crumbs.forEach((c, i) => {
+      if (i > 0) items.push(sep(`sep-${i}`));
+      items.push(crumb(c, i === crumbs.length - 1));
+    });
+  } else {
+    // root / … / parent / current — collapse everything between root and parent.
+    const hidden = crumbs.slice(1, crumbs.length - 2);
+    items.push(crumb(crumbs[0], false));
+    items.push(sep('sep-e'));
+    items.push(<CrumbMenu key="crumb-ellipsis" items={hidden} onPick={(id) => onCrumb?.(id)} />);
+    items.push(sep('sep-p'));
+    items.push(crumb(crumbs[crumbs.length - 2], false));
+    items.push(sep('sep-c'));
+    items.push(crumb(crumbs[crumbs.length - 1], true));
+  }
+
+  return <nav className="km-locushdr__crumbs">{items}</nav>;
+}
+
+/** The `…` dropdown for collapsed breadcrumbs: lists hidden ancestors only. */
+function CrumbMenu({ items, onPick }: { items: { id: string; name: string }[]; onPick: (mapId: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="km-locushdr__crumbmenu">
+      <button
+        className="km-locushdr__crumb"
+        onClick={() => setOpen((o) => !o)}
+        title="Show hidden Rooms"
+        aria-label="Show hidden Rooms"
+        aria-expanded={open}
+      >
+        …
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="km-menu" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0 }}>
+            {items.map((it) => (
+              <button key={it.id} onClick={() => { onPick(it.id); setOpen(false); }} className="km-menu__item">
+                {it.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </span>
   );
 }
 
