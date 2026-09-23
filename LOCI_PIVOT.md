@@ -4,8 +4,9 @@
 > Approved as direction, **not** as a rewrite. Read alongside `REDESIGN_PLAN.md`,
 > `DESIGN_SYSTEM.md`, and `BACKEND_SPIKE.md`.
 >
-> **Status:** planning. L1 (the navigational spine) is scoped below but **not yet
-> implemented**. Nothing here is built.
+> **Status:** L1 (the navigational spine) and L2 (Rooms polish) are **shipped**; L3
+> (**Send to Room** — manual collection) is next. Some sections below were written
+> pre-L1 and describe original scope, not current status.
 
 ---
 
@@ -30,6 +31,35 @@ Two target "wow" moments:
   synthesis. *(This is a later sprint — see Deferred. Not in L1.)*
 - **Wow 2 — Place.** The user brings that knowledge into their Locus and sees, at a
   glance, how it relates to everything else they know and are thinking about.
+
+### The core loop (product thesis)
+
+Loci helps people **turn what they read into something they can understand,
+remember, and create with.** The end-to-end loop the product is built around:
+
+> **Read → Highlight → Collect → Send to Room → Shape / Transform → Remember or Create**
+
+Everything on the roadmap is a step toward making that loop coherent, then wider,
+then faster — in this order:
+
+1. **Make the manual loop coherent first.** Reading material can be collected and
+   *sent into a Room*, then shaped by hand (notes, topics, connections, regions).
+2. **Then widen what can be read/ingested** — beyond Kindle imports to **native
+   in-product reading (PDF first): open a PDF inside Loci, highlight while reading,
+   auto-collect those highlights under that source, then send them to a Room.** The
+   ambition is working with reading material from *multiple source types*, not
+   "Kindle management."
+3. **Then add AI as an accelerator of shaping** — take selected highlights / notes /
+   summaries inside a Room and transform them into the representation that aids
+   understanding: outline, diagram, concept map, visual explanation, timeline,
+   comparison, questions, and other study/thinking structures. AI **reshapes
+   material into a representation; it is not a chatbot**, and its **outputs live
+   inside the Room/workspace**, not in a disappearing chat.
+
+**Sequencing discipline:** do not pull steps 2–3 forward prematurely — coherent
+manual loop → wider ingestion/reading → AI acceleration. Where this ordering and the
+exact phase numbers in `LOCI_ROADMAP.md` disagree, this thesis takes precedence and
+the roadmap is what gets re-sequenced.
 
 ---
 
@@ -167,9 +197,10 @@ Small and additive:
 - New fields flow through the existing `updatedAt` / `ownerId` auto-stamp, so
   sync-readiness (Backend Spike Phase A) is preserved.
 
-Note for later (not L1): "send content to a Room" and "move a node into a Room" are
-just **changing a node's `mapId`**. The model supports it trivially; only the
-interaction is deferred.
+Note on the two directions: **sending** Library/source material to a Room **creates**
+the appropriate node in the target Room's map (Send to Room — L3). **Moving** an
+existing canvas node between Rooms is the one that merely **changes its `mapId`**
+(cross-Room move — deferred, L5). Both are cheap; only the move interaction is deferred.
 
 ---
 
@@ -213,7 +244,7 @@ The pivot is architecture + naming, not a reskin. The mockups' extra accents
 
 ---
 
-## L1 — "Loci: the spine" (first sprint)
+## L1 — "Loci: the spine" (first sprint) — *shipped*
 
 **Goal:** validate the navigational loop end to end and nothing deeper:
 
@@ -247,21 +278,28 @@ drag-between-Rooms; the zoom *animation* (instant first).
 
 ---
 
-## Explicitly deferred (post-L1, in rough order)
+## Explicitly deferred (post-L2, in rough order)
 
+*(L1 and L2 shipped. The manual **Send to Room** link is the active next sprint — L3 —
+not deferred. Order follows the sequencing thesis: broader reading → AI shaping →
+conveniences.)*
+
+- **Broader reading / source support** — native in-product reading (PDF first):
+  open/read a PDF inside Loci, highlight while reading, collect highlights per source,
+  then send them to a Room. Then articles, Apple Books, other importers, Collections /
+  Topics as first-class.
 - **Wow 1 — AI "Shape into…"** its own sprint. Select highlights → *Shape into…* →
-  Summary / Study notes / Questions / Concepts / Mind map. AI is a **contextual
-  tool, not a chatbot**: it helps give shape to the user's thinking, it doesn't
-  replace it. Can be mocked before real AI.
-- **`/` command menu** on the canvas (`/note`, `/room`, `/book`, `/quote`, `/image`,
-  `/source`, `/question`, `/summary`, `/concept`) — designed to be extensible.
+  outline / diagram / concept map / questions / comparison / summary / study notes.
+  AI is a **contextual tool, not a chatbot**, and its outputs live inside the Room.
+  Can be mocked before real AI.
+- **`/` command menu** (convenience & extensibility) on the canvas (`/note`, `/room`,
+  `/book`, `/quote`, `/image`, `/source`, `/question`, `/summary`, `/concept`) —
+  lands around/after the AI layer.
 - **Connections** restyled to feel subtle and editorial (comprehension, not a
   technical graph of arrows).
-- **Cross-Room movement** — drag/send a node into a Room (change `mapId`).
+- **Cross-Room movement** — drag/move an existing node between Rooms (change `mapId`).
 - **Deeper nesting UI** beyond 1–2 visible levels (model already supports arbitrary
   depth — see below).
-- **Library growth** — PDFs, articles, Apple Books and other importers, Collections /
-  Topics as first-class.
 - **Camera zoom animation** for enter/exit.
 - **Quick-Jump** (⌘K to jump anywhere, not just search).
 

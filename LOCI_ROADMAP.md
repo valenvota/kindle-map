@@ -5,8 +5,17 @@
 > Read alongside `LOCI_PIVOT.md`, `REDESIGN_PLAN.md` (redesign + pre-pivot sprint
 > history), `BACKEND_SPIKE.md`, and `SETUP.md`.
 >
-> **Status:** planning. Nothing below L0 is built. Each phase is proposed → approved
+> **Status:** L1 (the spine) and L2 (Rooms polish) are **shipped**; **L3 — Send to
+> Room** is next. Phases beyond L3 remain planning. Each phase is proposed → approved
 > → built → verified, one at a time. Do not start a phase without explicit approval.
+>
+> **Product thesis & sequencing (see `LOCI_PIVOT.md` → "The core loop"):** Loci helps
+> people turn what they read into something they can understand, remember, and create
+> with. Core loop: **Read → Highlight → Collect → Send to Room → Shape / Transform →
+> Remember or Create.** Build order: (1) make the manual loop coherent, (2) widen
+> ingestion/reading (native PDF reading + highlight capture), (3) add AI as a shaping
+> accelerator. That thesis governs sequencing; the phase order below is being
+> re-evaluated against it (the L3 slot in particular).
 
 ---
 
@@ -23,7 +32,7 @@
 
 ---
 
-## 1. L1 — Loci: The Spine
+## 1. L1 — Loci: The Spine  *(shipped)*
 
 Validate the navigational loop: **Desk → Library → Locus → Room → Back / Search.**
 
@@ -43,7 +52,7 @@ cross-Room movement, zoom animation.
 
 ---
 
-## 2. L2 — Rooms polish
+## 2. L2 — Rooms polish  *(closed)*
 
 - Create Room.
 - Rename / delete Room.
@@ -54,23 +63,51 @@ cross-Room movement, zoom animation.
 
 ---
 
-## 3. L3 — Slash command / creation flow
+## 3. L3 — Send to Room (manual collection)  *(next)*
 
-A `/` command menu on the canvas, designed to be extensible:
+Close the loop's manual link: **Read → Highlight → Collect → _Send to Room_.** Today
+you can already *pull* a Library book/highlight into a Room from inside the Room
+(`AddBookModal` / `AddQuoteModal`), but there is no natural **push** from the
+reading/source surface — no Library-side "Send to Room", no multi-select, no batch.
+Closing that push is the highest-value manual step before AI.
 
-- `/note`, `/room`, `/book`, `/quote`, `/image`, `/source`, `/question`,
-  `/summary`, `/concept`.
+- From the book/highlights (source) surface: **multi-select highlights → Send to
+  Room → pick an existing Room →** they appear there as `quote` nodes.
+- Reuse the existing quote-node semantics (`AddQuoteModal`); no schema change expected
+  (sending content to a Room is just creating nodes on the target map).
+- Deterministic per-Room highlight identity: the same highlight may live in different
+  Rooms, but cannot be inserted twice into the same Room.
 
-Not every command needs to ship at once — the system should be extensible.
+*(The former "slash / creation flow" that occupied L3 moves to a later convenience
+slot — see §4.4. Cross-Room **move** / drag-drop / reparenting stays deferred — §5.)*
 
 ---
 
 ## 4. L4 — Shape into… / AI study notes  (Wow 1)
 
 - Select highlights → **Shape into…**
-- Options: Summary, Study notes, Questions, Concepts, Mind map.
+- Options: outline, diagram, concept map, visual explanation, timeline, comparison,
+  questions, summary, study notes — and other study/thinking structures.
 - AI is a **contextual tool, not a chatbot** — it helps give shape to the user's
   thinking, it does not replace it. Can be mocked before real AI.
+- **Outputs live inside the Room/workspace**, not in a disappearing chat: AI reshapes
+  material into a representation the user keeps and can work with.
+
+---
+
+## 4.4 — Slash / creation menu  (convenience & extensibility)
+
+*Relocated here from the old L3.* A `/` command menu on the canvas, designed to be
+extensible:
+
+- `/note`, `/room`, `/book`, `/quote`, `/image`, `/source`, `/question`,
+  `/summary`, `/concept`.
+
+Deferred to *around/after the AI shaping layer* on purpose: its creation commands
+largely duplicate the existing left toolbar / `PlusMenu` and the `AddBook` /
+`AddQuoteModal` flows, and its distinctive commands (`/summary`, `/concept`,
+`/question`) only become worthwhile once the AI layer (§4) exists. Not a Private
+Alpha gate. Not every command needs to ship at once — the system should be extensible.
 
 ---
 
@@ -103,12 +140,14 @@ people who already use Kindle highlights.
 
 ---
 
-## 5. L5 — Send to Locus / Cross-Room movement
+## 5. L5 — Cross-Room movement
 
-- Send books / highlights / notes from Library to Locus.
-- Send to a specific Room.
-- Move nodes between Rooms.
-- Drag / drop into a Room.
+*(The initial Library→Room **push** — "Send to a specific Room" — moved forward to L3.
+What remains here is moving content that already exists on a canvas.)*
+
+- Move existing nodes between Rooms.
+- Drag / drop a node into a Room.
+- Reparenting.
 
 *(Model note: moving a node is just changing its `mapId` — see `LOCI_PIVOT.md`.)*
 
@@ -116,11 +155,17 @@ people who already use Kindle highlights.
 
 ## 6. L6 — Library expansion
 
-- PDFs.
+- **Native in-product reading (PDF first)** — open and read a PDF *inside* Loci,
+  highlight passages while reading, auto-collect those highlights under that source,
+  then send them to a Room. This is reading + highlight capture, not just import.
 - Articles.
 - Apple Books.
 - Imported documents.
 - Collections / Topics.
+
+*(Reframing note: the loop-critical "Send to Room" link is being pulled ahead of this
+phase — see the L3 re-evaluation. Native reading here is about widening the sources
+that feed that same link.)*
 
 ---
 
