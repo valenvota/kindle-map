@@ -552,6 +552,37 @@
 .bd-hl__actions { margin-left: auto; display: flex; gap: 4px; opacity: 0; transition: opacity .16s; }
 .bd-hl:hover .bd-hl__actions, .bd-hl:focus-within .bd-hl__actions { opacity: 1; }
 
+/* L3 — highlight selection (hover checkbox, persistent when checked) */
+.bd-hl--selectable { position: relative; padding-left: 34px; }
+.bd-hl--selected { background: var(--accent-soft); border-radius: 12px; padding-right: 14px; }
+.bd-hl__check { position: absolute; left: 6px; top: 24px; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: 1.5px solid var(--hair-md); border-radius: 6px; background: var(--surface); color: var(--accent); cursor: pointer; opacity: 0; transition: opacity .16s, border-color .16s, background .16s; }
+.bd-hl:hover .bd-hl__check, .bd-hl:focus-within .bd-hl__check { opacity: 1; }
+.bd-hl__check--on { opacity: 1; border-color: var(--accent); background: var(--surface); }
+.bd-hl__check svg { width: 13px; height: 13px; }
+
+/* L3 — selection action bar (bottom of the content column) */
+.bd-selbar { position: sticky; bottom: 0; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 48px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--hair); box-shadow: 0 -8px 20px -14px rgba(0,0,0,0.3); }
+.bd-selbar__count { font-size: 13px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.bd-selbar__actions { display: flex; gap: 8px; }
+
+/* L3 — success toast */
+.bd-toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 60; padding: 10px 16px; border-radius: 10px; background: var(--ink); color: var(--surface); font-size: 13px; font-weight: 550; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.45); }
+
+/* L3 — Send to Room picker (inside the shared Modal) */
+.str-search { position: relative; margin-bottom: 12px; }
+.str-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
+.str-search .km-field { padding-left: 32px; }
+.str-list { max-height: 320px; overflow-y: auto; margin: 0 -6px; }
+.str-row { display: flex; align-items: center; gap: 11px; width: 100%; padding: 10px 12px; border: none; background: transparent; border-radius: 10px; text-align: left; cursor: pointer; transition: background .14s; }
+.str-row:hover:not(:disabled) { background: var(--surface-2); }
+.str-row:disabled { opacity: 0.5; cursor: default; }
+.str-row__icon { width: 16px; height: 16px; color: var(--ink-soft); flex-shrink: 0; }
+.str-row__text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.str-row__name { font-size: 14px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.str-row__path { font-size: 11.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.str-row__cta { flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--accent); }
+.str-empty { padding: 22px 8px; text-align: center; font-size: 13.5px; color: var(--ink-faint); }
+
 /* Notes writing page */
 .bd-notes-head { font-family: var(--font-serif); font-size: 22px; font-weight: 500; color: var(--ink); margin: 0 0 4px; }
 .bd-notes-sub { font-size: 12.5px; color: var(--ink-faint); margin-bottom: 22px; }

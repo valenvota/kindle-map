@@ -8,6 +8,10 @@ type Props = {
   onUpdate?: () => void;
   focused?: boolean;
   cardRef?: (el: HTMLDivElement | null) => void;
+  /** L3: show a selection checkbox (hover-revealed, persistent once checked). */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 };
 
 /**
@@ -15,7 +19,7 @@ type Props = {
  * Important highlights carry the ember marker (a left rule + label); status is
  * never shown with colored fills. Hover reveals mark-important + copy actions.
  */
-export function HighlightCard({ highlight, onUpdate, focused, cardRef }: Props) {
+export function HighlightCard({ highlight, onUpdate, focused, cardRef, selectable, selected, onToggleSelect }: Props) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -36,8 +40,23 @@ export function HighlightCard({ highlight, onUpdate, focused, cardRef }: Props) 
         'bd-hl',
         highlight.important ? 'bd-hl--important' : '',
         focused ? 'bd-hl--focused' : '',
+        selectable ? 'bd-hl--selectable' : '',
+        selected ? 'bd-hl--selected' : '',
       ].filter(Boolean).join(' ')}
     >
+      {selectable && (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={!!selected}
+          aria-label={selected ? 'Deselect highlight' : 'Select highlight'}
+          className={`bd-hl__check${selected ? ' bd-hl__check--on' : ''}`}
+          onClick={onToggleSelect}
+        >
+          {selected && <Check />}
+        </button>
+      )}
+
       <p className="bd-hl__q">“{highlight.text}”</p>
 
       <div className="bd-hl__meta">

@@ -14,7 +14,9 @@ import { HighlightCard } from './HighlightCard';
 import { BookEditForm } from './BookEditForm';
 import { StudyMode } from './StudyMode';
 import { BookCover } from './BookCover';
+import { SendToRoomModal } from './SendToRoomModal';
 import { Modal } from '../ui';
+import type { SendToRoomResult } from '../../db/sendToRoom';
 import type { Highlight } from '../../types/highlight';
 import type { ReadingStatus } from '../../types/book';
 
@@ -53,6 +55,33 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
   const [noteSaved, setNoteSaved]     = useState(false);
   const highlightRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
+  // L3 — Send to Room: multi-select highlights (persists across search/filter).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showSend, setShowSend] = useState(false);
+  const [toast, setToast]       = useState<string | null>(null);
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  const clearSelection = () => setSelected(new Set());
+  const selectedHighlights = useMemo(
+    () => highlights.filter((h) => selected.has(h.id)),
+    [highlights, selected],
+  );
+
+  const handleSent = (result: SendToRoomResult, roomName: string) => {
+    const summary =
+      result.added && result.skipped ? `${result.added} added · ${result.skipped} already there`
+      : result.added ? `Added ${result.added} highlight${result.added !== 1 ? 's' : ''}`
+      : `${result.skipped} already in this Room`;
+    setToast(`${summary} → ${roomName}`);
+    clearSelection();
+    setTimeout(() => setToast(null), 2600);
+  };
+
   const loadHighlights = async () => {
     const data = await getHighlightsByBook(bookId);
     setHighlights(data);
@@ -61,6 +90,7 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
 
   useEffect(() => {
     setLoading(true);
+    setSelected(new Set()); // don't carry a selection across books
     loadHighlights();
     getGeneralBookNote(bookId).then((n) => setGeneralNote(n?.text ?? ''));
   }, [bookId]);
@@ -288,6 +318,9 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
                       onUpdate={loadHighlights}
                       focused={h.id === focusHighlightId}
                       cardRef={(el) => highlightRefs.current.set(h.id, el)}
+                      selectable
+                      selected={selected.has(h.id)}
+                      onToggleSelect={() => toggleSelect(h.id)}
                     />
                   ))}
                 </div>
@@ -328,7 +361,31 @@ export function BookDetailView({ bookId, focusHighlightId, onClose }: Props) {
             </div>
           )}
         </div>
+
+        {/* L3 — selection action bar (highlights tab only) */}
+        {tab === 'highlights' && selected.size > 0 && (
+          <div className="bd-selbar">
+            <span className="bd-selbar__count">{selected.size} selected</span>
+            <div className="bd-selbar__actions">
+              <button className="km-btn km-btn--secondary km-btn--sm" onClick={clearSelection}>Clear</button>
+              <button className="km-btn km-btn--primary km-btn--sm" onClick={() => setShowSend(true)}>Send to Room</button>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Send selected highlights to a Room */}
+      {showSend && (
+        <SendToRoomModal
+          bookId={bookId}
+          highlights={selectedHighlights}
+          onClose={() => setShowSend(false)}
+          onSent={handleSent}
+        />
+      )}
+
+      {/* Success feedback */}
+      {toast && <div className="bd-toast" role="status">{toast}</div>}
 
       {/* Edit metadata */}
       {isEditing && (
